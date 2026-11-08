@@ -1,0 +1,24 @@
+RAW-SNIPPET (Tavily-Suchmaschinen-Snippet, Abruf 2026-11-08)
+Quelle: https://gearspace.com/threads/waldorf-quantum.1147680/page-293
+Direktes Scraping von gearspace.com schlägt mit 403 fehl; Snippet lieferte den VOLLSTÄNDIGEN Post-Text.
+
+Kontext (Frage, auf die rolfw antwortet):
+* prophei, 15 year member, Feb 11, 2019, #8,764:
+  "Rolf, What is the sampler format of the Quantum? ...
+   It would be incredible to be able to organize the samples externally, and then just load everything in.
+   Also, was my email regarding the sequencer behavior we discussed clear enough? R"
+
+Antwort (rolfw = Rolf Wöhrmann, Waldorf-CEO, "5 year member" bei GS seit Feb 2019, joined Feb 8, 2019):
+* rolfw, Feb 11, 2019, #8,765 — VOLLSTÄNDIGER WORTLAUT laut Snippet:
+
+"Sample rate is ignored, but assumed to be 44.1 kHz. For other rates you could adapt sample pitch as needed.
+Sample maps are normally stored within the patches but can be exported and imported as well. They describe all the key & velocity zones etc. what you see in the GUI. These samplemap files are text files you could edit and create by hand. Just look onto them and compare what's in the screen. Should be quite self explanatory. Otherwise ask.
+So, if you have a komplex sample mapping you could do this in a text editor until the above mentioned tools are ready.
+Sample transfer to the machine currently is done via SD card. We have no plans for plain old Sysex, but like to invest in a direct USB connection. No promises about when and if at all, but the idea is that you connect Quantum to your computer and Quantum's sample storage appears as an external drive on your computer.
+The sequencer thing is well understood but need some time to let it sink in and do it :-)
+R"
+
+(Erster Satz des Posts, ebenfalls im Snippet: "In general, samples are stored as normal audio files like wav or aiff. You can use uncompressed 16,24,32 bit integer or 32 bit float formats and number of channels. It will always goes to stereo.")
+
+Korroboration derselben Aussage:
+* prophei, page-332, #9,936, Jul 1, 2019: "Anyone know if they plan on incorporating a usb disk mode that allows connection via usb cable and transfer directly to the SD card? ..." -> prophei: "I am not an expert in this field, but understood rolfw this way, yes."

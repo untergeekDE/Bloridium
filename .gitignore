@@ -1,0 +1,8 @@
+# Generiert
+__pycache__/
+*.pyc
+bloridium.db
+
+# Große Fremd-Referenzdaten (Waldorf Factory-Zips, ~1,8 GB) – bei Bedarf entfernen
+.DS_Store
+docs/refs/*.zip

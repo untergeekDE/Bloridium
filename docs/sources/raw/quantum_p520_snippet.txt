@@ -1,0 +1,16 @@
+RAW-SNIPPET (Tavily-Suchmaschinen-Snippet, Abruf 2026-11-08)
+Quelle: https://gearspace.com/threads/waldorf-quantum.1147680/page-520 (Thread "Waldorf Quantum")
+Beitrag datiert laut Snippet "Aug 3, 2026"; exakte Beitragsnummer (#15,6xx-Bereich) ließ sich aus den Snippets NICHT eindeutig ermitteln.
+
+"I have requested documentation multiple times from Waldorf without succes. Anyhow my autosamplerT now creates sfz, qpat and map files.
+qpats give a full turnkey patch, and they contain the map that can be exported on its own anyway. create ..."
+
+Kontext: derselbe Autor verweist auf sein GitHub-Projekt autosamplerT
+(https://github.com/timandtheocean/autosamplerT), das u. a. Waldorf-QPAT-Export implementiert
+("Waldorf QPAT : Export to Waldorf Quantum/Iridium format (SD card, internal, or USB storage)").
+
+Weitere relevante Snippets derselben Diskussion:
+* Paul_xyz, page-505, #15,149, Feb 8, 2024 (Ruprecht_ok: "Is there documentation on best practices of a map file for the Quantum/Iridium?"):
+  "not seen any official documentation for that."
+* rolfw, page-334, #10,004, Jul 13, 2019 (zu OS 2.0 Kernel): "Lastly, it makes a reasonable fist of importing raw DX7 patches in sysex."
+  => DX7-SysEx-Import ist ein dateibasierter Fremdformat-Parser, keine eigene SysEx-Schicht.

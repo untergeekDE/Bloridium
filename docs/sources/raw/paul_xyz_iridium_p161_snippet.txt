@@ -1,0 +1,31 @@
+RAW-SNIPPETS (Tavily-Suchmaschinen-Snippets, Abruf 2026-11-08)
+Quelle: https://gearspace.com/threads/waldorf-iridium.1314350/page-161 (Thread "Waldorf Iridium", gestartet 2020-06-10)
+
+Diskussion 6. Nov 2023, Seite 161:
+
+* #4,808 (Nov 6, 2023) — Urheber im Snippet nicht eindeutig auflösbar (steht direkt vor #4,809):
+  "I actually love my Korg01W User Guide. It has a fully defined Sysex documentation for every single parameter and patch format and such.
+  Even for the Sequential Prophet-10 Rev4 it was only partially correct and available, and nothing for Novation Summit.
+  For the later one I created the complete Sysex documentation via Reverse Engineering, but I do not want to do this again for Iridium.
+  Any ideas on this?"
+  => WICHTIG: "fully defined Sysex documentation" bezieht sich auf das KORG 01/W USER GUIDE, NICHT auf Iridium.
+
+* #4,809 SerErris, Nov 6, 2023:
+  "Hi, I am looking for a Sysex definition of the Iridium Midi Implementation. Has anyone found anything? I must have Tomatoes on my eyes or no Vendor sees any value in providing such information.?"
+
+* #4,810 Paul_xyz, Nov 6, 2023:
+  "It's my understanding that there is no sysex layer in quantum/iridium."
+
+* #4,811 SerErris:
+  "But you can import DX7 patches via Sysex ... so there must be a Sysex layer." ->
+  "no, would just need to be a parser that converts a DX7 sysex file to quantum/iridium parameters."
+
+* #4,812 Paul_xyz:
+  "So how do you then save the patches to external? Just via USB-Stick? How will you manage the patches in an librarian? Not at all?"
+
+* #4,813 SerErris (Nummer aus Snippet-Reihenfolge zwischen #4,812 und #4,814 erschlossen):
+  "yes, patches are physically transferred via usb stick/sd card. there is no librarian and Rolf said early on there would be no editor as the hardware is its own editor - see (22:29)"
+
+Zusatzbeleg (anderer Thread):
+* feijai, Thread "Hydrasynth Patch Editors and sysex spec" (gearspace.com/threads/hydrasynth-patch-editors-and-sysex-spec.1395298), May 24, 2023:
+  "When Waldorf releases a machine with sysex (not the Quantum/Iridium) they're still very willing to work with you. I'm working on the M editor right now, and wrote the first Kyra editor with help from Waldorf and Manuel."
