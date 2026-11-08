@@ -1,0 +1,25 @@
+WAYBACK / CDX-ARCHIV-RECHERCHE, durchgeführt 2026-11-08
+(CDX-API: http://web.archive.org/cdx/search/cdx?url=...)
+
+ERGEBNIS: KEIN Snapshot der konkreten Seiten gefunden.
+
+1) Quantum-Thread /threads/ Variante:
+   curl 'http://web.archive.org/cdx/search/cdx?url=gearspace.com/threads/waldorf-quantum.1147680*&...&limit=200'
+   -> 0 Treffer (leere Antwort)
+   curl '...url=gearspace.com/threads/waldorf-quantum.1147680/page-293...' -> 0 Treffer
+
+2) Quantum-Thread /board/ Variante (25 Snapshots insgesamt, alle page-NN.html und post-URLs):
+   - kein Snapshot von .../1147680-waldorf-quantum-293.html
+   - 2019-Ära post-URLs: nur post12548052 (20220827033830, 301) und post12593793 (20250319141857, 301) — Redirects, keine verwertbaren Inhalte; Zuordnung zu #8,765 nicht möglich
+   - Thread-Hauptseite existiert: 20210515115908 .../1147680-waldorf-quantum.html (200)
+   - Seiten-Snapshots vorhanden u. a.: -181, -33, -355, -36, -4, -419 (403), -428, -465, -469, -470 (403), -471, -474, -478, -505 (403), -519
+   - KEINE Snapshots von page-520/521
+
+3) Iridium-Thread:
+   - /threads/waldorf-iridium.1314350* -> 0 Treffer
+   - board-Hauptseite 1314350-waldorf-iridium.html: Snapshots 20210510165220, 20210621122901 (x2), 20220827033814, 20230527013609, 20230527013653 (alle 200) — aber nur Seite 1
+   - 1314350-waldorf-iridium-161.html -> 0 Treffer
+
+4) timetravel.mementoweb.org API für page-293 (2019) -> leere Antworten
+
+FAZIT: web.archive.org enthält KEINEN Snapshot von Quantum page-293 / Post #8,765, Iridium page-161 oder Quantum page-520/521. Die Zitate in diesem Dossier stammen daher aus Suchmaschinen-Snippets (Tavily), die den vollständigen Post-Text lieferten. Roh-CDX-Ausgaben siehe wb/cdx_*.txt im Recherche-Ordner.

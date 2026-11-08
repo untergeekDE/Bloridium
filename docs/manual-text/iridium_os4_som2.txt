@@ -1,0 +1,602 @@
+QUANTUM                  User Manual
+                             for OS 4
+IRIDIUM
+
+
+Including
+SOM v2 Board Functions
+Content
+About this Manual ....................................................................................3
+General Safety Guidelines .......................................................................4
+The new OS 4 Features ............................................................................6
+  New Oscillator Type: Seeds Mode (with new SOM v2 Board) ........6
+  New Wavetable Tool Option .......................................................................14
+  Note Locks (only with new SOM v2 Board) .........................................14
+  The Flavour Option (only with new SOM v2 Board) ........................16
+  New Options on the Master/Layer Pages .............................................18
+  The Mutator Tab ..............................................................................................21
+  New Option on the Perform Page .............................................................23
+  New Option on the Arpeggiator Page .....................................................24
+  New Options on the Global MIDI Page ...................................................24
+
+
+
+
+                                                                                                                     2   OS 4 Manual
+About this Manual                                                    Hint
+                                                                     Waldorf Music is not liable for any erroneous information
+This manual refers to the new features of the OS 4 update for        contained in this manual. The contents of this manual may
+Waldorf Quantum and Iridium synthesizer.                             be updated at any time without prior notice. We made every
+Additionally, all new functions made                                 effort to ensure the information herein is accurate and that
+possible with the SOM v2 Board are                                   the manual contains no contradictory information. Waldorf
+also explained. We indicate in the ma-                               Music extends no liabilities in regard to this manual other
+nual at the appropriate point if certain functions only work         than those required by local law.
+in conjunction with the new SOM v2 board.                            This manual or any portion of it may not be reproduced in
+                                                                     any form without the manufacturer's written consent.
+This manual is suitable for all users of the following Waldorf
+devices:                                                             Rev. 1, August 2026
+•   all Iridium models excluding Iridium MK2 with OS 4 and
+                                                                         The complete manual for your the Waldorf device can be
+    with or without optional SOM v2 Board
+                                                                         found in the Support & Download section of our web-
+•   all Quantum models with OS 4 and with or without op-                 site.
+    tional SOM v2 Board
+
+    Iridium MK2 already includes the new SOM v2 Board
+    and therefore offers the full functionality of OS4.
+And now have fun with the new features of OS 4!
+Your Waldorf Team
+
+
+
+
+                                                                 3                                                  OS 4 Manual
+General Safety Guidelines                                          Power Supply
+                                                                   •   Only use the power cable that came with your synth.
+     Please read the following safety tips carefully! They
+                                                                   •   Unplug the device when you are not using it for longer
+     include several precautions you should always observe
+                                                                       periods.
+     when dealing with electronic equipment. Read all of
+     the instructions before operating your device.                •   Always pull the plug when unplugging the device - never
+                                                                       the cable.
+Suitable Operating Conditions                                      •   Never touch the cable with wet hands.
+•   Use the device in enclosed rooms only.
+•   Never use the device in damp conditions such as                Operation
+    bathrooms, washrooms, or around indoor swimming                •   Never place objects containing liquids on or near the
+    pools.                                                             device.
+•   Do not use the device in extremely dusty or dirty envi-        •   Place the device on a stable base only.
+    ronments.
+                                                                   •   Make sure no foreign objects `ind their way into the
+•   Make sure that adequate ventilation is available on all            chassis. If for some reason this occurs, switch the power
+    sides of the device.                                               off, unplug the device, and consult a quali`ied repair cen-
+•   Do not place the device near heat sources such as radia-           ter.
+    tors.                                                          •   This device can generate volume levels that may do irre-
+•   Do not expose the device to direct sunlight.                       parable damage to your hearing when used on its own or
+                                                                       with ampli`iers, speakers, or headphones. For this reason
+•   Do not expose the device to extreme vibrations.                    you should keep the volume at tolerable levels.
+
+
+
+
+                                                               4                                                     OS 4 Manual
+Maintenance
+•   Do not open the device or remove the cover. Refer all
+    service and repair tasks to quali`ied personnel. The inte-
+    rior of the chassis contains no components that require
+    user maintenance.
+•   Use only a dry, soft cloth or brush to clean the device.
+    Never use alcohol, cleaning solutions or similar chemi-
+    cals. They will damage the surface of the chassis.
+
+Proper Use
+This device is designed exclusively to produce low-frequency
+audio signals for the purpose of generating sound. Any other
+use is prohibited and voids the warranty extended by Wal-
+dorf Music. Waldorf Music is not liable for damages due to
+incorrect use.
+     Please do not press and hold the Global, Master and
+     Load buttons during start up procedure. This will
+     activate the Skynet Arti`icial Intelligence. Waldorf is not
+     responsible for further courses of the timeline.
+
+
+
+
+                                                                   5   OS 4 Manual
+                                                                     Seeds Panel Parameters (not available for Iridium
+The new OS 4 Features                                                Core)
+
+New Oscillator Type: Seeds Mode (with new                            Semitone / Octave
+SOM v2 Board)                                                        Sets the pitch of the Seeds in semitone steps. The standard
+                                                                     setting for this parameter is 0, but there are cases where
+= Press the Particle and Resonator button simultaneous-              different values are interesting as well. Press the Semitone
+    ly to activate the Seeds mode for the corresponding              dial to select the pitch in octave steps.
+    oscillator 1, 2, or 3. The whole oscillator section lights
+    up in yellow.                                                    Fine Pitch
+So what, exactly is Seeds synthesis? Inspired by wavetable           Fine-tunes the Seeds in steps of 1/128th of a semitone. The
+synthesis, in which each wavetable represents a timbral              audible result of detuned oscillators is a Chorus effect. Use a
+journey, the Iridium/Quantum bases these timbral journeys            positive setting for one oscillator and an equivalent negative
+not only on static waveforms, but also to dynamically syn-           setting for another.
+thesize each waypoint from sub-oscillators – we called this
+‘Seeds‘ Seeds can be controlled and recombined using tech-           Position (Position Knob)
+niques like ring modulation and frequency modulation, and            This parameter de`ines the start-point of the Seeds sub-
+enriched with noise and other non-pitched material. The              oscillator (a vector). A setting of 0 selects the `irst Seed
+synth provides, similarly to wavetables, a set of prede`ined         vector; the maximum setting selects the end of the last vec-
+timbral journeys, but you can also edit and create your own.         tor (which is determined with the Num Vectors parameter).
+
+                                                                     Count (Spectr. Knob)
+                                                                     The Seeds can generate up to four oscillator signals simulta-
+                                                                     neously. This is determined by the Count knob. This option
+
+
+
+                                                                 6                                                     OS 4 Manual
+is similar as a chorus effect and add more depth to the over-       Seeds Display Page
+all sound. Use the Detune and the Spread option for more
+depth.                                                              To access the Seeds display page, press the corresponding
+                                                                    OSC 1, 2 or 3 button.
+Spread (FX Knob)
+Spreads the Seeds in the stereo `ield when Count is set to
+any value greater than 1.
+
+Detune (Noisy Knob)
+Detunes the Seeds when Count is set to any value greater
+than 1.
+
+FreeEnv1 Amount (Travel Knob)
+Allows moving through a Seeds with prede`ined Free Envel-
+ope 1. More precisely, this parameter controls the modulati-
+on intensity of the Free Envelope 1. Positive values allow a
+forward movement; negative values a backward movement.
+                                                                                View display page of the Seeds mode
+If you want a cyclic modulation, use the Position parameter
+modulated with an LFO, or any other cyclic modulation sour-         Here you can switch between three modes: Pitch & Tools,
+ce.                                                                 Mix, and Timbre. Tap on the corresponding tab to select it.
+                                                                    The display switches to this mode. A fourth tab displays the
+g Use FreeEnv 1 Amount with a setting of +1.0 to get an             current oscillator model.
+     impression of the diversity of the Seeds.
+
+
+
+
+                                                                7                                                     OS 4 Manual
+Let´s start with the option of the basic View in the Timbre        •   Set Default: sets this parameter to its default of 2 vec-
+tab.                                                                   tors.
+                                                                   •   Set Last Loaded: resets the parameter to the last loaded
+Num Vectors                                                            value from the current sound patch.
+Here you determine the number of the Seeds vectors. This is        •   MIDI Learn CC: activates MIDI Learn, which maps an
+roughly comparable to the waves in a wavetable. The more               incoming MIDI control change to this parameter.
+vectors, the more complex the resulting sound. The maxi-
+mum number is 12.                                                  Detune
+Tap on Num Vectors to open a pop-up menu for further               Same functionality as the corresponding panel parameter.
+settings:
+                                                                   Tap on Detune to open a pop-up menu for further settings:
+•   Set Default: sets this parameter to its default of 5
+    vectors.                                                       •   Normal: Detune change is about 0.01.
+•   Set Last Loaded: resets the parameter to the last loaded       •   Fine: Detune change is about 0.001.
+    value from the current sound patch.                            •   Super Fine: Detune change is about 0.0001.
+•   MIDI Learn CC: activates MIDI Learn, which maps an             •   Set Default: sets Detune to its default value 0.05.
+    incoming MIDI control change to this parameter.
+                                                                   •   Set Last Loaded: resets the parameter to the last loaded
+Count                                                                  value from the current sound patch.
+                                                                   •   Modulations: opens the Mod menu to sets up a modula-
+Same functionality as the corresponding panel parameter.
+                                                                       tion for this parameter. More information can be found in
+Tap on Count to open a pop-up menu for further settings:               ‘The Modulation Mode’ chapter.
+
+
+
+
+                                                               8                                                     OS 4 Manual
+•   MIDI Learn CC: activates MIDI Learn, which maps an              Position
+    incoming MIDI control change to this parameter.
+                                                                    Same functionality as the corresponding panel parameter.
+Spread                                                              Tap on Position to open a pop-up menu for further settings:
+Same functionality as the corresponding panel parameter.            •   Normal: Position change works normal, depending on
+                                                                        the number of vectors.
+Tap on Spread to open a pop-up menu for further settings:
+                                                                    •   Fine: Position change works `ine, depending on the
+•   Normal: Spread change is about 0.01.                                number of vectors.
+•   Fine: Spread change is about 0.001.                             •   Super Fine: Position change works super`ine, depending
+•   Super Fine: Spread change is about 0.0001.                          on the number of vectors..
+•   Set Default: sets Spread to its default value 0.70.             •   Set Default: sets Position to its default value 1.00.
+•   Set Last Loaded: resets the parameter to the last loaded        •   Set Last Loaded: resets the parameter to the last loaded
+    value from the current sound patch.                                 value from the current sound patch.
+•   Modulations: opens the Mod menu to sets up a modula-            •   Modulations: opens the Mod menu to sets up a modula-
+    tion for this parameter. More information can be found in           tion for this parameter. More information can be found in
+    ‘The Modulation Mode’ chapter.                                      ‘The Modulation Mode’ chapter.
+•   MIDI Learn CC: activates MIDI Learn, which maps an              •   MIDI Learn CC: activates MIDI Learn, which maps an
+    incoming MIDI control change to this parameter.                     incoming MIDI control change to this parameter.
+
+
+
+
+                                                                9                                                      OS 4 Manual
+FreeEnv1 Amt                                                          Edit Button
+Same functionality as the corresponding panel parameter.              Tap on the Edit button to open a display page for setup and
+                                                                      editing the Seeds sub-oscillators.
+Tap on FreeEnv1 Amt to open a pop-up menu for further
+settings:                                                             Here you can setup your Seeds from the scratch, if desired.
+•   Normal: FreeEnv1 Amt change is about 0.02.
+•   Fine: FreeEnv1 Amt change is about 0.002.
+•   Super Fine: FreeEnv1 Amt change is about 0.0002.
+•   Set Default: sets FreeEnv1 Amt to its default value +0.00.
+•   Set Last Loaded: resets the parameter to the last loaded
+    value from the current sound patch.
+•   MIDI Learn CC: activates MIDI Learn, which maps an
+    incoming MIDI control change to this parameter.
+
+
+
+
+                                                                                    The Seed Edit mode display page
+                                                                      r     If this is your `irst time trying Seeds, we recommend
+                                                                            starting with one of the included templates (found
+                                                                            under Tools).
+
+
+
+
+                                                                 10                                                    OS 4 Manual
+The basic concept of creating and editing Seeds is:                    The Seed Types
+1)   Choose your desired number of vectors.
+                                                                       Parts
+2)   Select the vector, you want to edit (with Selected Vec-
+     tor).                                                             Parts offers a simple additive synthesis with up to four parti-
+3)   Select your desired Seed Type for this vector.                    als. For each partial (selectable with Selected Part), the
+                                                                       level can be set (Vol) and a tuning ratio to the fundamental
+4)   Edit the speci`ic parameters on the right for your vector.
+                                                                       can be de`ined (Ratio). By using the Fine and Super modes of
+5)   Finally, determine the volume (Volume) and transposi-             the encoder, non-integer ratios can be set.
+     tion (Transpose option in semitones/cents) for your
+     vector.                                                           Wave
+During editing, you can solo the current selected vector for a         Wave offers a simple wavetable synthesis using the same
+more precise adjustment (with the Solo Vec button).                    Wavetables as the dedicated wavetable oscillator. Wave Pos
+                                                                       allows you to set the position of the start wave within the
+                                                                       wavetable.
+
+                                                                       FM
+                                                                       FM offers a simple frequency modulation with feedback. FM
+                                                                       Ratio sets the frequency relationship between the FM opera-
+                                                                       tors. By using the Fine and Super modes of the encoder, non-
+                                                                       integer ratios can be set. FM Index set the amount of the FM
+                                                                       modulation from modulator to the carrier, and FM Feedback
+                                                                       adds FM modulation of the carrier to itself.
+
+
+
+
+                                                                  11                                                     OS 4 Manual
+RM                                                                       The Tools Button
+RM is a classic ring modulation with an adjustable frequency             Tap on the Tools button to open a pop-up window for loa-
+ratio (RM Ratio) of the two input signals, based on a wave-              ding Seeds templates with prede`ined settings and selectable
+table oscillator and a sine oscillator. The wavetable oscillator         options for basic edits.
+offers the same operating options as the Wavetable Seed
+                                                                         •   Load Templates: Opens a display page with 5 selectable
+Type (Wavetable & Wave Pos). By using the Fine and Super
+                                                                             Seeds (with Template knob).
+modes of the encoder, non-integer ratios can be set.
+                                                                         •   ShufGle: Mixes the current selected Seeds vectors ran-
+Dirt                                                                         domly.
+Dirt resembles a noise generator and produces different                  •   Reverse: Reverses the current selected Seeds vectors.
+types of noise, which are selected using Dirt Type. Besides
+White Noise and Pink Noise, each with adjustable resonance               •   Rotate: Rotates the current selected Seeds vectors one
+(Dirt Res), there are two other, more exotic noise types:                    step forwards.
+Crackle and Geiger generate short noise pulses; the speed of             •   Rotate Back: Rotates the current selected Seeds vectors
+these noise pulses can be changed with the Dirt Speed pa-                    one step backwards.
+rameter.
+                                                                         •   Copy Vector: Only available in Edit mode. Copies the cur-
+                                                                             rent selected vector into the clipboard.
+g Dirt Tip: Use the Resonance parameter to give the
+       noise a pitch-like timbre in order to play it melodically.        •   Paste Vector: Only available in Edit mode. Pastes vector
+                                                                             from the clipboard to the current selected vector.
+
+
+
+
+                                                                    12                                                    OS 4 Manual
+The Lucky Button
+Tap on the Lucky button to open a new display page. Lucky
+sounds a bit like the name of a slot machine in Las Vegas.
+The comparison isn't entirely far-fetched. Here, we offer `ive
+pre-de`ined Seeds options with random generation. For ex-
+ample, tap the Crazy button and start the fun. Each subse-
+quent tap generates a new crazy seed. You can control the
+number of vectors at any time using the Num Vectors opti-
+on.
+Instead of describing all `ive buttons in detail, we encourage
+you to simply try your luck yourself.
+
+
+
+
+                                                                 13   OS 4 Manual
+New Wavetable Tool Option                                            Note Locks (only with new SOM v2 Board)
+A new tool is available for the Wavetable oscillator. Tap the        To access the Note Locks display page, press the MOD button
+Tools button in the Timbre tab to access it.                         above the display. Tap on the Note Locks tab to select the
+•   Generate Lucky: creates random waves with complex                corresponding display page.
+    waveforms. This option is perfect for happy little
+    accidents.
+
+
+
+
+                                                                     This special feature called Per Note Parameter-Locks is the
+                                                                     result of a collaboration with the legendary British musician
+                                                                     Aphex Twin, a long-term Waldorf Iridium user. With this
+                                                                     feature, each of the 128 notes of your keyboard can be assi-
+                                                                     gned up to 16 individual parameter variations. This system
+                                                                     allows each note to have a different set of parameters. You
+
+
+
+                                                                14                                                   OS 4 Manual
+can even change the synthesis mode of oscillators for each          We have included some useful utility option buttons:
+note or change effect parameters. This feels like adding a
+whole new dimension to your music. Per Note Parameter-              Copy
+Locks are saved with each patch and can be inspected and
+                                                                    Tap on the Copy button to copy the parameter changes of the
+edited on this display.
+                                                                    current selected note into the internal clipboard.
+How to record Per Note Parameter-Locks
+                                                                    Paste
+The process for assigning individual parameter variations
+                                                                    Only available, when a slot was copied before. Tap on the
+for a note on your (master-)keyboard is very easy:
+                                                                    Paste button to paste the parameter changes from the clip-
+1) First, tap on the Record button to activate the parame-          board to the current selected note.
+     ter recording function.
+2) Now, select the note for which you want to record pa-            Clear Item
+     rameter variations. You can do this with the MIDI Note
+                                                                    Select a desired item entry by using the Item option. Tap on
+     selection knob or simply play the desired note on your
+                                                                    the Clear button to delete this item entry.
+     master keyboard. In the keyboard graphic below, a
+     selected note lights in red.
+                                                                    Clear Note
+3) Turn any parameter knob to record its setting into the
+     `irst Item slot. A recorded setting is displayed by its        Tap on this button to delete all parameter recordings for the
+     parameter name and value.                                      current selected note.
+4) Repeat the last step and record up to 16 parameter set-
+     tings, if desired.
+                                                                    Clear All
+5) Tap on Stop to `inish your recording.                            Tap on this button to delete all parameter recordings for all
+6) Repeat the process for other notes, if desired.                  notes.
+
+
+
+                                                               15                                                   OS 4 Manual
+The Flavour Option (only with new SOM v2                              But why the endless explanations? Just turn it and enjoy!
+Board)                                                                On the Flavour display page, you can set up what and how
+                                                                      the Flavour knob do with the current sound.
+To access the Flavour display page, press the MOD button
+above the display. Tap on the Flavour tab to select the corre-             Flavour adds all sort of micro variations to the sound.
+sponding display page.                                                     This includes small pitch variations on the `lavour va-
+                                                                           lue. A parameter value of 0 won’t add any sound varia-
+                                                                           tions.
+
+                                                                      Osc 1 / Osc 2 / Osc 3
+                                                                      These are subtle oscillator parameter variations, primarily in
+                                                                      timbral parameters of the various synthesis engines.
+
+                                                                      Filter
+                                                                      These are subtle `ilter parameter variations, primarily for
+                                                                      the cutoff frequency and resonance.
+
+                                                                      Envelopes
+The further you move the center based Flavour slider, the             These are subtle envelope parameter variations for all tim-
+more you in`luence sonic variations of the current sound.             bral and level aspects of the envelopes.
+These changes do not happen completely randomly, but are
+methodical.
+
+
+
+
+                                                                 16                                                    OS 4 Manual
+Pitch                                                                  On Iridium Desktop, the Envelope Velocity knob left to
+                                                                       the Master Volume works now as physical Flavour
+These are subtle parameter variations for the oscillator pitch         knob.
+con`igurations.
+
+Volume
+These are subtle parameter variations for the sound volume.
+
+Pan
+These are subtle parameter variations for the sound pan-
+ning.
+
+Flavour
+A counterpart to the center based Flavour slider.
+Tap on the corresponding parameter to open a pop-up menu
+for further settings:
+•   Set Default: sets the value to its default setting of 0.00.
+•   Set Last Loaded: resets the parameter to the last loaded
+    value from the current sound patch.
+•   MIDI Learn CC: activates MIDI Learn, which maps an
+    incoming MIDI control change to this parameter.
+
+
+
+
+                                                                  17                                            OS 4 Manual
+New Options on the Master/Layer Pages                           Timbre Modes
+                                                                Iridium/Quantum offers three different modes for the sound
+r Devices with the new SOM v2 board offer four layers,
+                                                                layers:
+  while devices without this board still only offer two
+  layers.                                                       •   Single: all 4 Sound layers have individual settings and
+                                                                    cannot be played together. You can switch between the 4
+The Mode Tab (only with new SOM v2 Board)                           layers by tapping on the Layer 1..4 buttons in the touch
+                                                                    screen display.
+Here you determine the behavior of the 4 layers. You can            Split: Layer 1 to 4 use a dedicated keyboard range for
+                                                                •
+also load sound presets for split and multi layers.                 playing. A typical situation is that a bass sound is played
+                                                                    in the lower range (for Layer 1) of the keyboard while a
+                                                                    lead sound is played in the upper range (for Layer 2).
+                                                                    Layer 3 could add an overall sub pad layer, while Layer 4
+                                                                    is not in use. Use the Layer Voices and Min Key/Max
+                                                                    Key parameters for the corresponding Layer to set the
+                                                                    desired keyboard ranges for the split sounds. In addition
+                                                                    or alternatively, each layer can be assigned an individual
+                                                                    MIDI channel which is done in here: Global -> MIDI -> In.
+                                                                •   Multi: all Sound layers are played simultaneously over
+                                                                    the whole keyboard range – in different playback modes.
+                                                                    Use this option to combine sounds, such as pads, drones
+                                                                    and keys.
+                                                                r Depending on the selected Timbre mode, the display
+         Mode page in Split mode with SOM Board                   representation differs.
+
+
+                                                           18                                                     OS 4 Manual
+Voice Allocation (only available for Quantum)                       Min / Max Key (only for Split Mode)
+This option determines how the 16 voices should be used in          Here you determine the keyboard range for the correspon-
+conjunction with the 8 analog `ilters when used in Single,          ding layer when in Split mode. The lowest setting is note C-2;
+Split, or Multi mode.                                               the highest is note G8.
+                                                                    Tap on the corresponding Min Key or Max Key button to
+Layer 1…4 Voices (only for Split Mode)                              open a pop-up menu. Here you can change the key with the
+Here you determine, how many voices the corresponding               main selection encoder or directly via your MIDI master
+sound layer is able to play. Keep in mind that Iridium/Quan-        keyboard. Please keep in mind that the MIDI channel set-
+tum offers an overall polyphony of 16 voices. If you set the        tings for each layer in the Global -> MIDI -> In screen also
+sum of all active layer voices to more than 16, an overuse          apply.
+message is displayed in the bottom area of the display page.
+                                                                    Controller (only for Split and Layered Mode)
+Layer 1…4 Active/Off (only for Split and Multi                      Determines which Layer will be affected by incoming Mod
+Mode)                                                               wheel, Pitch bend, Aftertouch, Pads and Modulation pad
+Here you can activate/deactivate the corresponding layer.           data.
+The number of an inactive layer is shown in brackets in the         •   All: wheels and play controls affect all layers.
+bottom right layer overview in the display
+                                                                    •   Layer 1…4: wheels and play controls affect the chosen
+Layer 1…4 Load (only for Split and Multi Mode)                          layer only.
+
+From here, you can call up the Loading page to load a sound         •   Selected: wheels and play controls affect only the current
+patch for the corresponding layer.                                      selected layer.
+
+
+
+
+                                                               19                                                          OS 4 Manual
+Multi Mode                                                           The Master Tab
+The Multi mode allows you to play up to 4 sound patches in           On the Master page you can setup panning and level for each
+different ways:                                                      of the 4 layers (when new SOM v2 Board is installed), as well
+                                                                     as the master volume. The remaining functions are identical
+•   Layered: all active sound layers are played simulta-
+                                                                     to those of older operating systems.
+    neously over the whole keyboard range. Use this option
+    to combine up to 4 sounds, such as pads, keys and dro-
+    nes.
+•   Round Robin: with every new triggered note, the active
+    layers are played repeatedly one after the other from
+    lowest to highest layer number, and so on.
+•   Random Robin: same as Round Robin, but the layers are
+    played repeatedly one after the other in a random way.
+
+Arp/Seq Mode (only for Multi Mode)
+Determines which Layer will be affected by the arpeggiator
+and/or sequencer.
+•   Individual Layer: each active layer uses its own Arp/Seq         Layer 1…4 Vol (Volume)
+    settings.                                                        Determines the volume for the corresponding layer.
+•   Global by Layer 1…4: the Arp/Seq settings of the selected        Pan 1…4
+    Layer are used for all other active layers.
+                                                                     Determines the panning for the corresponding layer.
+
+
+
+                                                                20                                                   OS 4 Manual
+The Mutator Tab                                                        Mutate Button
+With the Mutator option, you can randomize the current                 These buttons trigger the actual mutation process for the
+sound or parts of its sound parameters.                                corresponding section. Click multiple times in a row to get
+                                                                       new random results. For the Oscillator section, you can
+                                                                       select or deselect the desired oscillator that should be trans-
+                                                                       formed.
+
+                                                                       Reset Button
+                                                                       Click on these buttons to reset the corresponding section to
+                                                                       either its default settings or the values from the last loaded
+                                                                       patch. Keep in mind, that this is not the same as the Undo
+                                                                       option.
+
+                                                                       All Slider
+                                                                       Here you can adjust the intensity with which the mutation
+                                                                       process is applied when Mutate All is pressed.
+You can either randomize the Oscillators, Pitch, Filter, Envel-
+opes, Modulations, or Effects sections independently or the
+                                                                       Amount Intensity Sliders
+complete sound patch (Mutate All).                                     Each section offers its own control slider for the mutation
+                                                                       intensity. The further you turn it up, the more intense the
+g We recommend to start with an Init patch. Here you                   randomization. Decide for yourself: subtle randomness or
+     can best perceive the sonic effects of the mutator.
+                                                                       extreme sonic chaos.
+
+
+
+
+                                                                  21                                                     OS 4 Manual
+Mutate All
+Clicking on this button creates a mutation for all sections
+simultaneously.
+
+Undo Last
+Unhappy with your mutation? Simply click the Undo Last
+button to reset the last made mutation. Note that this undo
+option only offers one undo step.
+r There is an uncon`irmed rumor that entire sound sets
+  were created using the Mutation option.
+
+
+
+
+                                                              22   OS 4 Manual
+New Option on the Perform Page                                       You can also access the Favorites tab by pressing the selec-
+                                                                     tion dial. This is valid from every location except when on
+Favorites Tab                                                        the Load display page.
+                                                                     Here is how it works.
+This is a special perform mode for live musicians. Here you
+can set up 20 sound patches per Set for faster selection. You        1)   Select the desired sound patch by using the Prev/Next
+can de`ine up to 12 Sets, which means faster access to 240                buttons or tapping on the sound name in the lower dis-
+sound patches with just two taps.                                         play section.
+                                                                     2)   Tap and hold on one of the 20 blocks. After a little while
+                                                                          a pop-up window will be shown. Here you can Assign
+                                                                          the current sound patch to the selected block. You can
+                                                                          also Clear the selected block or Cancel any action.
+                                                                     3)   Repeat step 1 and 2 until you have `illed the matrix with
+                                                                          your favorite sound patches. You can tap on Set 1 to 6 to
+                                                                          select a new favorite matrix. Tap on > to switch to Sets
+                                                                          7 to 12. With < you can switch back to Sets 1 to 6.
+                                                                     4)   To call up a favorite sound patch just tap on the desired
+                                                                          matrix block or use the Selection dial to scroll through
+                                                                          the sound patches of the current Set. If you want to load
+                                                                          a sound patch, press the Selection dial.
+                                                                     5)   One Set can contain only one sound patch at any given
+                                                                          time. This means that if you want to add the same sound
+                                                                          patch as previously added, the older one disappears
+                                                                          when saving the new one to a desired location.
+
+
+
+                                                                23                                                     OS 4 Manual
+New Option on the Arpeggiator Page                                   New Options on the Global MIDI Page
+Mono / Poly Button                                                   Once the new SOM v2 board is installed, you will `ind addi-
+                                                                     tional MIDI In & Out channel settings for the two additional
+Normally, the arpeggiator plays its notes one after the other        layers, for DIN MIDI, USB controller and USB computer opti-
+when the Mono button is displayed. We have also included             ons.
+some polyphonic playback options. Simply tap on the Mono
+button and select the desired option. Depending on the               The new Arp/Seq button im the MIDI Out tab lets you speci-
+selected Poly option, additional buttons are available:              fy whether the MIDI data from the arpeggiator or sequencer
+                                                                     should be sent via the MIDI output (On) or not (Off).
+•   The Voices button selects the number of additional
+    arpeggiator voices from 1 to 4.
+•   The Follow /Skip button determines how the additional
+    voices will follow or skip the original played voices.
+•   The Transpose button (only for the Poly Trans options)
+    determines the transposition in semitones from 1 to 12
+    (one octave).
+
+
+
+
+                                                                24                                                  OS 4 Manual
+Waldorf Music GmbH • Lilienthalstrasse 7 • 53424 Remagen • Germany
+          © 2026 Waldorf Music GmbH • All rights reserved
+                      waldorfmusic.com
+
