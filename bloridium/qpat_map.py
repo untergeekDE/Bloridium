@@ -7,11 +7,14 @@ bipolar (Mitte 64) -> raw/127 (0.5 ~ Mitte). Enums siehe Tabellen unten
 
 from __future__ import annotations
 
-# Enum-Tabellen (display -> value) aus docs/refs/qpat (Factory-Soundsets)
+# Enum-Tabellen (display -> value) – Filter-Werte aus eigenen OS4-Exporten
+# (dumps/export-001, qpat v14); ACHTUNG: Nummerierung weicht von aelteren Files ab!
 OSC_TYPE = {"Wavetable": 0.0, "Waveform": 1.0, "Particle": 2.0, "Resonator": 3.0, "Off": 4.0}
 WF_SHAPE = {"Sawtooth": 0.0, "Sine": 1.0, "Triangle": 2.0, "Square": 3.0,
             "Pink Noise": 4.0, "White Noise": 5.0}
-FILTER12_TYPE = {"12dB LP": 0.0, "24dB LP": 1.0, "12dB sat. LP": 2.0, "24dB sat. LP": 3.0}
+FILTER12_TYPE = {"12dB LP": 0.0, "12dB sat. LP": 1.0, "24dB LP": 3.0,
+                 "24dB sat. LP": 4.0, "24dB dirty LP": 5.0,
+                 "24dB HP": 9.0, "24dB BP": 15.0}
 FX_TYPE = {"Off": 0.0, "Phaser": 1.0, "Chorus": 2.0, "Flanger": 3.0, "Delay": 4.0,
            "Reverb": 5.0, "EQ": 6.0, "Drive": 7.0, "Compressor": 8.0}
 
@@ -20,11 +23,15 @@ BLOFELD_SHAPE_TO_IRIDIUM = {
     "off": ("Off", None), "Pulse": ("Waveform", "Square"), "Saw": ("Waveform", "Sawtooth"),
     "Triangle": ("Waveform", "Triangle"), "Sine": ("Waveform", "Sine"),
 }
-# Blofeld Filter-Type (Spec 4.4) -> Iridium Filter12Type
+# Blofeld Filter-Type (Spec 4.4) -> Iridium Filter12Type (v14-Werte).
+# Notch/Comb sind Naeherungen (echte Comb-/PPG-Modelle sitzen im DigiFormer,
+# waeren aber ein eigener Routing-Eingriff -> siehe unmapped).
 BLOFELD_FILTER_TO_IRIDIUM = {
     "Bypass": None, "LP 24dB": "24dB LP", "LP 12dB": "12dB LP", "PPG LP": "12dB LP",
-    "BP 24dB": "24dB LP", "BP 12dB": "12dB LP", "HP 24dB": "24dB LP", "HP 12dB": "12dB LP",
-    "Notch24dB": "24dB LP", "Notch12dB": "12dB LP", "Comb+": "24dB LP", "Comb-": "24dB LP",
+    "BP 24dB": "24dB BP", "BP 12dB": "24dB BP",
+    "HP 24dB": "24dB HP", "HP 12dB": "24dB HP",
+    "Notch24dB": "24dB BP", "Notch12dB": "24dB BP",
+    "Comb+": "24dB BP", "Comb-": "24dB BP",
 }
 # Blofeld FX-Type (Spec 5.1) -> Iridium FX1/FX2-Type
 BLOFELD_FX_TO_IRIDIUM = {
@@ -73,6 +80,13 @@ BLOFELD_MOD_DST = {
 def norm(raw: int) -> float:
     """Blofeld raw 0..127 -> Iridium norm 0..1."""
     return max(0.0, min(1.0, raw / 127.0))
+
+
+def amt_bipolar(raw: int) -> float:
+    """Blofeld Mod-Amount (bipolar, Mitte 64 = 0) -> Iridium Matrix-Amount 0..1
+    zentriert um 0.5:  64 -> 0.5 (neutral), 127 -> 1.0, 0 -> 0.0.
+    Verhindert, dass Wheel/Velocity auf dem Iridium voll aufaddieren."""
+    return max(0.0, min(1.0, 0.5 + (raw - 64) / 254.0))
 
 
 def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
@@ -130,11 +144,19 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
 
     # --- Filter ---
     f1_label = p["Filter 1 Type"]
-    f12 = BLOFELD_FILTER_TO_IRIDIUM.get(f1_label if isinstance(f1_label, str) else "", "24dB LP")
-    if f12:
-        setp("Filter12Type", FILTER12_TYPE[f12], f12)
+    f2_label = p["Filter 2 Type"]
+    m1 = BLOFELD_FILTER_TO_IRIDIUM.get(f1_label if isinstance(f1_label, str) else "", "24dB LP")
+    if m1:
+        setp("Filter12Type", FILTER12_TYPE[m1], m1)
+        setp("FilterState", 0.0, "Active")
     else:
-        setp("FilterState", 1.0, "Bypass")  # Bypass
+        setp("FilterState", 1.0, "Bypass")  # F1 Bypass (0=Active, 1=Bypass in v14)
+    m2 = BLOFELD_FILTER_TO_IRIDIUM.get(f2_label if isinstance(f2_label, str) else "", "24dB LP")
+    if m2:
+        setp("Filter2Type", FILTER12_TYPE[m2], m2)  # v14-Werte approx.; F2 meist Bypass
+        setp("Filter2State", 0.0, "Active")
+    else:
+        setp("Filter2State", 1.0, "Bypass")
     setp("Filter1CutOff", norm(p["Filter 1 Cutoff"]))
     setp("Filter1Reso", norm(p["Filter 1 Resonance"]))
     setp("Filter2CutOff", norm(p["Filter 2 Cutoff"]))
@@ -197,7 +219,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         if s_disp and d_disp:
             setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
             setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)
-            setp(f"MatrixAmount{slot}", norm(amt))
+            setp(f"MatrixAmount{slot}", amt_bipolar(amt))
             setp(f"MatrixOnOff{slot}", 1.0, "Active")
         else:
             unmapped.append(f"Modulation {m} ({src} -> {dst})")
@@ -211,7 +233,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             if s_disp:
                 setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
                 setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)
-                setp(f"MatrixAmount{slot}", norm(p[f"Filter {n} Mod Amount"]))
+                setp(f"MatrixAmount{slot}", amt_bipolar(p[f"Filter {n} Mod Amount"]))
                 setp(f"MatrixOnOff{slot}", 1.0, "Active")
             else:
                 unmapped.append(f"Filter {n} Mod Source {src!r}")

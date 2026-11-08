@@ -38,16 +38,24 @@ def test_filter_keytrack_bipolar(overrides):
     assert overrides["Filter1Keytrack"][0] == pytest.approx(0.5)
 
 
+def test_filter_types_v14_values(overrides):
+    # SH Power: F1 = LP 24dB -> Filter12Type 3.0 (v14!); F2 = Bypass -> Filter2State 1.0
+    assert overrides["Filter12Type"] == (3.0, "24dB LP")
+    assert overrides["FilterState"] == (0.0, "Active")
+    assert overrides["Filter2State"] == (1.0, "Bypass")
+
+
 def test_mod_matrix_slots_mapped(overrides):
     # SH Power Mod-Slots: 1: LFO2*Press->Pitch 84, 2: Pressure->O2 Pitch 43,
     # 3: MW->FE Sustain 17, 4: MW->FE Decay 102, 5: Vel->F1 Cutoff 115, 6: Vel->F1 Reso 95
+    # Amounts bipolar um 0.5 zentriert: irr = 0.5 + (blo-64)/254
     exp = {
-        1: (16.0, 1.0, 84 / 127),    # AfterTouch -> Pitch
-        2: (16.0, 3.0, 43 / 127),    # AfterTouch -> Osc2 Pitch
-        3: (14.0, 114.0, 17 / 127),  # Wheel -> Filt1Env Sustain
-        4: (14.0, 123.0, 102 / 127), # Wheel -> Filt1Env Decay
-        5: (32.0, 100.0, 115 / 127), # Velocity -> Filter1 Cutoff
-        6: (32.0, 101.0, 95 / 127),  # Velocity -> Filter1 Reso
+        1: (16.0, 1.0, 0.5 + (84 - 64) / 254),    # AfterTouch -> Pitch
+        2: (16.0, 3.0, 0.5 + (43 - 64) / 254),    # AfterTouch -> Osc2 Pitch
+        3: (14.0, 114.0, 0.5 + (17 - 64) / 254),  # Wheel -> Filt1Env Sustain
+        4: (14.0, 123.0, 0.5 + (102 - 64) / 254), # Wheel -> Filt1Env Decay
+        5: (32.0, 100.0, 0.5 + (115 - 64) / 254), # Velocity -> Filter1 Cutoff
+        6: (32.0, 101.0, 0.5 + (95 - 64) / 254),  # Velocity -> Filter1 Reso
     }
     for slot, (src, dst, amt) in exp.items():
         assert overrides[f"MatrixSrc{slot}"][0] == src, f"slot {slot} src"
@@ -60,7 +68,7 @@ def test_filter_direct_mod_source_mapped_to_extra_matrix_slot(overrides):
     # Blofeld "Filter 1 Mod Source = Mod Wheel, Mod Amount = 111" -> naechster freier Slot (7) -> Filter1 Cutoff
     assert overrides["MatrixSrc7"][0] == 14.0
     assert overrides["MatrixDst7"][0] == 100.0
-    assert overrides["MatrixAmount7"][0] == pytest.approx(111 / 127)
+    assert overrides["MatrixAmount7"][0] == pytest.approx(0.5 + (111 - 64) / 254)
 
 
 def test_converted_file_is_version_14(parsed, tmp_path):
