@@ -138,10 +138,22 @@ def test_ab_list_empty_and_diff(db_path, capsys):
 
 
 class FakeSynth:
+    out_port_name = "FakePort"
+    in_port_name = "FakePort"
+
     def __init__(self, name):
         self.name = name
         self.channel = 4
         self.events = []
+
+    def send_sysex(self, data):
+        self.events.append(("sysex", list(data)))
+
+    def device_inquiry(self):
+        pass
+
+    def receive(self, timeout=1.0):
+        return []
 
     def control_change(self, c, v, channel=None):
         self.events.append(("cc", c, channel))
@@ -181,6 +193,86 @@ def test_ab_measure_sends_all_notes_off_before_note(db_path, tmp_path, monkeypat
     conn = db.connect(db_path)
     runs = db.list_ab_runs(conn, sound="A043")
     assert len(runs) == 1 and runs[0]["note"] == 36
+
+
+# ---- Fix-Pass: I1/I2/I3/I4 ----
+
+def test_ab_measure_hardware_unreachable_exits_2(db_path, monkeypatch, capsys):
+    """I1: ab ohne erreichbares Geraet -> Exit 2 + Port-Liste, kein Traceback."""
+    from bloridium import cli, midi
+
+    monkeypatch.setattr(midi, "list_ports", lambda: {"in": [], "out": ["Blofeld"]})
+
+    def boom(name, ports=None):
+        raise RuntimeError(f"MIDI-Port nicht gefunden: {name}")
+
+    monkeypatch.setattr(midi, "connect", boom)
+    rc = run(cli, db_path, "ab", "--label", "x")
+    assert rc == 2
+    assert "Blofeld" in capsys.readouterr().err
+
+
+def test_convert_live_read_failure_is_clean_exit_1(repo, db_path, monkeypatch, capsys):
+    """I1: Blofeld antwortet nicht auf SNDR -> sauberer Fehler, Exit 1, kein Traceback."""
+    from bloridium import cli, midi
+
+    class SilentSynth(FakeSynth):
+        def receive(self, timeout=1.0):
+            return []
+
+    monkeypatch.setattr(midi, "connect", lambda name, ports=None: SilentSynth(name))
+    rc = run(cli, db_path, "convert", "A043")
+    assert rc == 1
+    assert "SNDD" in capsys.readouterr().err
+
+
+def test_status_audio_ffmpeg_failure_is_graceful(db_path, monkeypatch, capsys):
+    """I2: status --audio ohne ffmpeg -> Warnung, Exit 1, kein Traceback."""
+    from bloridium import audio, cli, midi
+
+    class Fake(FakeSynth):
+        def device_inquiry(self):
+            pass
+
+        def receive(self, timeout=1.0):
+            return []
+
+    monkeypatch.setattr(midi, "list_ports", lambda: {"in": ["Blofeld"], "out": ["Blofeld"]})
+    monkeypatch.setattr(midi, "connect", lambda name, ports=None: Fake(name))
+
+    def boom(*a, **k):
+        raise RuntimeError("ffmpeg-Fehler: Device nicht verfuegbar")
+
+    monkeypatch.setattr(audio, "play_and_measure", boom)
+    rc = run(cli, db_path, "status", "--audio")
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "ffmpeg" in err.lower()
+
+
+def test_location_is_canonicalized_in_cli(repo, db_path, tmp_path):
+    """I3: convert a043 / bank show A43 landen kanonisch als A043 in der DB."""
+    from bloridium import cli, db
+
+    run(cli, db_path, "bank", "import", str(repo / "dumps"), "--banks-dir", str(tmp_path / "banks"))
+    rc = run(cli, db_path, "convert", "a043", "--dump", str(repo / DUMP_BIN), "--out", str(tmp_path / "t"))
+    assert rc == 0
+    conn = db.connect(db_path)
+    assert db.get_sound(conn, "A043") is not None  # nicht "a043"
+    assert db.list_conversions(conn, sound="A043")  # nicht "a043"
+
+
+def test_bank_show_warns_on_missing_file(repo, db_path, tmp_path, capsys):
+    """I4: bank show meldet fehlende .bin-Datei (FEHLT), zeigt aber gecachte Daten."""
+    from bloridium import cli, db
+
+    run(cli, db_path, "bank", "import", str(repo / "dumps"), "--banks-dir", str(tmp_path / "banks"))
+    conn = db.connect(db_path)
+    Path(db.get_sound(conn, "A043")["sndd_path"]).unlink()
+    capsys.readouterr()
+    assert run(cli, db_path, "bank", "show", "A043") == 0
+    out = capsys.readouterr().out
+    assert "FEHLT" in out and "SH Power" in out
 
 
 # ---- status ----

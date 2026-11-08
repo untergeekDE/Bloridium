@@ -32,11 +32,20 @@ def show_param(parsed: dict, key: str) -> tuple[float, str]:
 def set_param(parsed: dict, key: str, value: float, display: str | None = None) -> None:
     """Wert setzen (clamp 0..1); display nur ueberschreiben, wenn angegeben.
 
-    Unbekannter Key wird neu angelegt (Editor ist auch fuer neue Keys nutzbar).
+    Unbekannter Key -> KeyError (Tippfehler duerfen nicht stillschweigend einen
+    neuen, bedeutungslosen Parameter im Geraete-File anlegen).
     """
+    if key not in parsed["params"]:
+        raise KeyError(f"unbekannter qpat-Parameter: {key!r} "
+                       f"(verfuegbar: {len(parsed['params'])}, z. B. {sorted(parsed['params'])[0]!r})")
     value = max(0.0, min(1.0, float(value)))
-    old = parsed["params"].get(key, {"value": 0.0, "display": ""})
-    parsed["params"][key] = {"value": value, "display": display if display is not None else old["display"]}
+    old = parsed["params"][key]
+    new_disp = display if display is not None else old["display"]
+    parsed["params"][key] = {"value": value, "display": new_disp}
+    # rohe Record-Felder mitsyncen, damit save() das neue Display schreibt
+    rf = parsed.get("_raw_fields", {})
+    if key in rf:
+        rf[key] = (rf[key][0], qpat._pad32(new_disp))
 
 
 def save(parsed: dict, path, backup: bool = True) -> Path:
@@ -52,6 +61,13 @@ def save(parsed: dict, path, backup: bool = True) -> Path:
         categories=parsed.get("categories", ["", "", "", ""]),
         version=parsed.get("version", qpat.PRESET_VERSION),
         sample_maps=parsed.get("sample_maps", []),
+        tail=parsed.get("_tail"),  # byte-faithful: Sample-Maps/Multi-Patch-Tail 1:1
+        resources=parsed.get("resources"),
+        layer2=parsed.get("layer2", (0, 0, 0)),
+        instrument=parsed.get("instrument", 0),
+        raw_fields=parsed.get("_raw_fields"),
+        records_raw=parsed.get("_records_raw"),
+        header_pad=parsed.get("_header_pad"),
     )
     p.write_bytes(data)
     return p

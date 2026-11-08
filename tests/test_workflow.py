@@ -20,6 +20,9 @@ def test_parse_location_valid():
     assert workflow.parse_location("a043") == (0, 42)
     assert workflow.parse_location("edit") == (0x7F, 0)
     assert workflow.parse_location("B128") == (1, 127)
+    assert workflow.parse_location("A1") == (0, 0)        # I3: kanonisch pin
+    assert workflow.parse_location("A 43") == (0, 42)     # I3
+    assert workflow.parse_location(" edit ") == (0x7F, 0)  # I3
 
 
 def test_parse_location_invalid_raises():

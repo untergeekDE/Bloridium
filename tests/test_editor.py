@@ -31,6 +31,30 @@ def test_qpat_roundtrip_params_identical(path):
     assert again["name"] == parsed["name"]
 
 
+@pytest.mark.parametrize("path", EXPORT_001, ids=lambda p: p.name)
+def test_qpat_roundtrip_byte_faithful(path):
+    """C1: parse->build muss die Datei byte-identisch reproduzieren (inkl. Tail/Multi-Patch)."""
+    parsed = qpat.load(path)
+    rebuilt = qpat.build_qpat(
+        parsed["name"], _params_tuples(parsed), creator=parsed["creator"],
+        description=parsed["description"], categories=parsed["categories"],
+        version=parsed["version"], sample_maps=parsed["sample_maps"],
+        tail=parsed.get("_tail", b""), resources=parsed["resources"],
+        layer2=parsed.get("layer2", (0, 0, 0)), instrument=parsed.get("instrument", 0),
+        raw_fields=parsed.get("_raw_fields"), records_raw=parsed.get("_records_raw"),
+        header_pad=parsed.get("_header_pad"))
+    assert rebuilt == path.read_bytes()
+
+
+def test_set_param_unknown_key_raises():
+    """I5: Tippfehler im Key darf nicht stillschweigend einen neuen Param anlegen."""
+    from bloridium import editor
+
+    parsed = qpat.load(TEMPLATE)
+    with pytest.raises(KeyError):
+        editor.set_param(parsed, "Osc1Typ", 0.5)  # Tippfehler
+
+
 def test_set_param_clamps_and_save_writes_bak(tmp_path):
     from bloridium import editor
 
