@@ -123,19 +123,25 @@ def _connect_or_exit2(name: str):
         return None
 
 
+def _canon_loc(loc: str) -> str:
+    """Kanonische Location ('a043' -> 'A043', ' edit ' -> 'edit')."""
+    return workflow.location_str(*workflow.parse_location(loc))
+
+
 def _store_sound(conn, loc: str, parsed: dict, banks_dir: Path) -> str:
     """Stabile .bin-Kopie unter banks_dir/<Bank>/<LOC>.bin + DB-Upsert. -> sndd_path"""
+    loc = _canon_loc(loc)
     bb, nn = workflow.parse_location(loc)
     raw = bytes([0xF0]) + bytes(bd.build_sndd(parsed["sdata"], bb=bb, nn=nn)) + bytes([0xF7])
-    bank = workflow.location_str(bb, nn)[0] if loc.lower() != "edit" else "edit"
-    dest = Path(banks_dir) / bank / f"{loc.upper() if loc.lower() != 'edit' else 'edit'}.bin"
+    bank = "edit" if loc == "edit" else loc[0]
+    dest = Path(banks_dir) / bank / f"{loc}.bin"
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(raw)
     from datetime import datetime, timezone
     pj = dict(parsed)
     pj["sdata"] = parsed["sdata"].hex()  # bytes -> hex, damit JSON-serialisierbar
     db.upsert_sound(conn, {
-        "location": loc.upper() if loc.lower() != "edit" else "edit",
+        "location": loc,
         "bank": bank, "slot": nn + 1, "name": parsed["name"],
         "category": str(parsed["params"].get("Category", "")),
         "sndd_path": str(dest), "parsed_json": pj,
@@ -174,7 +180,13 @@ def cmd_status(args) -> int:
                     print(f"  MIDI <- Identity Reply: {info}" if info else f"  MIDI <- SysEx {bytes([0xF0, *m.data, 0xF7]).hex(' ')}")
             if args.audio:
                 import numpy as np
-                data, m = audio.play_and_measure(synth, audio.CHANNELS[name], note=60, velocity=100, duration=2.0)
+                try:
+                    data, m = audio.play_and_measure(synth, audio.CHANNELS[name], note=60, velocity=100, duration=2.0)
+                except RuntimeError as e:
+                    # I2: z. B. ffmpeg/Scarlett nicht verfuegbar -> graceful Degradierung
+                    print(f"  Audio-Messung fehlgeschlagen: {e}", file=sys.stderr)
+                    results[name] = False
+                    continue
                 peak = float(np.max(m["peak_dbfs"]))
                 print(f"  Audio In {audio.CHANNELS[name]}: Peak {peak:.1f} dBFS -> {'OK' if peak > -60 else 'KEIN TON'}")
                 results[name] = peak > -60.0
@@ -269,13 +281,17 @@ def cmd_bank_list(args) -> int:
 
 def cmd_bank_show(args) -> int:
     conn = _db(args)
-    s = db.get_sound(conn, args.loc.upper())
+    loc = _canon_loc(args.loc)
+    s = db.get_sound(conn, loc)
     if s is None:
-        print(f"Location {args.loc.upper()} nicht in der Bank – erst 'bank read'/'bank import'?", file=sys.stderr)
+        print(f"Location {loc} nicht in der Bank – erst 'bank read'/'bank import'?", file=sys.stderr)
         return 1
+    s["missing"] = not (s.get("sndd_path") and Path(s["sndd_path"]).exists())
 
     def text():
         print(f"{s['location']}: {s['name']!r}  Kategorie={s.get('category')!r}  Quelle={s.get('source')}")
+        if s["missing"]:
+            print(f"  WARNUNG: Datei fehlt (FEHLT): {s.get('sndd_path')} – Daten aus DB-Cache")
         for k, v in sorted(s["parsed_json"]["params"].items()):
             print(f"  {k:32s} = {v}")
 
@@ -287,6 +303,7 @@ def cmd_bank_show(args) -> int:
 
 def cmd_convert(args) -> int:
     conn = _db(args)
+    loc = _canon_loc(args.loc)
     if args.dump:
         parsed = bd.parse_sndd(workflow.load_sndd_file(args.dump))
         print(f"Dump geladen: {args.dump} -> {parsed['name']!r}")
@@ -295,10 +312,13 @@ def cmd_convert(args) -> int:
         if synth is None:
             return 2
         try:
-            parsed = workflow.read_sound(synth, args.loc)
+            parsed = workflow.read_sound(synth, loc)
+        except RuntimeError as e:
+            # I1: Blofeld antwortet nicht -> sauberer Fehler, kein Traceback
+            print(f"FEHLER: {e}", file=sys.stderr)
+            return 1
         finally:
             synth.close()
-    loc = args.loc.upper()
     banks_dir = REPO / "dumps" / "banks"
     _store_sound(conn, loc, parsed, banks_dir)
     out_dir = Path(args.out) if args.out else workflow.TRANSFER
@@ -346,8 +366,16 @@ def cmd_ab(args) -> int:
         return 0
     # Messung
     rec_dir = Path(args.rec_dir) if args.rec_dir else workflow.RECORDINGS
-    report = workflow.measure_ab(note=args.note, dur=args.dur, label=args.label,
-                                 rec_dir=rec_dir, sound_location=args.sound)
+    try:
+        report = workflow.measure_ab(note=args.note, dur=args.dur, label=args.label,
+                                     rec_dir=rec_dir, sound_location=_canon_loc(args.sound) if args.sound else None)
+    except RuntimeError as e:
+        # I1: MIDI-Port oder Audio-Device nicht erreichbar -> Exit 2 + Port-Liste
+        print(f"FEHLER: {e}", file=sys.stderr)
+        ports = midi.list_ports()
+        print(f"verfuegbare MIDI-Ports OUT: {ports['out']}", file=sys.stderr)
+        print(f"verfuegbare MIDI-Ports IN : {ports['in']}", file=sys.stderr)
+        return 2
     db.insert_ab_run(conn, args.label, args.sound, args.note, args.dur,
                      report["files"]["report"], report["files"]["blofeld_npy"],
                      report["files"]["iridium_npy"], report)
@@ -375,8 +403,11 @@ def cmd_qpat_info(args) -> int:
         parsed["name"], {k: (v["value"], v["display"]) for k, v in parsed["params"].items()},
         creator=parsed["creator"], description=parsed["description"],
         categories=parsed["categories"], version=parsed["version"],
-        sample_maps=parsed["sample_maps"])
-    ok = qpat.parse_qpat(rebuilt)["params"] == parsed["params"]
+        sample_maps=parsed["sample_maps"], tail=parsed.get("_tail"),
+        resources=parsed["resources"], layer2=parsed.get("layer2", (0, 0, 0)),
+        instrument=parsed.get("instrument", 0), raw_fields=parsed.get("_raw_fields"),
+        records_raw=parsed.get("_records_raw"), header_pad=parsed.get("_header_pad"))
+    ok = rebuilt == path.read_bytes()  # byte-faithful inkl. Tail (C1)
     print(f"Datei     : {path}")
     print(f"Name      : {parsed['name']!r}  Creator: {parsed['creator']!r}  Version: {parsed['version']}")
     print(f"Kategorien: {parsed['categories']}")
@@ -424,7 +455,11 @@ def cmd_edit(args) -> int:
         except ValueError:
             print(f"Wert muss float 0..1 sein, bekam {val!r}", file=sys.stderr)
             return 1
-        editor.set_param(parsed, key.strip(), value, display=args.display)
+        try:
+            editor.set_param(parsed, key.strip(), value, display=args.display)
+        except KeyError as e:
+            print(str(e), file=sys.stderr)
+            return 1
         out = Path(args.save) if args.save else path
         editor.save(parsed, out, backup=True)
         print(f"gesetzt: {key.strip()} = {value:.4f}" + (f" (display={args.display!r})" if args.display else ""))

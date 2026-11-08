@@ -27,9 +27,10 @@ TEMPLATE_QPAT = REPO / "docs" / "refs" / "qpat" / "template_waveform.qpat"
 
 def parse_location(loc: str) -> tuple[int, int]:
     """'A043' -> (0x00, 0x2A); 'edit' -> (0x7F, 0x00). ValueError bei ungueltig."""
+    loc = loc.strip()
     if loc.lower() in ("edit", "puffer", ""):
         return 0x7F, 0x00
-    loc = loc.strip().upper()
+    loc = loc.upper()
     bank = ord(loc[0]) - ord("A") if loc else -1
     try:
         num = int(loc[1:]) - 1
