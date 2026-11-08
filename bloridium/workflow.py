@@ -135,7 +135,8 @@ def convert_parsed(parsed: dict, loc: str, out_dir, template_path=None) -> tuple
     out_path.write_bytes(qpat.build_qpat(
         merged["name"], merged["params"], creator=merged["creator"],
         description=merged["description"], categories=merged["categories"],
-        version=merged["version"], sample_maps=merged.get("sample_maps")))
+        version=qpat.PRESET_VERSION,  # Zielgeraet OS4 erwartet v14 (Template ist v8)
+        sample_maps=merged.get("sample_maps")))
     return out_path, len(overrides), unmapped
 
 

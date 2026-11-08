@@ -33,6 +33,42 @@ BLOFELD_FX_TO_IRIDIUM = {
     "Reverb": "Reverb",
 }
 
+# ---- Iridium Routing/Matrix-Enums (Werte aus dumps/export-001 = eigene OS4-Exporte, qpat v14) ----
+OSC_DESTINATION = {"Main": 0.0, "VCA": 1.0, "DF 0 Fil 100": 2.0, "DF 100 Fil 0": 22.0}
+FILTER_FORMER_ROUTING = {"Former > Filter": 0.0, "Filter > Former": 1.0, "Parallel": 2.0}
+FILTER_LINK = {"Single": 0.0, "Boost": 1.0, "Independent": 6.0, "Linked": 7.0}
+MATRIX_SRC = {"Off": 0.0, "Amp Env": 1.0, "Filter1 Env": 2.0, "Filter2 Env": 3.0,
+              "Free Env1": 4.0, "Free Env2": 5.0, "Free Env3": 6.0,
+              "LFO 1": 7.0, "LFO 2": 8.0, "LFO 3": 9.0, "LFO 4": 10.0, "LFO 5": 11.0, "LFO 6": 12.0,
+              "Pitch Bend": 15.0, "Wheel": 14.0, "After Touch": 16.0,
+              "Keytrack": 31.0, "Velocity": 32.0}
+MATRIX_DST = {"Off": 0.0, "Pitch": 1.0, "Osc1 Pitch": 2.0, "Osc2 Pitch": 3.0, "Osc3 Pitch": 4.0,
+              "Osc1 Mix": 5.0, "Osc2 Mix": 6.0, "Osc3 Mix": 7.0,
+              "Filter1 Cutoff": 100.0, "Filter1 Reso": 101.0,
+              "Filter2 Cutoff": 103.0, "Filter2 Reso": 105.0,
+              "Filt1Env Attack": 113.0, "Filt1Env Sustain": 114.0, "Filt1Env Decay": 123.0,
+              "Volume": 112.0, "Pan": 144.0}
+# Blofeld Mod-Source -> Iridium MatrixSrc-Display (Press-Kombis approx. auf After Touch)
+BLOFELD_MOD_SRC = {
+    "LFO 1": "LFO 1", "LFO 2": "LFO 2", "LFO 3": "LFO 3",
+    "LFO1*MW": "Wheel", "LFO2*MW": "Wheel", "LFO3*MW": "Wheel",
+    "LFO1*Press": "After Touch", "LFO2*Press": "After Touch", "LFO3*Press": "After Touch",
+    "Mod Wheel": "Wheel", "Pressure": "After Touch", "Poly Press": "After Touch",
+    "Velocity": "Velocity", "Rel. Velo": "Velocity",
+    "Keytrack": "Keytrack", "Pitch Bend": "Pitch Bend",
+    "FilterEnv": "Filter1 Env", "AmpEnv": "Amp Env",
+    "Env3": "Free Env1", "Env4": "Free Env2",
+}
+# Blofeld Mod-Destination -> Iridium MatrixDst-Display (FE = Filter Envelope -> Filt1Env)
+BLOFELD_MOD_DST = {
+    "Pitch": "Pitch", "O1 Pitch": "Osc1 Pitch", "O2 Pitch": "Osc2 Pitch", "O3 Pitch": "Osc3 Pitch",
+    "O1 Level": "Osc1 Mix", "O2 Level": "Osc2 Mix", "O3 Level": "Osc3 Mix",
+    "F1 Cutoff": "Filter1 Cutoff", "F1 Reson.": "Filter1 Reso",
+    "F2 Cutoff": "Filter2 Cutoff", "F2 Reson.": "Filter2 Reso",
+    "FE Attack": "Filt1Env Attack", "FE Decay": "Filt1Env Decay", "FE Sustain": "Filt1Env Sustain",
+    "Volume": "Volume",
+}
+
 
 def norm(raw: int) -> float:
     """Blofeld raw 0..127 -> Iridium norm 0..1."""
@@ -112,7 +148,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                    ("Sustain", "Filter1EnvSustain"), ("Release", "Filter1EnvRelease")):
         setp(ik, norm(p[f"{fe} {bk}"]))
         setp(ik.replace("Filter1", "Filter2"), norm(p[f"{fe} {bk}"]))
-    unmapped += ["Filter N Drive/Curve/Keytrack/Mod/FM/Pan", "Filter Routing"]
+    # (Filter-Routing/Keytrack/Mod siehe oben gemappt; Drive/Curve/FM/Pan ungemappt)
 
     # --- Amp ---
     setp("MainVolume", norm(p.get("Amplifier Volume", 127)))
@@ -135,17 +171,50 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp(f"LFO{n}Speed", norm(raw))
         unmapped.append(f"LFO {n} Shape/Sync/Delay/Fade/Keytrack")
 
-    # --- Modulation/Matrix: Blofeld 16 Slots -> Iridium Matrix 1..16 ---
-    mod_src = {"off": 0.0, "LFO 1": None, "LFO1*MW": None, "LFO 2": None, "LFO2*Press": None,
-               "LFO 3": None, "FilterEnv": None, "AmpEnv": None, "Env3": None, "Env4": None,
-               "Keytrack": None, "Velocity": None, "Rel. Velo": None, "Pressure": None,
-               "Poly Press": None, "Pitch Bend": None, "Mod Wheel": None, "Sustain": None,
-               "Foot Ctrl": None, "BreathCtrl": None}
+    # --- Routing: Blofeld Osc->Mixer->F1->F2->Amp entspricht Iridium
+    #     Osc Destination 'DF 0 Fil 100' (100 % in den Filter) + 'Filter > Former' ---
+    for n in (1, 2, 3):
+        setp(f"Osc{n}Destination", OSC_DESTINATION["DF 0 Fil 100"], "DF 0 Fil 100")
+    setp("FilterFormerRouting", FILTER_FORMER_ROUTING["Filter > Former"], "Filter > Former")
+    if p.get("Filter Routing") == 1:  # Blofeld seriell -> F1/F2 linked
+        setp("FilterLink", FILTER_LINK["Linked"], "Linked")
+    # Filter-Keytrack bipolar (Blofeld Mitte 64 -> 0.5)
+    for n in (1, 2):
+        kt = p[f"Filter {n} Keytrack"]
+        setp(f"Filter{n}Keytrack", max(0.0, min(1.0, (kt - 64) / 64.0)))
+
+    # --- Modulation/Matrix: Blofeld 16 Slots -> Iridium Matrix-Slots ---
+    slot = 0
     for m in range(1, 17):
         src = p[f"Modulation {m} Source"]
+        dst = p[f"Modulation {m} Destination"]
+        amt = p[f"Modulation {m} Amount"]
+        if not isinstance(src, str) or src == "off":
+            continue
+        slot += 1
+        s_disp = BLOFELD_MOD_SRC.get(src)
+        d_disp = BLOFELD_MOD_DST.get(dst)
+        if s_disp and d_disp:
+            setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
+            setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)
+            setp(f"MatrixAmount{slot}", norm(amt))
+            setp(f"MatrixOnOff{slot}", 1.0, "Active")
+        else:
+            unmapped.append(f"Modulation {m} ({src} -> {dst})")
+    # direkte Filter-Modulation (Filter N Mod Source/Amount) -> Extra-Matrix-Slots ab 17
+    for n in (1, 2):
+        src = p[f"Filter {n} Mod Source"]
         if isinstance(src, str) and src != "off":
-            unmapped.append(f"Modulation {m} ({src} -> {p[f'Modulation {m} Destination']})")
-        setp(f"MatrixAmount{m}", norm(p[f"Modulation {m} Amount"]))
+            slot += 1
+            s_disp = BLOFELD_MOD_SRC.get(src)
+            d_disp = "Filter1 Cutoff" if n == 1 else "Filter2 Cutoff"
+            if s_disp:
+                setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
+                setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)
+                setp(f"MatrixAmount{slot}", norm(p[f"Filter {n} Mod Amount"]))
+                setp(f"MatrixOnOff{slot}", 1.0, "Active")
+            else:
+                unmapped.append(f"Filter {n} Mod Source {src!r}")
 
     # --- FX ---
     for n, key in ((1, "FX1Type"), (2, "FX2Type")):
