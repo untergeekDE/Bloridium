@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Schritt 1: Verbindung zu beiden Synthesizern herstellen + Sound messen.
 
+Wrapper ueber bloridium.workflow.check_connection (argv/Exit/Stdout unveraendert).
+
 Testet pro Synthesizer (Blofeld, Iridium):
-  1. MIDI-Verbindung: Port öffnen, Universal Device Inquiry senden,
-     eingehende MIDI-Nachrichten mitlesen
+  1. MIDI-Verbindung: Port oeffnen, Universal Device Inquiry senden, mitlesen
   2. Sound-Messung: Note spielen und Pegel am Scarlett 18i8 messen
-     (Blofeld: Eingänge 3/4, Iridium: Eingänge 5/6)
+     (Blofeld: Eingaenge 3/4, Iridium: Eingaenge 5/6)
 
 Aufruf:  python3 scripts/step1_verify_connection.py
 """
@@ -13,62 +14,28 @@ Aufruf:  python3 scripts/step1_verify_connection.py
 from __future__ import annotations
 
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from bloridium import audio, midi
+from bloridium import audio, workflow
+from bloridium import waldorf
 
 NOTE = 60          # C4
 VELOCITY = 100
 DURATION = 2.0     # Aufnahme-Dauer in s
-PEAK_THRESHOLD_DB = -60.0   # Aufnahme gilt als "Ton vorhanden", wenn Peak darüber
+PEAK_THRESHOLD_DB = -60.0
 
 
 def fmt_db(v: float) -> str:
     return f"{v:.1f} dBFS" if v != float("-inf") else "-inf dBFS"
 
 
-def describe_sysex(m) -> str:
-    d = list(m.data)
+def describe_sysex(d: list) -> str:
     if len(d) >= 6 and d[0] == 0x7E and d[2] == 0x06 and d[3] == 0x02:
         manuf = d[4:7]
         return f"Identity Reply (Hersteller-ID {manuf[0]:02X} {manuf[1]:02X} {manuf[2]:02X}, Familie {d[7] if len(d) > 7 else '?'} ...)"
     return f"SysEx {bytes([0xF0, *d, 0xF7]).hex(' ')}"
-
-
-def test_synth(name: str, synth: midi.Synth, channels) -> bool:
-    print(f"\n=== {name.upper()} ===")
-    print(f"  MIDI Out : {synth.out_port_name}")
-    print(f"  MIDI In  : {synth.in_port_name or '(kein Rückkanal)'}")
-    print(f"  Audio In : Scarlett 18i8 {DEVICE_DESC[channels]}")
-
-    # --- 1) MIDI: Device Inquiry --------------------------------------
-    synth.device_inquiry()
-    replies = synth.receive(timeout=1.0)
-    sysex = [m for m in replies if m.type == "sysex"]
-    if sysex:
-        for m in sysex:
-            print(f"  MIDI <- {describe_sysex(m)}")
-    elif replies:
-        print(f"  MIDI <- {len(replies)} Nachricht(en): {[str(m) for m in replies[:5]]}")
-    else:
-        print("  MIDI <- keine Antwort (Rückkanal evtl. nicht verdrahtet – prüfe per Audio)")
-
-    # --- 2) Sound: Note spielen + Pegel messen -------------------------
-    # Kanal kommt vom Synth-Objekt (empirisch ermittelt: Blofeld Kanal 5, Iridium Kanal 6)
-    print(f"  MIDI-Kanal (0-basiert): {synth.channel} (Kanal {synth.channel + 1})")
-    data, m = audio.play_and_measure(
-        synth, channels, note=NOTE, velocity=VELOCITY, duration=DURATION
-    )
-    labels = ["L", "R"] if len(channels) == 2 else [f"c{channels[0]}"]
-    print(f"  Audio: {data.shape[1]} Samples @ {audio.SAMPLERATE} Hz aufgenommen")
-    for i, lab in enumerate(labels):
-        print(f"    Kanal {lab}: RMS {fmt_db(m['rms_dbfs'][i])}, Peak {fmt_db(m['peak_dbfs'][i])}")
-    ok = bool((m["peak_dbfs"] > PEAK_THRESHOLD_DB).any())
-    print(f"  Ergebnis Sound-Messung: {'OK – Ton gemessen' if ok else 'KEIN TON gemessen!'}")
-    return ok
 
 
 DEVICE_DESC = {
@@ -78,24 +45,35 @@ DEVICE_DESC = {
 
 
 def main() -> int:
+    res = workflow.check_connection(do_audio=True, note=NOTE, velocity=VELOCITY, duration=DURATION)
     print("Verfügbare MIDI-Ports:")
-    ports = midi.list_ports()
-    for p in ports["out"]:
+    for p in res["ports"]["out"]:
         print(f"  OUT: {p}")
-    for p in ports["in"]:
+    for p in res["ports"]["in"]:
         print(f"  IN : {p}")
     print(f"\nAudio-Device: {audio.DEVICE} ({audio.SAMPLERATE} Hz, 20 Eingänge)")
 
     results = {}
-    synths = {}
-    try:
-        for name in ("blofeld", "iridium"):
-            synth = midi.connect(name)
-            synths[name] = synth
-            results[name] = test_synth(name, synth, audio.CHANNELS[name])
-    finally:
-        for s in synths.values():
-            s.close()
+    for name, e in res["synths"].items():
+        print(f"\n=== {name.upper()} ===")
+        print(f"  MIDI Out : {e['out_port']}")
+        print(f"  MIDI In  : {e['in_port'] or '(kein Rückkanal)'}")
+        print(f"  Audio In : Scarlett 18i8 {DEVICE_DESC[tuple(audio.CHANNELS[name])]}")
+        print(f"  MIDI-Kanal (0-basiert): {e['channel']} (Kanal {e['channel'] + 1})")
+        for d in e["sysex"]:
+            print(f"  MIDI <- {describe_sysex(d)}")
+        if not e["sysex"] and not e["other"]:
+            print("  MIDI <- keine Antwort (Rückkanal evtl. nicht verdrahtet – prüfe per Audio)")
+        elif e["other"]:
+            print(f"  MIDI <- {len(e['other'])} Nachricht(en): {e['other'][:5]}")
+        print(f"  Audio: {e['samples']} Samples @ {audio.SAMPLERATE} Hz aufgenommen")
+        channels = audio.CHANNELS[name]
+        labels = ["L", "R"] if len(channels) == 2 else [f"c{channels[0]}"]
+        for i, lab in enumerate(labels):
+            print(f"    Kanal {lab}: RMS {fmt_db(e['rms_dbfs'][i])}, Peak {fmt_db(e['peak_dbfs_list'][i])}")
+        ok = e["ok"]
+        print(f"  Ergebnis Sound-Messung: {'OK – Ton gemessen' if ok else 'KEIN TON gemessen!'}")
+        results[name] = ok
 
     print("\n=== Zusammenfassung ===")
     all_ok = True
