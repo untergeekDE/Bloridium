@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Schritt 3 (qpat-Weg): Blofeld-Sound als .qpat fuer den Iridium erzeugen.
 
+Wrapper ueber bloridium.workflow (argv/Exit/Stdout unveraendert).
+
   1. Blofeld-SNDD lesen (Location, z.B. A043)
   2. Template-.qpat laden (Waveform-Template) + Blofeld->qpat-Mapping anwenden
   3. <name>.qpat nach transfer/ schreiben
@@ -18,49 +20,24 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from bloridium import blofeld_dump as bd
-from bloridium import midi, qpat, qpat_map, waldorf
+from bloridium import midi, qpat_map, workflow
 
-TEMPLATE = Path(__file__).resolve().parent.parent / "docs" / "refs" / "qpat" / "template_waveform.qpat"
-OUT = Path(__file__).resolve().parent.parent / "transfer"
-
-
-def read_blofeld(location: str) -> dict:
-    if location.lower() in ("edit", ""):
-        bb, nn = 0x7F, 0x00
-    else:
-        location = location.strip().upper()
-        bb, nn = ord(location[0]) - ord("A"), int(location[1:]) - 1
-    synth = midi.connect("blofeld")
-    try:
-        synth.send_sysex(bd.build_sndr(bb=bb, nn=nn))
-        for m in synth.receive(timeout=4.0):
-            if m.type == "sysex":
-                p = waldorf.parse_sysex(m.data)
-                if p.get("cmd") == 0x10:
-                    return bd.parse_sndd(bytes([0xF0] + list(m.data) + [0xF7]))
-        raise RuntimeError("kein SNDD empfangen")
-    finally:
-        synth.close()
+OUT = workflow.TRANSFER
 
 
 def main() -> int:
     loc = sys.argv[1] if len(sys.argv) > 1 else "A043"
-    parsed = read_blofeld(loc)
+    synth = midi.connect("blofeld")
+    try:
+        parsed = workflow.read_sound(synth, loc)
+    finally:
+        synth.close()
     print(f"Blofeld-Sound: {parsed['name']!r} ({loc})")
 
-    template = qpat.load(TEMPLATE)
     overrides, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
     print(f"{len(overrides)} qpat-Parameter gemappt, {len(unmapped)} unmapped")
 
-    merged = qpat_map.apply_to_template(template, overrides, name=parsed["name"])
-    OUT.mkdir(exist_ok=True)
-    safe = "".join(c if c.isalnum() or c in "-_ " else "_" for c in parsed["name"]).strip() or loc
-    out_path = OUT / f"{safe}_{loc}.qpat"
-    out_path.write_bytes(qpat.build_qpat(
-        merged["name"], merged["params"], creator=merged["creator"],
-        description=merged["description"], categories=merged["categories"],
-        version=merged["version"]))
+    out_path, _, _ = workflow.convert_parsed(parsed, loc, OUT)
     print(f"geschrieben: {out_path} ({out_path.stat().st_size} Bytes)")
 
     # Report

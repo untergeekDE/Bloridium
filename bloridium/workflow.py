@@ -138,6 +138,46 @@ def convert_parsed(parsed: dict, loc: str, out_dir, template_path=None) -> tuple
     return out_path, len(overrides), unmapped
 
 
+# ---- Verbindungs-Check (ex step1) ------------------------------------------
+
+def check_connection(do_audio: bool = False, note: int = 60, velocity: int = 100,
+                     duration: float = 2.0) -> dict:
+    """step1-Logik: Ports listen; pro Synth connect + Device-Inquiry (+ optional Pegelmessung).
+
+    Rueckgabe: {"ports": {...}, "synths": {name: {"out_port", "in_port", "channel",
+    "sysex": [[...], ...], "ok", ...}}}. Wirft RuntimeError, wenn ein Port fehlt.
+    """
+    result = {"ports": midi.list_ports(), "synths": {}}
+    synths = {}
+    try:
+        for name in ("blofeld", "iridium"):
+            synth = midi.connect(name)
+            synths[name] = synth
+            entry = {"out_port": synth.out_port_name, "in_port": synth.in_port_name,
+                     "channel": synth.channel, "sysex": [], "other": []}
+            synth.device_inquiry()
+            for m in synth.receive(timeout=1.0):
+                if m.type == "sysex":
+                    entry["sysex"].append(list(m.data))
+                else:
+                    entry["other"].append(str(m))
+            if do_audio:
+                data, m = audio.play_and_measure(synth, audio.CHANNELS[name],
+                                                 note=note, velocity=velocity, duration=duration)
+                entry["samples"] = int(data.shape[1])
+                entry["rms_dbfs"] = [float(x) for x in m["rms_dbfs"]]
+                entry["peak_dbfs_list"] = [float(x) for x in m["peak_dbfs"]]
+                entry["peak_dbfs"] = float(np.max(m["peak_dbfs"]))
+                entry["ok"] = bool((m["peak_dbfs"] > -60.0).any())
+            else:
+                entry["ok"] = True
+            result["synths"][name] = entry
+    finally:
+        for s in synths.values():
+            s.close()
+    return result
+
+
 # ---- A/B-Messung (ex step4) ------------------------------------------------
 
 def spectral_centroid(x: np.ndarray, sr: int = audio.SAMPLERATE) -> float:
