@@ -167,9 +167,12 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # F2 -> DigiFormer (Kette: Filter(F1) > Former(F2)); Filter2-Stufe bleibt Bypass.
     # Umgekehrt ('Former > Filter') waere der Former die F1-Position.
     if BLOFELD_FILTER_TO_IRIDIUM.get(f2_label if isinstance(f2_label, str) else "") is None:
+        # F2 Bypass: Former bypass UND FilterLink 'Single' – sonst leaked bei
+        # parallelem Routing das Dry-Signal am F1 vorbei (Filter "zu offen")
         setp("DigiFormerType", DIGIFORMER_TYPE["Bypass"], "Bypass")
         setp("DigiFormerAmount", 0.0)
         setp("Filter2State", 1.0, "Bypass")
+        setp("FilterLink", FILTER_LINK["Single"], "Single")
     else:
         former = BLOFELD_FILTER2_TO_FORMER.get(f2_label if isinstance(f2_label, str) else "", "Nave LP24")
         setp("DigiFormerType", DIGIFORMER_TYPE[former], former)

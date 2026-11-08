@@ -46,6 +46,8 @@ def test_filter_types_v14_values(overrides):
     # F2 sitzt hinter dem Filter als DigiFormer: Bypass -> Type 0.0, Amount 0
     assert overrides["DigiFormerType"] == (0.0, "Bypass")
     assert overrides["DigiFormerAmount"][0] == 0.0
+    # F2 Bypass -> FilterLink 'Single' (kein paralleler Dry-Leak am F1 vorbei)
+    assert overrides["FilterLink"] == (0.0, "Single")
 
 
 def test_mod_matrix_slots_mapped(overrides):
