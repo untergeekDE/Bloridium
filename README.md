@@ -68,6 +68,37 @@ with midi.connect("blofeld") as blofeld, midi.connect("iridium") as iridium:
 - `bloridium/midi2.py` – UMP/MIDI-2.0-Helfer (Paket-Builder + `UMPOut` über
   `tools/ump_send` für echtes UMP, falls nötig).
 
+## Bloridium CLI (Phase 1)
+
+Das anwendungsreife Terminal-Tool kapselt den ganzen Workflow (Design:
+`docs/superpowers/specs/2026-11-08-bloridium-cli-design.md`, Referenz:
+`docs/CLI.md`):
+
+```bash
+pip install -e ".[dev]"          # installiert das Kommando `bloridium`
+
+bloridium status                 # MIDI-Ports + Identity (mit --audio: Pegelmessung)
+bloridium bank read A            # Bank A live per SysEx auslesen -> dumps/banks/A/ + DB
+bloridium bank import dumps      # OFFLINE: vorhandene Dumps in die Bank importieren
+bloridium bank list              # Sounds auflisten (--grep, --json)
+bloridium bank show A043         # Parameter eines Sounds
+bloridium convert A043           # A043 -> transfer/<name>_A043.qpat (+ DB-Eintrag)
+# am Iridium: USB-Stick/SD -> Load>Actions>Import -> laden
+bloridium ab --sound A043 --label shpower --note 36   # A/B-Messung + DB-Run
+bloridium ab --list --sound A043                      # Runs pro Sound
+bloridium ab --diff 1 2                               # zwei Runs vergleichen
+bloridium qpat info transfer/SH\ Power_A043.qpat --register
+bloridium edit transfer/SH\ Power_A043.qpat --list --grep osc1
+bloridium edit transfer/SH\ Power_A043.qpat --set Osc1Type=1.0   # in-place, mit .bak
+```
+
+Sicherheit: Das Tool ändert **nie** Geräte-Einstellungen; vor Messungen wird
+All Notes Off (CC123) auf allen Kanälen gesendet. **Achtung: CC7=0 ist am
+Iridium stumm** (Output Level). Iridium-Patches gelangen nur als `.qpat`-Datei
+aufs Gerät (kein SysEx am Iridium). Exit-Codes: 0 ok, 1 Fehler, 2 Hardware
+nicht erreichbar (mit Port-Liste). DB: `--db PATH` oder `$BLORIDIUM_DB`,
+Default `<repo>/bloridium.db`.
+
 ## Diagnose-Skripte (scripts/)
 
 - `step1_verify_connection.py` – Verbindungstest + Sound-Messung (Schritt 1)
