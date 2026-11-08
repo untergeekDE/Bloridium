@@ -257,7 +257,7 @@ def parse_sndd(data: bytes) -> dict:
             params[name] = table[v]
         else:
             params[name] = v
-    name = bytes(sdata[363:379]).decode("ascii", "replace").rstrip()
+    name = bytes(sdata[363:379]).split(b"\x00")[0].decode("ascii", "replace").rstrip()
     return {"bb": bb, "nn": nn, "sdata": sdata, "chk": chk,
             "chk_ok": chk == checksum(sdata), "name": name, "params": params}
 
