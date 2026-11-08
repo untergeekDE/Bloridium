@@ -71,6 +71,18 @@ bloridium edit FILE.qpat --diff OTHER.qpat
   `dumps/export-001/`.
 - `--diff` listet nur die unterschiedlichen Parameter beider Dateien.
 
+## cc – Live-CC am geladenen Patch (Nachstellen ohne Re-Import)
+```
+bloridium cc --list [--grep PAT]              # CC-Tabelle (aus docs/midi-maps/*.csv)
+bloridium cc "Filter1 Reso" 100 [--part 2]    # Name -> CC aufloesen, senden (Default Part 1 = MIDI ch6)
+bloridium cc --raw 9 64                       # rohe CC-Nummer
+bloridium cc ... --synth blofeld              # Blofeld (Single Mode, MIDI ch5)
+```
+- Namen case-insensitive; eindeutiger Substring reicht, mehrdeutig → Liste + Exit 1.
+- **NRPN-only-Parameter** (z. B. Iridium `Filter1 Cutoff`) haben **keinen CC** – NRPN wird
+  am Iridium ignoriert → dafür qpat-Re-Import oder MIDI Learn am Gerät.
+- ⚠️ **CC7 = Output Level (0 = stumm!)** – `cc --raw 7 0` wird ohne `--force` verweigert.
+
 ## Tests
 ```bash
 pip install -e ".[dev]"

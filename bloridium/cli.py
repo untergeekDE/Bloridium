@@ -95,6 +95,17 @@ def build_parser() -> argparse.ArgumentParser:
     ed.add_argument("--save", default=None, metavar="OUT", help="statt in-place nach OUT schreiben")
     ed.set_defaults(func=cmd_edit)
 
+    ccp = sub.add_parser("cc", help="Live-CC am Synth senden (Name aus midi.guide-CSV) – zum Nachstellen am geladenen Patch")
+    ccp.add_argument("name", nargs="?", help="Parametername, z. B. 'Filter1 Reso'")
+    ccp.add_argument("value", nargs="?", help="CC-Wert 0..127")
+    ccp.add_argument("--raw", metavar="CC", default=None, help="statt Name: rohe CC-Nummer (dann VALUE als erstes Positional)")
+    ccp.add_argument("--part", type=int, default=1, help="Iridium Part 1-4 (Default 1 = MIDI ch6)")
+    ccp.add_argument("--synth", default="iridium", choices=["iridium", "blofeld"])
+    ccp.add_argument("--list", action="store_true", help="CC-Tabelle anzeigen")
+    ccp.add_argument("--grep", default=None, help="Filter fuer --list")
+    ccp.add_argument("--force", action="store_true", help="erlaubt CC7=0 (Output Level -> stumm!)")
+    ccp.set_defaults(func=cmd_cc)
+
     return p
 
 
@@ -475,6 +486,77 @@ def cmd_edit(args) -> int:
                   f"{str(round(vb, 4)) if vb is not None else '-':>8s}  {da!r} -> {db_!r}")
         return 0
     return 1
+
+
+# ---- cc (Live-Nachstellung am geladenen Patch) ------------------------------
+
+CC_CSV = {
+    "iridium": REPO / "docs" / "midi-maps" / "iridium_midi_guide.csv",
+    "blofeld": REPO / "docs" / "midi-maps" / "blofeld_midi_guide.csv",
+}
+
+
+def cmd_cc(args) -> int:
+    from . import ccmap
+
+    table = ccmap.load_cc_map(CC_CSV[args.synth])
+    if args.list:
+        rows = [r for r in table if r.get("cc_msb")
+                and (not args.grep or args.grep.lower() in r["parameter_name"].lower())]
+        print(f"{'CC':>5s}  PARAMETER   ({args.synth})")
+        for r in rows:
+            cc = int(r["cc_msb"])
+            warn = "   (!! empirisch Output Level: 0 = stumm)" if cc == 7 else ""
+            print(f"CC{cc:<4d}  {r['parameter_name']}{warn}")
+        print(f"({len(rows)} Parameter mit CC; NRPN-only-Parameter ausgeblendet – NRPN wird ignoriert)")
+        return 0
+
+    if args.raw is not None:
+        cc_num, pname = int(args.raw), f"CC{args.raw}"
+        value_str = args.value if args.value is not None else args.name
+    else:
+        if not args.name or args.value is None:
+            print("Aufruf: bloridium cc <Name> <Wert> [--part N] | bloridium cc --raw <CC> <Wert> | bloridium cc --list",
+                  file=sys.stderr)
+            return 1
+        try:
+            cc_num, pname = ccmap.find_cc(args.name, table)
+        except (KeyError, ValueError) as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        value_str = args.value
+    try:
+        value = int(value_str)
+    except (TypeError, ValueError):
+        print(f"Wert muss 0..127 sein, bekam {value_str!r}", file=sys.stderr)
+        return 1
+    if not 0 <= value <= 127:
+        print(f"Wert muss 0..127 sein, bekam {value}", file=sys.stderr)
+        return 1
+
+    if cc_num == 7 and not args.force and value == 0:
+        print("ABBRUCH: CC7 = Output Level, 0 = STUMM! (--force um trotzdem zu senden)", file=sys.stderr)
+        return 1
+
+    if args.synth == "iridium":
+        if not 1 <= args.part <= 4:
+            print(f"Part muss 1..4 sein, bekam {args.part}", file=sys.stderr)
+            return 1
+        channel = 5 + args.part - 1  # Parts 1-4 = MIDI 6-9 (0-basiert 5-8)
+    else:
+        channel = 4  # Blofeld Global Channel = MIDI 5 (0-basiert 4), Single Mode
+
+    synth = _connect_or_exit2(args.synth)
+    if synth is None:
+        return 2
+    try:
+        synth.control_change(cc_num, value, channel=channel)
+    finally:
+        synth.close()
+    if cc_num == 7:
+        print(f"WARNUNG: CC7 = Output Level wurde gesendet (Wert {value})")
+    print(f"{args.synth} MIDI ch{channel + 1}: {pname} (CC{cc_num}) = {value}")
+    return 0
 
 
 # ---- main ------------------------------------------------------------------
