@@ -15,6 +15,19 @@ WF_SHAPE = {"Sawtooth": 0.0, "Sine": 1.0, "Triangle": 2.0, "Square": 3.0,
 FILTER12_TYPE = {"12dB LP": 0.0, "12dB sat. LP": 1.0, "24dB LP": 3.0,
                  "24dB sat. LP": 4.0, "24dB dirty LP": 5.0,
                  "24dB HP": 9.0, "24dB BP": 15.0}
+# DigiFormerType (v14, aus eigenen OS4-Exporten) – sitzt in der Kette NACH dem Filter
+# (FilterFormerRouting 'Filter > Former') und entspricht damit Blofeld-Filter 2
+DIGIFORMER_TYPE = {"Bypass": 0.0, "Drive": 1.0, "Comb+": 3.0, "Comb-": 4.0,
+                   "Nave LP24": 7.0, "PPG LP24": 8.0, "Largo LP24": 9.0, "SVF LP24": 10.0,
+                   "Nave LP12": 11.0, "Nave HP12": 18.0, "SVF HP12": 20.0}
+# Blofeld-F2-Typ -> DigiFormer-Modell (charaktergetreuer als Filter12Type)
+BLOFELD_FILTER2_TO_FORMER = {
+    "LP 24dB": "Nave LP24", "LP 12dB": "Nave LP12", "PPG LP": "PPG LP24",
+    "HP 24dB": "Nave HP12", "HP 12dB": "Nave HP12",
+    "Comb+": "Comb+", "Comb-": "Comb-",
+    "BP 24dB": "Nave LP24", "BP 12dB": "Nave LP24",      # Naeherung (kein BP24 in v14-Exporten gesehen)
+    "Notch24dB": "Nave LP24", "Notch12dB": "Nave LP24",  # Naeherung
+}
 FX_TYPE = {"Off": 0.0, "Phaser": 1.0, "Chorus": 2.0, "Flanger": 3.0, "Delay": 4.0,
            "Reverb": 5.0, "EQ": 6.0, "Drive": 7.0, "Compressor": 8.0}
 
@@ -151,11 +164,17 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp("FilterState", 0.0, "Active")
     else:
         setp("FilterState", 1.0, "Bypass")  # F1 Bypass (0=Active, 1=Bypass in v14)
-    m2 = BLOFELD_FILTER_TO_IRIDIUM.get(f2_label if isinstance(f2_label, str) else "", "24dB LP")
-    if m2:
-        setp("Filter2Type", FILTER12_TYPE[m2], m2)  # v14-Werte approx.; F2 meist Bypass
-        setp("Filter2State", 0.0, "Active")
+    # F2 -> DigiFormer (Kette: Filter(F1) > Former(F2)); Filter2-Stufe bleibt Bypass.
+    # Umgekehrt ('Former > Filter') waere der Former die F1-Position.
+    if BLOFELD_FILTER_TO_IRIDIUM.get(f2_label if isinstance(f2_label, str) else "") is None:
+        setp("DigiFormerType", DIGIFORMER_TYPE["Bypass"], "Bypass")
+        setp("DigiFormerAmount", 0.0)
+        setp("Filter2State", 1.0, "Bypass")
     else:
+        former = BLOFELD_FILTER2_TO_FORMER.get(f2_label if isinstance(f2_label, str) else "", "Nave LP24")
+        setp("DigiFormerType", DIGIFORMER_TYPE[former], former)
+        setp("DigiFormerAmount", norm(p["Filter 2 Cutoff"]))    # approx: Cutoff -> Amount
+        setp("DigiFormerColor", norm(p["Filter 2 Resonance"]))  # approx: Reso -> Color
         setp("Filter2State", 1.0, "Bypass")
     setp("Filter1CutOff", norm(p["Filter 1 Cutoff"]))
     setp("Filter1Reso", norm(p["Filter 1 Resonance"]))

@@ -39,10 +39,13 @@ def test_filter_keytrack_bipolar(overrides):
 
 
 def test_filter_types_v14_values(overrides):
-    # SH Power: F1 = LP 24dB -> Filter12Type 3.0 (v14!); F2 = Bypass -> Filter2State 1.0
+    # SH Power: F1 = LP 24dB -> Filter12Type 3.0 (v14!); F2 = Bypass -> Former Bypass
     assert overrides["Filter12Type"] == (3.0, "24dB LP")
     assert overrides["FilterState"] == (0.0, "Active")
     assert overrides["Filter2State"] == (1.0, "Bypass")
+    # F2 sitzt hinter dem Filter als DigiFormer: Bypass -> Type 0.0, Amount 0
+    assert overrides["DigiFormerType"] == (0.0, "Bypass")
+    assert overrides["DigiFormerAmount"][0] == 0.0
 
 
 def test_mod_matrix_slots_mapped(overrides):
