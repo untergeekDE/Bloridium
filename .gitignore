@@ -6,3 +6,10 @@ bloridium.db
 # Große Fremd-Referenzdaten (Waldorf Factory-Zips, ~1,8 GB) – bei Bedarf entfernen
 .DS_Store
 docs/refs/*.zip
+
+# Build-Artefakte
+*.egg-info/
+.superpowers/
+
+# Laufzeit-Output (tracked Dateien bleiben erhalten)
+dumps/banks/
