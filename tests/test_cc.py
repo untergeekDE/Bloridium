@@ -99,3 +99,19 @@ def test_cc_unknown_name_exits_1(db_path, monkeypatch, capsys):
     rc, fake = _run_cc(monkeypatch, db_path, "GibtEsNicht", "100")
     assert rc == 1
     assert fake.sent == []
+
+
+# --- Task 5: Pid-Map ---
+
+def test_load_pid_map(repo):
+    from bloridium import ccmap
+    m = ccmap.load_pid_map(repo / "docs/midi-maps/iridium_pid_map.csv")
+    assert m["filter1 cutoff"] == (0, 966)   # rdb: CC0 -> Pid 966
+    assert m["filter1 reso"] == (2, 967)
+
+
+def test_cc_for_fallback_ohne_pid_spalte(tmp_path):
+    from bloridium import ccmap
+    p = tmp_path / "m.csv"
+    p.write_text("cc,parameter_name\n5,Filter1 Sustain\n")
+    assert ccmap.cc_for("Filter1 Sustain", pid_map_path=p) == (5, None)

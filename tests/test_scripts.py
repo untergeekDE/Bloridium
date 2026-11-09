@@ -88,3 +88,47 @@ def test_sim_compare_npy_offline(repo, tmp_path):
     assert len(rows) == 1
     assert rows[0]["meta"]["pair"] == "sine_vs_saw"
     assert rows[0]["result"]["score"] < 95.0   # Saw != Sinus
+
+
+def test_sim_live_mit_fakes(repo, tmp_path, monkeypatch):
+    """sim_live.main(): sendet CC am Iridium, misst gegen Ref-.npy, loggt JSONL."""
+    import json
+    import sys
+    import numpy as np
+    sys.path.insert(0, str(repo / "scripts"))
+    import sim_live
+    from bloridium import audio, midi
+
+    sent = []
+
+    class FakeSynth:
+        out_port_name = "fake"
+        channel = 5
+        def control_change(self, cc, val, channel=0):
+            sent.append((cc, val, channel))
+        def note_on(self, note, velocity, channel=0): pass
+        def note_off(self, note, channel=0): pass
+        def close(self): pass
+
+    sr = 48000
+    t = np.arange(sr) / sr
+    ref = np.stack([0.5 * np.sin(2 * np.pi * 220 * t)] * 2)
+    ref_path = tmp_path / "ref.npy"
+    np.save(ref_path, ref)
+    live = 0.5 * (2 * ((220 * t) % 1) - 1)  # Saw statt Sinus -> Score < 100
+
+    monkeypatch.setattr(midi, "connect", lambda name, ports=None: FakeSynth())
+    def fake_record(duration, channels=None, **kw):
+        d = np.zeros((20, int(duration * sr)))
+        d[4] = np.resize(live, d.shape[1])
+        d[5] = d[4]          # Iridium In 5/6
+        return d
+    monkeypatch.setattr(audio, "record", fake_record)
+    log = tmp_path / "log.jsonl"
+    rc = sim_live.main(["--param", "Filter1 Cutoff", "--value", "90",
+                        "--ref", str(ref_path), "--log", str(log), "--note", "60"])
+    assert rc == 0
+    assert any(cc == 0 and v == 90 for cc, v, ch in sent)   # CC0 (Cutoff lt. pid_map)
+    rows = [json.loads(l) for l in log.read_text().splitlines()]
+    assert rows[0]["meta"]["param"] == "Filter1 Cutoff"
+    assert rows[0]["result"]["score"] < 100.0
