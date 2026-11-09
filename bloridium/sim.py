@@ -82,10 +82,15 @@ def compare(fa: dict, fb: dict) -> dict:
     denom = float(np.linalg.norm(sa) * np.linalg.norm(sb))
     spec_cos = float(np.dot(sa, sb) / denom) if denom > 0 else 0.0
     spec_cos = max(0.0, min(1.0, spec_cos))
-    env_dtw = _dtw(fa["env_rms"], fb["env_rms"])
-    # env_dtw ist RMS-Distanz; auf 0..1 klemmen (RMS typisch << 1)
-    env_dtw = max(0.0, min(1.0, env_dtw))
-    score = 100.0 * (0.7 * spec_cos + 0.3 * (1.0 - env_dtw))
+    # Huellkurve pegel-normalisieren (sonst ist env_dtw gain-abhaengig)
+    ea, eb = fa["env_rms"], fb["env_rms"]
+    ma, mb = float(ea.max()), float(eb.max())
+    if ma > 0:
+        ea = ea / ma
+    if mb > 0:
+        eb = eb / mb
+    env_dtw = max(0.0, min(1.0, _dtw(ea, eb)))
+    score = 100.0 * (0.7 * spec_cos + 0.3 * (1.0 - env_dtw))  # env_dtw siehe unten
     score = max(0.0, min(100.0, score))
     verdict = "nahe" if score >= 85 else ("mittel" if score >= 60 else "weit")
     band_delta_db = (fb["log_spec"].mean(axis=1) - fa["log_spec"].mean(axis=1)).tolist()
@@ -116,6 +121,12 @@ def score_pair(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
         fb = features(x_irr, sr)
     except ValueError as e:
         result = {"score": None, "verdict": "fehler", "error": str(e)}
+        log_run(result, meta, log_path)
+        return result
+    # Stille-Guard: tote Aufnahme (falsches Kabel/stummer Synth) -> fehler, nie "mittel"
+    if float(fa["env_rms"].max()) < 1e-4 or float(fb["env_rms"].max()) < 1e-4:
+        result = {"score": None, "verdict": "fehler",
+                  "error": "stille Aufnahme (env_rms max < 1e-4)"}
         log_run(result, meta, log_path)
         return result
     result = compare(fa, fb)

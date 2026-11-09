@@ -105,3 +105,20 @@ def test_score_pair_zu_kurz_gibt_fehler(tmp_path):
     assert r["verdict"] == "fehler"
     assert r["score"] is None
     assert p.exists()  # trotzdem geloggt
+
+
+# --- Fix Important 2: Stille-Guard + pegel-unabhaengige Huelle ---
+
+def test_score_pair_stille_gibt_fehler(tmp_path):
+    p = tmp_path / "log.jsonl"
+    r = sim.score_pair(np.zeros(SR), sine(440.0), sr=SR, meta={}, log_path=p)
+    assert r["verdict"] == "fehler"
+    assert r["score"] is None
+
+
+def test_compare_pegel_unabhaengig():
+    # gleicher Klang, halber Pegel -> nach Env-Normalisierung hoher Score
+    fa = sim.features(sine(440.0, amp=0.5))
+    fb = sim.features(sine(440.0, amp=0.25))
+    r = sim.compare(fa, fb)
+    assert r["score"] > 95.0

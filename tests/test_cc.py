@@ -115,3 +115,21 @@ def test_cc_for_fallback_ohne_pid_spalte(tmp_path):
     p = tmp_path / "m.csv"
     p.write_text("cc,parameter_name\n5,Filter1 Sustain\n")
     assert ccmap.cc_for("Filter1 Sustain", pid_map_path=p) == (5, None)
+
+
+# --- Fix Important 3: cc_for Fallback robust ---
+
+def test_cc_for_pid_datei_fehlt_fallback_guide(tmp_path):
+    from bloridium import ccmap
+    guide = tmp_path / "guide.csv"
+    guide.write_text("parameter_name,cc_msb\nFilter1 Reso,2\n")
+    cc, pid = ccmap.cc_for("Filter1 Reso", pid_map_path=tmp_path / "fehlt.csv",
+                           guide_path=guide)
+    assert cc == 2 and pid is None
+
+
+def test_cc_for_beide_fehlend_wirft_keyerror(tmp_path):
+    from bloridium import ccmap
+    with pytest.raises(KeyError):
+        ccmap.cc_for("Filter1 Reso", pid_map_path=tmp_path / "x.csv",
+                     guide_path=tmp_path / "y.csv")

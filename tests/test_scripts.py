@@ -132,3 +132,51 @@ def test_sim_live_mit_fakes(repo, tmp_path, monkeypatch):
     rows = [json.loads(l) for l in log.read_text().splitlines()]
     assert rows[0]["meta"]["param"] == "Filter1 Cutoff"
     assert rows[0]["result"]["score"] < 100.0
+
+
+def test_sim_live_ohne_ref_spielt_blofeld_mit(repo, tmp_path, monkeypatch):
+    """Fix Critical 1: ohne --ref wird der Blofeld live mit angespielt."""
+    import json
+    import sys
+    import numpy as np
+    sys.path.insert(0, str(repo / "scripts"))
+    import sim_live
+    from bloridium import audio, midi
+
+    notes = {"blofeld": [], "iridium": []}
+
+    class FakeSynth:
+        def __init__(self, name):
+            self.name = name
+            self.channel = 4 if name == "blofeld" else 5
+            self.out_port_name = name
+        def control_change(self, cc, val, channel=0): pass
+        def note_on(self, note, velocity, channel=0):
+            notes[self.name].append((note, channel))
+        def note_off(self, note, channel=0): pass
+        def close(self): pass
+
+    sr = 48000
+    t = np.arange(sr) / sr
+    sig = 0.5 * np.sin(2 * np.pi * 220 * t)
+
+    def fake_connect(name, ports=None):
+        return FakeSynth(name)
+
+    def fake_record(duration, channels=None, **kw):
+        d = np.zeros((20, int(duration * sr)))
+        for i in (2, 3, 4, 5):
+            d[i] = np.resize(sig, d.shape[1])
+        return d
+
+    monkeypatch.setattr(midi, "connect", fake_connect)
+    monkeypatch.setattr(audio, "record", fake_record)
+    log = tmp_path / "log.jsonl"
+    rc = sim_live.main(["--param", "Filter1 Cutoff", "--value", "90",
+                        "--log", str(log), "--note", "60"])
+    assert rc == 0
+    assert notes["blofeld"], "Blofeld wurde nicht angespielt"
+    assert notes["iridium"], "Iridium wurde nicht angespielt"
+    rows = [json.loads(l) for l in log.read_text().splitlines()]
+    assert rows[0]["meta"]["blofeld"] == "live"
+    assert rows[0]["result"]["score"] > 95.0   # gleiches Signal -> nahe

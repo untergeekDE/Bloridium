@@ -52,7 +52,11 @@ def cc_for(name: str, pid_map_path=DEFAULT_PID_MAP, guide_path=DEFAULT_GUIDE) ->
     hits = [v for k, v in m.items() if n in k]
     if len(hits) == 1:
         return hits[0]
-    cc, _pname = find_cc(name, load_cc_map(guide_path))
+    try:
+        table = load_cc_map(guide_path)
+    except OSError as e:
+        raise KeyError(f"keine CC-Map gefunden (pid-map und guide fehlen: {e})") from e
+    cc, _pname = find_cc(name, table)
     return cc, None
 
 

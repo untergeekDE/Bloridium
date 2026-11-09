@@ -42,11 +42,13 @@ def test_filter_types_v14_values(overrides):
     # SH Power: F1 = LP 24dB -> Filter12Type 3.0 (v14!); F2 = Bypass -> Former Bypass
     assert overrides["Filter12Type"] == (3.0, "24dB LP")
     assert overrides["FilterState"] == (0.0, "Active")
-    assert overrides["Filter2State"] == (1.0, "Bypass")
+    # F2 Bypass -> Filter2State 'Off' (2.0): 'Bypass' allein leaked Dry am F1 vorbei
+    # (Beleg: dumps/00202-SH Power.qpat, v15 Filter2State=2.0 'Off')
+    assert overrides["Filter2State"] == (2.0, "Off")
     # F2 sitzt hinter dem Filter als DigiFormer: Bypass -> Type 0.0, Amount 0
     assert overrides["DigiFormerType"] == (0.0, "Bypass")
     assert overrides["DigiFormerAmount"][0] == 0.0
-    # F2 Bypass -> FilterLink 'Single' (kein paralleler Dry-Leak am F1 vorbei)
+    # F2 Bypass -> FilterLink 'Single' (zusammen mit Filter2State 'Off': kein Dry-Leak)
     assert overrides["FilterLink"] == (0.0, "Single")
 
 
@@ -74,6 +76,16 @@ def test_filter_direct_mod_source_mapped_to_extra_matrix_slot(overrides):
     assert overrides["MatrixSrc7"][0] == 14.0
     assert overrides["MatrixDst7"][0] == 100.0
     assert overrides["MatrixAmount7"][0] == pytest.approx(0.5 + (111 - 64) / 254)
+
+
+def test_amp_velocity_maps_to_velocity_volume_slot(overrides):
+    # Blofeld Amplifier Velocity 64: AmpVeloAmount bleibt 0 (wirkt am Geraet kaum),
+    # Pegel-Dynamik laeuft als Matrix-Slot 8: Velocity -> Volume, Amount bipolar 0.5
+    assert overrides["AmpVeloAmount"] == (0.0, "")
+    assert overrides["MatrixSrc8"][0] == 32.0    # Velocity (v14)
+    assert overrides["MatrixDst8"][0] == 112.0   # Volume (v14)
+    assert overrides["MatrixAmount8"][0] == pytest.approx(0.5)
+    assert overrides["MatrixOnOff8"][0] == 1.0
 
 
 def test_converted_file_is_version_14(parsed, tmp_path):

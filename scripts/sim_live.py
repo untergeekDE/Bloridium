@@ -45,23 +45,32 @@ def main(argv=None) -> int:
     print(f"Param {args.param!r} -> CC{cc} (Pid {pid}) Wert {args.value}")
 
     irr = midi.connect("iridium")
+    blo = None if args.ref else midi.connect("blofeld")
     try:
-        for ch in range(16):
-            irr.control_change(123, 0, channel=ch)
-            irr.control_change(7, 127, channel=ch)
+        for s in [irr] + ([blo] if blo else []):
+            for ch in range(16):
+                s.control_change(123, 0, channel=ch)
+                s.control_change(7, 127, channel=ch)
         for ch in (5, 6, 7, 8):                      # Iridium Parts 1-4
             irr.control_change(cc, args.value, channel=ch)
         time.sleep(0.2)
+        if blo:
+            blo.note_on(note=args.note, velocity=100, channel=blo.channel)
         for ch in (5, 6, 7, 8):
             irr.note_on(note=args.note, velocity=100, channel=ch)
         time.sleep(0.25)
         d = audio.record(duration=args.dur, channels=None)
+        if blo:
+            blo.note_off(note=args.note, channel=blo.channel)
         for ch in (5, 6, 7, 8):
             irr.note_off(note=args.note, channel=ch)
-        for ch in range(16):
-            irr.control_change(123, 0, channel=ch)
+        for s in [irr] + ([blo] if blo else []):
+            for ch in range(16):
+                s.control_change(123, 0, channel=ch)
     finally:
         irr.close()
+        if blo:
+            blo.close()
     ix = np.asarray(d[audio.CHANNELS["iridium"], :], dtype=np.float64).mean(axis=0)
 
     meta = {"mode": "live", "param": args.param, "cc": cc, "pid": pid,
