@@ -73,3 +73,35 @@ def test_band_delta_vorzeichen_heller_positiv_oben():
     high = np.sqrt(edges[:-1] * edges[1:]) > 2000
     assert delta[high].mean() > 0
     assert delta[~high].mean() < 0
+
+
+# --- Task 3: log_run + score_pair ---
+
+def test_log_run_schreibt_jsonl(tmp_path):
+    p = tmp_path / "sim_log.jsonl"
+    ok = sim.log_run({"score": 91.0}, {"blofeld": "A043"}, path=p)
+    assert ok is True
+    lines = p.read_text().strip().splitlines()
+    assert len(lines) == 1
+    import json
+    row = json.loads(lines[0])
+    assert row["meta"]["blofeld"] == "A043"
+    assert row["result"]["score"] == 91.0
+    assert "ts" in row
+
+
+def test_log_run_kaputter_pfad_gibt_false(tmp_path):
+    # mkdir schlaegt fehl, weil "blocker" eine Datei ist
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x")
+    ok = sim.log_run({"score": 1}, {}, path=blocker / "sub" / "log.jsonl")
+    assert ok is False
+
+
+def test_score_pair_zu_kurz_gibt_fehler(tmp_path):
+    p = tmp_path / "log.jsonl"
+    r = sim.score_pair(np.zeros(int(0.05 * SR)), sine(440.0), sr=SR,
+                       meta={"test": 1}, log_path=p)
+    assert r["verdict"] == "fehler"
+    assert r["score"] is None
+    assert p.exists()  # trotzdem geloggt
