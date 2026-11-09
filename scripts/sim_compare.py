@@ -65,12 +65,12 @@ def run_live(note, dur, blofeld, slot, log, meta) -> int:
                 s.control_change(7, 127, channel=ch)     # Output Level voll
         time.sleep(0.4)
         blo.note_on(note=note, velocity=100, channel=blo.channel)
-        for ch in (5, 6, 7, 8):                          # Iridium Parts 1-4
+        for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
             irr.note_on(note=note, velocity=100, channel=ch)
         time.sleep(0.25)                                 # Attack abwarten
         d = audio.record(duration=dur, channels=None)
         blo.note_off(note=note, channel=blo.channel)
-        for ch in (5, 6, 7, 8):
+        for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
             irr.note_off(note=note, channel=ch)
         for s in (blo, irr):
             for ch in range(16):

@@ -39,6 +39,7 @@ def main(argv=None) -> int:
     ap.add_argument("--note", type=int, default=60)
     ap.add_argument("--dur", type=float, default=1.6)
     ap.add_argument("--log", default=str(sim.DEFAULT_LOG))
+    ap.add_argument("--meta", nargs="*", default=[], help="k=v Paare fürs Log")
     args = ap.parse_args(argv)
 
     cc, pid = ccmap.cc_for(args.param)
@@ -51,18 +52,18 @@ def main(argv=None) -> int:
             for ch in range(16):
                 s.control_change(123, 0, channel=ch)
                 s.control_change(7, 127, channel=ch)
-        for ch in (5, 6, 7, 8):                      # Iridium Parts 1-4
+        for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
             irr.control_change(cc, args.value, channel=ch)
         time.sleep(0.2)
         if blo:
             blo.note_on(note=args.note, velocity=100, channel=blo.channel)
-        for ch in (5, 6, 7, 8):
+        for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
             irr.note_on(note=args.note, velocity=100, channel=ch)
         time.sleep(0.25)
         d = audio.record(duration=args.dur, channels=None)
         if blo:
             blo.note_off(note=args.note, channel=blo.channel)
-        for ch in (5, 6, 7, 8):
+        for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
             irr.note_off(note=args.note, channel=ch)
         for s in [irr] + ([blo] if blo else []):
             for ch in range(16):
@@ -75,6 +76,9 @@ def main(argv=None) -> int:
 
     meta = {"mode": "live", "param": args.param, "cc": cc, "pid": pid,
             "value": args.value, "note": args.note}
+    for kv in args.meta:
+        k, _, v = kv.partition("=")
+        meta[k] = v
     if args.ref:
         bx = _load_npy(args.ref)
         meta["ref"] = str(args.ref)
