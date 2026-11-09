@@ -83,6 +83,14 @@ bloridium cc ... --synth blofeld              # Blofeld (Single Mode, MIDI ch5)
   am Iridium ignoriert → dafür qpat-Re-Import oder MIDI Learn am Gerät.
 - ⚠️ **CC7 = Output Level (0 = stumm!)** – `cc --raw 7 0` wird ohne `--force` verweigert.
 
+## sim – Ähnlichkeits-Score Blofeld↔Iridium (Skripte, siehe README)
+
+- `scripts/sim_compare.py --npy A.npy B.npy` – offline aus .npy-Takes
+- `scripts/sim_compare.py --live [--note 60] [--blofeld A043] [--iridium-slot 207]` – live messen
+- `scripts/sim_live.py --param "Filter1 Cutoff" --value 90 [--ref ref.npy]` – CC drehen + messen
+- Score 0–100 (70 % Spektrogramm-Cosine + 30 % Hüllkurven-DTW) + Band-Deltas; Log: `recordings/sim_log.jsonl`
+- CC/Pid-Auflösung: `bloridium/ccmap.py` (`docs/midi-maps/iridium_pid_map.csv`)
+
 ## Tests
 ```bash
 pip install -e ".[dev]"

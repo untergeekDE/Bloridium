@@ -123,6 +123,13 @@ Default `<repo>/bloridium.db`.
 - CC-Weg (approximativ): `bloridium/mapping.py`, `step3_transfer_sound.py`.
   Achtung: **CC7 = Output Level (0 = stumm!)** am Iridium.
 - A/B-Messung: `scripts/step4_measure_ab.py [--note 36]` (Blofeld In3/4 vs Iridium In5/6).
+- **Ähnlichkeits-Score** (`bloridium/sim.py`, numpy-only): log-Spektrogramm + RMS-Hülle,
+  Score 0–100 = 70 % Spektrogramm-Cosine + 30 % Hüllkurven-DTW, dazu pro-Band-dB-Deltas.
+  `scripts/sim_compare.py --npy A.npy B.npy` (offline) oder `--live` (spielt Note auf beiden
+  Synths); `scripts/sim_live.py --param "Filter1 Cutoff" --value 90 --ref ref.npy` dreht per
+  CC (CC/Pid aus `docs/midi-maps/iridium_pid_map.csv`) und misst. Jeder Run landet in
+  `recordings/sim_log.jsonl` (Basis fürs spätere Mapping-Modell). Spec/Plan:
+  `docs/superpowers/specs/2026-11-09-similarity-tool-design.md`.
 - Dumps/Refs: `dumps/` (Blofeld SNDD), `recordings/` (A/B), `docs/refs/` (qpat-Zips),
   `docs/midi-maps/` (CC-CSVs), `docs/MAPPING.md` (CC-Mapping-Entwurf).
 
