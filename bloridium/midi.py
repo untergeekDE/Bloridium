@@ -27,13 +27,18 @@ import mido
 #            Der Endpunkt "Synth" empfaengt derzeit nichts.
 DEFAULT_PORTS = {
     "iridium": {
-        "out": "Iridium Keyboard (MIDI 2.0) MIDI 2.0",
-        "in": "Iridium Keyboard (MIDI 2.0) MIDI 2.0",
+        # 2026-11-08: USB abgehaengt (Masseschleife -> USB-Rauschen auf In 5/6);
+        # Iridium haengt am 2. MIDI-OUT (DIN) des Launchpad Pro 3 und laeuft auf
+        # eigenem Netzteil. USB-Ports siehe FALLBACK_OUT_PORTS.
+        "out": "Launchpad Pro MK3 LPProMK3 DIN",
+        "in": "Launchpad Pro MK3 LPProMK3 DIN",
         "channel": 5,   # MIDI-Kanal 6 (Part 1); Parts 1-4 = Kanal 6-9 (Index 5-8)
     },
     "blofeld": {
-        "out": "Blofeld",                  # Blofeld direkt per USB
-        "in": "Blofeld",
+        # 2026-11-08: Blofeld-USB abgehaengt (gemeinsam mit Iridium am Launchpad
+        # Pro 3, DIN-Out; Kanal trennt: Blofeld ch5, Iridium ch6-9).
+        "out": "Launchpad Pro MK3 LPProMK3 DIN",
+        "in": "Launchpad Pro MK3 LPProMK3 DIN",
         "channel": 4,   # MIDI-Kanal 5 (Global Channel)
     },
 }
@@ -41,12 +46,13 @@ DEFAULT_PORTS = {
 # Fallback-Kandidaten, falls die Standard-Ports nicht greifen
 FALLBACK_OUT_PORTS = {
     "iridium": [
+        "Launchpad Pro MK3 LPProMK3 DIN",   # aktuelles Setup (USB abgehaengt)
         "Iridium Keyboard (MIDI 2.0) MIDI 2.0",
         "Iridium Keyboard (MIDI 2.0) Synth",
     ],
     "blofeld": [
+        "Launchpad Pro MK3 LPProMK3 DIN",   # aktuelles Setup (USB abgehaengt)
         "Blofeld",                          # USB
-        "Launchpad Pro MK3 LPProMK3 DIN",   # Fallback: Launchpad Out2 (DIN) -> Blofeld In
     ],
 }
 

@@ -57,6 +57,10 @@ BLOFELD_FX_TO_IRIDIUM = {
 OSC_DESTINATION = {"Main": 0.0, "VCA": 1.0, "DF 0 Fil 100": 2.0, "DF 100 Fil 0": 22.0}
 FILTER_FORMER_ROUTING = {"Former > Filter": 0.0, "Filter > Former": 1.0, "Parallel": 2.0}
 FILTER_LINK = {"Single": 0.0, "Boost": 1.0, "Independent": 6.0, "Linked": 7.0}
+# Filter2State (v14/v15 gleiche Werte: 0=Active, 1=Bypass, 2=Off).
+# ACHTUNG: 'Bypass' leaked das Dry-Signal am F1 vorbei – erst 'Off' schaltet F2
+# sauber ab (Beleg: dumps/00202-SH Power.qpat, v15 Filter2State=2.0 'Off').
+FILTER2_STATE = {"Active": 0.0, "Bypass": 1.0, "Off": 2.0}
 MATRIX_SRC = {"Off": 0.0, "Amp Env": 1.0, "Filter1 Env": 2.0, "Filter2 Env": 3.0,
               "Free Env1": 4.0, "Free Env2": 5.0, "Free Env3": 6.0,
               "LFO 1": 7.0, "LFO 2": 8.0, "LFO 3": 9.0, "LFO 4": 10.0, "LFO 5": 11.0, "LFO 6": 12.0,
@@ -164,21 +168,21 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp("FilterState", 0.0, "Active")
     else:
         setp("FilterState", 1.0, "Bypass")  # F1 Bypass (0=Active, 1=Bypass in v14)
-    # F2 -> DigiFormer (Kette: Filter(F1) > Former(F2)); Filter2-Stufe bleibt Bypass.
+    # F2 -> DigiFormer (Kette: Filter(F1) > Former(F2)); Filter2-Stufe wird 'Off'.
     # Umgekehrt ('Former > Filter') waere der Former die F1-Position.
     if BLOFELD_FILTER_TO_IRIDIUM.get(f2_label if isinstance(f2_label, str) else "") is None:
-        # F2 Bypass: Former bypass UND FilterLink 'Single' – sonst leaked bei
-        # parallelem Routing das Dry-Signal am F1 vorbei (Filter "zu offen")
+        # F2 Bypass: Former bypass UND FilterLink 'Single' UND Filter2State 'Off' –
+        # 'Bypass' allein leaked das Dry-Signal am F1 vorbei (Filter "zu offen")
         setp("DigiFormerType", DIGIFORMER_TYPE["Bypass"], "Bypass")
         setp("DigiFormerAmount", 0.0)
-        setp("Filter2State", 1.0, "Bypass")
+        setp("Filter2State", FILTER2_STATE["Off"], "Off")
         setp("FilterLink", FILTER_LINK["Single"], "Single")
     else:
         former = BLOFELD_FILTER2_TO_FORMER.get(f2_label if isinstance(f2_label, str) else "", "Nave LP24")
         setp("DigiFormerType", DIGIFORMER_TYPE[former], former)
         setp("DigiFormerAmount", norm(p["Filter 2 Cutoff"]))    # approx: Cutoff -> Amount
         setp("DigiFormerColor", norm(p["Filter 2 Resonance"]))  # approx: Reso -> Color
-        setp("Filter2State", 1.0, "Bypass")
+        setp("Filter2State", FILTER2_STATE["Off"], "Off")
     setp("Filter1CutOff", norm(p["Filter 1 Cutoff"]))
     setp("Filter1Reso", norm(p["Filter 1 Resonance"]))
     setp("Filter2CutOff", norm(p["Filter 2 Cutoff"]))
@@ -197,7 +201,12 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # --- Amp ---
     setp("MainVolume", norm(p.get("Amplifier Volume", 127)))
     setp("LayerVolume", 1.0)
-    setp("AmpVeloAmount", norm(p.get("Amplifier Velocity", 64)))
+    amp_velo = p.get("Amplifier Velocity", 64)
+    if not isinstance(amp_velo, (int, float)):
+        amp_velo = 64
+    # AmpVelo unipolar 0..127 -> norm. ACHTUNG bipolar-Falle: Matrix-Amounts sind
+    # um 0.5 zentriert (0.5 = neutral) -> Vel->Volume braucht 0.5 + 0.5*norm (64 -> 0.75)
+    setp("AmpVeloAmount", norm(amp_velo))
     ae = "Amplifier Envelope"
     for bk, ik in (("Attack", "AmpEnvAttack"), ("Decay", "AmpEnvDecay"),
                    ("Sustain", "AmpEnvSustain"), ("Release", "AmpEnvRelease")):
@@ -259,6 +268,15 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                 setp(f"MatrixOnOff{slot}", 1.0, "Active")
             else:
                 unmapped.append(f"Filter {n} Mod Source {src!r}")
+    # Blofeld Amplifier Velocity (Pegel-Dynamik, unipolar) -> eigener Matrix-Slot
+    # Velocity -> Volume. Amount bipolar um 0.5: 0.5 + 0.5*norm(raw) statt
+    # amt_bipolar (0.5 waere neutral/wirkungslos). Zusaetzlich AmpVeloAmount (oben).
+    if amp_velo > 0:
+        slot += 1
+        setp(f"MatrixSrc{slot}", MATRIX_SRC["Velocity"], "Velocity")
+        setp(f"MatrixDst{slot}", MATRIX_DST["Volume"], "Volume")
+        setp(f"MatrixAmount{slot}", 0.5 + 0.5 * norm(amp_velo))
+        setp(f"MatrixOnOff{slot}", 1.0, "Active")
 
     # --- FX ---
     for n, key in ((1, "FX1Type"), (2, "FX2Type")):

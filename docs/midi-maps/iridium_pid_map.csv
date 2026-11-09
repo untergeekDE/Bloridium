@@ -1,0 +1,117 @@
+cc,pid_rdb_2023,parameter_name,pid_werks_2017_midimap0,cc_midi_guide_csv
+0,966,Filter1 Cutoff,,
+2,967,Filter1 Reso,,2
+3,1003,Filter1 Attack,2102,3
+4,1004,Filter1 Decay,2103,4
+5,1005,Filter1 Sustain,3699,5
+6,1006,Filter1 Release,3700,6
+7,969,Filter1 Amount,2112,7
+8,970,Filter1 Velo Amount,2113,8
+9,976,Filter2 Cutoff,,9
+10,977,Filter2 Reso,,10
+11,1013,Filter2 Attack,,11
+12,1014,Filter2 Decay,,12
+13,1015,Filter2 Sustain,,13
+14,1016,Filter2 Release,,14
+15,979,Filter2 Amount,,15
+16,980,Filter2 Velo Amount,,16
+17,991,Amp Velo Amount,,17
+18,993,Amp Attack,,18
+19,994,Amp Decay,,19
+20,995,Amp Sustain,,20
+21,996,Amp Release,,21
+22,1642,Delay Dry Wet,,22
+23,1645,Delay Feedback,,23
+24,1643,Delay Time L,,24
+25,1644,Delay Time R,,25
+26,1650,Delay Sync L,,26
+27,1651,Delay Sync R,,27
+28,1608,Reverb Gain,,28
+29,1609,Reverb Color,,29
+30,1611,Reverb Time,,30
+31,1613,Reverb Mod Depth,,31
+32,2,Osc1 Fine Pitch,,32
+33,5,Osc1 Vol,,33
+34,6,Osc1 Pan,,34
+35,7,Osc1 WT Position,,35
+36,9,Osc1 WT Spectrum,,36
+37,16,Osc1 WT Table,,37
+38,22,Osc1 WT Stepped,,38
+39,23,Osc1 WF Shape,,39
+40,24,Osc1 WF Desity,,40
+41,25,Osc1 WF Spread,,41
+42,26,Osc1 WF PW,,42
+43,32,Osc1 WF Sync,,43
+44,43,Osc1 PT Position,,44
+45,45,Osc1 PT Travel,,45
+46,320,Osc2 Fine Pitch,,46
+47,323,Osc2 Vol,,47
+48,324,Osc2 Pan,,48
+49,325,Osc2 WT Position,,49
+50,327,Osc2 WT Spectrum,,50
+51,334,Osc2 WT Table,,51
+52,340,Osc2 WT Stepped,,52
+53,341,Osc2 WF Shape,,53
+54,342,Osc2 WF Desity,,54
+55,343,Osc2 WF Spread,,55
+56,344,Osc2 WF PW,,56
+57,350,Osc2 WF Sync,,57
+58,361,Osc2 PT Position,,58
+59,363,Osc2 PT Travel,,59
+60,638,Osc3 Fine Pitch,,60
+61,641,Osc3 Vol,,61
+62,642,Osc3 Pan,,62
+63,643,Osc3 WT Position,,63
+64,645,Osc3 WT Spectrum,,64
+65,652,Osc3 WT Table,,65
+66,658,Osc3 WT Stepped,,66
+67,659,Osc3 WF Shape,,67
+68,660,Osc3 WF Desity,,68
+69,661,Osc3 WF Spread,,69
+70,662,Osc3 WF PW,,70
+71,668,Osc3 WF Sync,,71
+72,679,Osc3 PT Position,,72
+73,681,Osc3 PT Travel,,73
+74,954,Ringmod Osc1 To Osc2,,74
+75,955,Ringmod Osc1 To Osc3,,75
+76,959,Digi Former Amount,,76
+77,960,Digi Former Color,,77
+78,961,Digi Former Pan,,78
+79,962,Digi Former Level,,79
+80,1059,Lfo1 Speed,,80
+81,1066,Lfo1 Amount,,81
+82,1071,Lfo2 Speed,,82
+83,1078,Lfo2 Amount,,83
+84,1083,Lfo3 Speed,,84
+85,1090,Lfo3 Amount,,85
+86,1131,Komplex Speed,,86
+87,1138,Komplex Amount,,87
+88,1141,Komplex Entropy,,88
+89,1586,Glide Rate,,89
+90,1587,Glide On Off,,90
+91,2117,Unisono Count,,91
+92,1590,Unisono Detune,,92
+93,1615,Chorus Dry Wet,,93
+94,1617,Chorus Speed,,94
+95,1620,Chorus Feedback,,95
+96,1625,Phaser Dry Wet,,96
+97,1626,Phaser Depth,,97
+98,1628,Phaser Feedback,,98
+99,1635,Flanger Dry Wet,,99
+100,1637,Flanger Speed,,100
+101,1638,Flanger Feedback,,101
+102,1672,Drive Amount,,102
+103,1673,Drive Dry Wet,,103
+104,1674,Drive Gain,,104
+105,1023,Free Env1 Attack,,105
+106,1024,Free Env1 Decay,,106
+107,1025,Free Env1 Sustain,,107
+108,1026,Free Env1 Release,,108
+109,1053,Free Env1 Amount,,109
+110,1054,Free Env1 Velo Amount,,110
+111,1033,Free Env2 Attack,,111
+112,1034,Free Env2 Decay,,112
+113,1035,Free Env2 Sustain,,113
+114,1036,Free Env2 Release,,114
+115,1055,Free Env2 Amount,,115
+116,1056,Free Env2 Velo Amount,,116

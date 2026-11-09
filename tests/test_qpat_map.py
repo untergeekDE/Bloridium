@@ -79,12 +79,13 @@ def test_filter_direct_mod_source_mapped_to_extra_matrix_slot(overrides):
 
 
 def test_amp_velocity_maps_to_velocity_volume_slot(overrides):
-    # Blofeld Amplifier Velocity 64: AmpVeloAmount bleibt 0 (wirkt am Geraet kaum),
-    # Pegel-Dynamik laeuft als Matrix-Slot 8: Velocity -> Volume, Amount bipolar 0.5
-    assert overrides["AmpVeloAmount"] == (0.0, "")
+    # Blofeld Amplifier Velocity 64 (unipolar): AmpVeloAmount = norm(64) = 0.5039.
+    # Matrix-Amount ist bipolar um 0.5 zentriert -> 0.5 + 0.5*norm = 0.752
+    # (0.5 waere neutral/wirkungslos! Bipolar-Falle 2026-11-09)
+    assert overrides["AmpVeloAmount"][0] == pytest.approx(64 / 127)
     assert overrides["MatrixSrc8"][0] == 32.0    # Velocity (v14)
     assert overrides["MatrixDst8"][0] == 112.0   # Volume (v14)
-    assert overrides["MatrixAmount8"][0] == pytest.approx(0.5)
+    assert overrides["MatrixAmount8"][0] == pytest.approx(0.5 + 0.5 * 64 / 127)
     assert overrides["MatrixOnOff8"][0] == 1.0
 
 
