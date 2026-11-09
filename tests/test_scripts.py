@@ -66,3 +66,25 @@ def test_check_connection_structure_offline(monkeypatch):
     assert set(res["synths"]) == {"blofeld", "iridium"}
     assert res["synths"]["blofeld"]["ok"] is True
     assert res["synths"]["blofeld"]["out_port"] == "Blofeld"
+
+
+def test_sim_compare_npy_offline(repo, tmp_path):
+    """sim_compare.py --npy: offline-Vergleich zweier .npy, loggt JSONL."""
+    import json
+    import numpy as np
+    sr = 48000
+    t = np.arange(sr) / sr
+    sine = np.stack([0.5 * np.sin(2 * np.pi * 220 * t)] * 2)
+    saw = np.stack([0.5 * (2 * ((220 * t) % 1) - 1)] * 2)
+    pa, pb = tmp_path / "a.npy", tmp_path / "b.npy"
+    np.save(pa, sine)
+    np.save(pb, saw)
+    log = tmp_path / "log.jsonl"
+    r = run_script(repo, "sim_compare.py", "--npy", str(pa), str(pb),
+                   "--log", str(log), "--meta", "pair=sine_vs_saw")
+    assert r.returncode == 0, r.stderr
+    assert "Score" in r.stdout
+    rows = [json.loads(l) for l in log.read_text().splitlines()]
+    assert len(rows) == 1
+    assert rows[0]["meta"]["pair"] == "sine_vs_saw"
+    assert rows[0]["result"]["score"] < 95.0   # Saw != Sinus
