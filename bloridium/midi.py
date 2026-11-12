@@ -168,3 +168,12 @@ def connect_all(ports: dict | None = None) -> dict:
     """Verbindungen zu beiden Synthesizern herstellen."""
     ports = ports or DEFAULT_PORTS
     return {name: connect(name, ports) for name in ports}
+
+
+def open_input(port_name: str):
+    """Nur MIDI-In oeffnen (rein lesende Mitschnitte, z. B. `explore`).
+
+    -> (gematchter Portname, mido.MidiIn). Wirft RuntimeError, wenn der Port fehlt.
+    """
+    name = match_port(list(mido.get_input_names()), port_name)
+    return name, mido.open_input(name)

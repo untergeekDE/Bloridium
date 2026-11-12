@@ -106,6 +106,25 @@ def build_parser() -> argparse.ArgumentParser:
     ccp.add_argument("--force", action="store_true", help="erlaubt CC7=0 (Output Level -> stumm!)")
     ccp.set_defaults(func=cmd_cc)
 
+    ex = sub.add_parser("explore", help="OS4-Pid-Exploration am Iridium: sagt, welchen Parameter du am "
+                                        "Panel drehen sollst, nimmt die NRPN auf und bucht sie in die CC-Liste "
+                                        "(rein lesend – sendet kein MIDI)")
+    ex.add_argument("--csv", default=str(REPO / "docs" / "midi-maps" / "iridium_os4_cc_list.csv"),
+                    help="CC-Liste (Default: docs/midi-maps/iridium_os4_cc_list.csv)")
+    ex.add_argument("--log", default=str(REPO / "recordings" / "explore_log.jsonl"),
+                    help="JSONL-Log (Default: recordings/explore_log.jsonl)")
+    ex.add_argument("--essential", action="store_true", help="nur essential=yes Parameter erkunden")
+    ex.add_argument("--grep", default=None, help="Filter auf Parameternamen (case-insensitive)")
+    ex.add_argument("--only-cc", default=None, help="nur diese CCs, z. B. 0,2,7")
+    ex.add_argument("--list", action="store_true", help="Status-Tabelle aller CCs (braucht kein MIDI)")
+    ex.add_argument("--port", default=None,
+                    help="MIDI-In-Port (Default: Iridium-In aus midi.DEFAULT_PORTS, aktuell Launchpad-DIN)")
+    ex.add_argument("--channel", type=int, default=5,
+                    help="0-basierter MIDI-Kanal des Parts (Default 5 = ch6 = Part 1)")
+    ex.add_argument("--listen", type=float, default=1.5,
+                    help="Stille in s, die einen Fang beendet (Default 1.5)")
+    ex.set_defaults(func=cmd_explore)
+
     return p
 
 
@@ -556,6 +575,128 @@ def cmd_cc(args) -> int:
     if cc_num == 7:
         print(f"WARNUNG: CC7 = Output Level wurde gesendet (Wert {value})")
     print(f"{args.synth} MIDI ch{channel + 1}: {pname} (CC{cc_num}) = {value}")
+    return 0
+
+
+# ---- explore (OS4-Pid-Exploration am Iridium, rein lesend) -----------------
+
+def cmd_explore(args) -> int:
+    import time
+    from datetime import datetime, timezone
+
+    from . import explore as ex
+
+    csv_path = Path(args.csv)
+    log_path = Path(args.log)
+    fieldnames, rows = ex.load_cc_list(csv_path)
+
+    if args.list:
+        cols = ["cc", "iridium_param", "pid", "os4_verified", "pid_os4", "nrpn_last"]
+        data = [{k: r.get(k, "") for k in cols} for r in sorted(rows, key=lambda r: int(r["cc"]))]
+
+        def text():
+            print(f"{'CC':>6s}  {'PARAM':28s} {'PID_RDB':>7s} {'VERIF':>6s} {'PID_OS4':>7s}  LAST")
+            for r in data:
+                print(f"CC{int(r['cc']):>4d}  {r['iridium_param'][:28]:28s} {r['pid']:>7s} "
+                      f"{(r['os4_verified'] or '-'):>6s} {(r['pid_os4'] or '-'):>7s}  {r['nrpn_last']}")
+            n_ok = sum(1 for r in rows if (r.get("os4_verified") or "").lower() == "ja")
+            print(f"({len(rows)} CCs, {n_ok} verifiziert)")
+
+        _emit(args, data, text)
+        return 0
+
+    pending = ex.pending_rows(rows, essential=args.essential, grep=args.grep, only_cc=args.only_cc)
+    if not pending:
+        print("keine offenen Parameter (alle os4_verified != 'nein') – nichts zu tun.")
+        return 0
+
+    port = args.port or midi.DEFAULT_PORTS["iridium"]["in"]
+    try:
+        in_name, inp = midi.open_input(port)
+    except RuntimeError as e:
+        print(f"FEHLER: {e}", file=sys.stderr)
+        ports = midi.list_ports()
+        print(f"verfuegbare MIDI-Ports IN : {ports['in']}", file=sys.stderr)
+        return 2
+
+    print(f"explore: {len(pending)} offene Parameter | In-Port {in_name!r} | Kanal ch{args.channel + 1} "
+          f"(Default ch6 = Part 1) | am Iridium: Global > MIDI = an, Send NRPN = on")
+    decoder = ex.NrpnDecoder()
+    total = len(rows)
+    done_total = sum(1 for r in rows if (r.get("os4_verified") or "").lower() == "ja")
+    done = 0
+    backup_done = False
+    idx = 0
+    try:
+        while idx < len(pending):
+            row = pending[idx]
+            print(f"\n[{done_total + done}/{total}] naechster: CC{row['cc']}  {row.get('iridium_param', '')}")
+            print(f"  erwartet rdb-Pid {row.get('pid', '?')}  |  Blofeld-Pendant: "
+                  f"{row.get('zugehoeriger_blofeld_param') or '-'} "
+                  f"({row.get('nutzung_pct') or '-'}%, essential={row.get('essential') or '-'})")
+            print(f"  Dreh jetzt am Panel, dann Enter  [s=weiter ohne Buchung, q=quit]")
+            while inp.poll() is not None:
+                pass  # Eingabepuffer leeren
+            try:
+                cmd_in = input("> ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                print("\n(quit – bisher Gebuchtes ist gespeichert)")
+                break
+            if cmd_in == "q":
+                print("(quit – bisher Gebuchtes ist gespeichert)")
+                break
+            if cmd_in == "s":
+                idx += 1
+                continue
+            # Fang: bis args.listen s Stille
+            events: list = []
+            stats = {"n": 0, "cc": 0, "nrpn_other_ch": None}
+            last = time.time()
+            while True:
+                m = inp.poll()
+                if m is None:
+                    if time.time() - last > args.listen:
+                        break
+                    time.sleep(0.005)
+                    continue
+                last = time.time()
+                stats["n"] += 1
+                if m.type == "control_change" and m.channel == args.channel:
+                    stats["cc"] += 1
+                    ev = decoder.feed(m)
+                    if ev:
+                        events.append(ev)
+                elif m.type == "control_change" and m.control in (99, 98, 6, 38):
+                    stats["nrpn_other_ch"] = m.channel
+            if not events:
+                if stats["n"] == 0:
+                    print("  kein NRPN empfangen – gar keine MIDI-Nachricht auf dem Port.")
+                    print("  Pruefe: Global > MIDI = an? Send NRPN = on? Evtl. Iridium-USB kurz anstecken")
+                    print("  und --port \"Iridium Keyboard (MIDI 2.0) MIDI 2.0\" setzen (DIN-Check: docs/HANDOVER-2026-11-12.md).")
+                elif stats["nrpn_other_ch"] is not None:
+                    print(f"  NRPN kam auf ch{stats['nrpn_other_ch'] + 1} – --channel {stats['nrpn_other_ch']} probieren?")
+                else:
+                    print("  Nachrichten empfangen, aber kein NRPN darunter – Send NRPN = on? "
+                          "richtiger Part (Default ch6 = Part 1)?")
+                continue  # gleicher Parameter bleibt dran
+            ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            entry = ex.book_row(row, events, ts)
+            entry["cc_gesehen"] = stats["cc"]
+            entry["port"] = in_name
+            entry["channel"] = args.channel
+            ex.append_log(log_path, entry)
+            ex.save_cc_list(csv_path, fieldnames, rows, backup=not backup_done)
+            backup_done = True
+            dev = f"  *** ABWEICHUNG zu rdb-Pid {row.get('pid')} ***" if entry["abweichung"] else ""
+            print(f"  NRPN: Pid {entry['pid_os4']}{dev}  Werte {entry['nrpn_min']}..{entry['nrpn_max']} "
+                  f"(last {entry['nrpn_last']}), {entry['n_msgs']} NRPNs")
+            print(f"  gebucht: {csv_path.name} (os4_verified=ja, pid_os4={entry['pid_os4']}) + {log_path.name}")
+            done += 1
+            done_total += 1
+            idx += 1
+    finally:
+        inp.close()
+    print(f"\nSession Ende: {done} Parameter erfasst.")
     return 0
 
 

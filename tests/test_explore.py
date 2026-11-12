@@ -127,3 +127,124 @@ def test_append_log_jsonl(tmp_path):
     lines = log.read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) == 2
     assert [json.loads(l)["pid_os4"] for l in lines] == [966, 1024]
+
+
+# ---- Task 3: CLI explore ----
+
+import json
+
+
+class _FakeIn:
+    """Liefert Messages erst, nachdem das erste input() kam (wie echt: Dreh nach dem Prompt)."""
+
+    def __init__(self, msgs):
+        self._msgs = list(msgs)
+        self.release = False
+        self.closed = False
+
+    def poll(self):
+        if not self.release:
+            return None
+        return self._msgs.pop(0) if self._msgs else None
+
+    def close(self):
+        self.closed = True
+
+
+def _nrpn_seq(pid, values, ch=5):
+    msb, lsb = pid >> 7, pid & 0x7F
+    msgs = []
+    for v in values:
+        msgs += [_cc(99, msb, ch), _cc(98, lsb, ch), _cc(6, v >> 7, ch), _cc(38, v & 0x7F, ch)]
+    return msgs
+
+
+def _run_explore(monkeypatch, tmp_path, argv_extra, inp_msgs, inputs):
+    from bloridium import cli, midi
+    csv_p = _write_csv(tmp_path)
+    log_p = tmp_path / "explore_log.jsonl"
+    fake = _FakeIn(inp_msgs)
+    monkeypatch.setattr(midi, "open_input", lambda port: ("FAKE-IN", fake))
+
+    def _input(prompt=""):
+        fake.release = True
+        return next(inputs)
+
+    monkeypatch.setattr("builtins.input", _input)
+    rc = cli.main(["explore", "--csv", str(csv_p), "--log", str(log_p),
+                   "--listen", "0.02", *argv_extra])
+    return rc, csv_p, log_p, fake
+
+
+def test_midi_open_input_matches_port(monkeypatch):
+    import mido
+    from bloridium import midi
+    monkeypatch.setattr(mido, "get_input_names", lambda: ["Launchpad Pro MK3 LPProMK3 DIN", "Other"])
+    opened = {}
+    monkeypatch.setattr(mido, "open_input", lambda name: opened.setdefault("name", name))
+    name, _ = midi.open_input("launchpad")   # case-insensitiver Teilstring
+    assert name == "Launchpad Pro MK3 LPProMK3 DIN" and opened["name"] == name
+
+
+def test_explore_list_text_and_json(tmp_path, capsys):
+    from bloridium import cli
+    csv_p = _write_csv(tmp_path)
+    rc = cli.main(["explore", "--csv", str(csv_p), "--list"])
+    out = capsys.readouterr().out
+    assert rc == 0 and "Filter1 Cutoff" in out and "966" in out and "nein" in out
+    rc = cli.main(["--json", "explore", "--csv", str(csv_p), "--list"])
+    rows = json.loads(capsys.readouterr().out)
+    assert rc == 0 and len(rows) == 4
+    assert rows[0]["cc"] == "0" and rows[0]["iridium_param"] == "Filter1 Cutoff"
+
+
+def test_explore_session_books_and_logs(tmp_path, capsys, monkeypatch):
+    rc, csv_p, log_p, fake = _run_explore(
+        monkeypatch, tmp_path, [], _nrpn_seq(1024, [100, 200]), iter(["", "q"]))
+    out = capsys.readouterr().out
+    assert rc == 0 and fake.closed
+    assert "ABWEICHUNG" in out and "1024" in out          # rdb-Pid 966 != 1024
+    from bloridium.explore import load_cc_list
+    _, rows = load_cc_list(csv_p)
+    r0 = next(r for r in rows if r["cc"] == "0")
+    assert r0["os4_verified"] == "ja" and r0["pid_os4"] == "1024"
+    assert r0["nrpn_min"] == "100" and r0["nrpn_max"] == "200" and r0["nrpn_last"] == "200"
+    assert (tmp_path / "cc_list.csv.bak").exists()
+    entries = [json.loads(l) for l in log_p.read_text(encoding="utf-8").strip().splitlines()]
+    assert len(entries) == 1 and entries[0]["abweichung"] is True and entries[0]["pid_os4"] == 1024
+
+
+def test_explore_session_sends_nothing(tmp_path, monkeypatch):
+    import mido
+
+    def _boom(*a, **k):
+        raise AssertionError("explore darf kein MIDI-Out oeffnen/senden")
+
+    monkeypatch.setattr(mido, "open_output", _boom)
+    rc, *_ = _run_explore(monkeypatch, tmp_path, [], _nrpn_seq(966, [1]), iter(["", "q"]))
+    assert rc == 0
+
+
+def test_explore_empty_capture_hints_and_stays(tmp_path, capsys, monkeypatch):
+    rc, csv_p, log_p, _ = _run_explore(
+        monkeypatch, tmp_path, [], [_cc(20, 99)], iter(["", "q"]))   # nur CC, kein NRPN
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "kein NRPN" in out and "Send NRPN" in out
+    from bloridium.explore import load_cc_list
+    _, rows = load_cc_list(csv_p)
+    assert all(r["os4_verified"] == "nein" for r in rows)   # nichts gebucht
+    assert not log_p.exists()
+
+
+def test_explore_no_in_port_exit_2(tmp_path, capsys, monkeypatch):
+    from bloridium import cli, midi
+
+    def _raise(port):
+        raise RuntimeError("MIDI-Port nicht gefunden: 'X'")
+
+    monkeypatch.setattr(midi, "open_input", _raise)
+    csv_p = _write_csv(tmp_path)
+    rc = cli.main(["explore", "--csv", str(csv_p), "--log", str(tmp_path / "l.jsonl")])
+    err = capsys.readouterr().err
+    assert rc == 2 and "FEHLER" in err and "MIDI-Ports IN" in err
