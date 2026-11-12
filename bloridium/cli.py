@@ -630,7 +630,7 @@ def cmd_explore(args) -> int:
     try:
         while idx < len(pending):
             row = pending[idx]
-            print(f"\n[{done_total + done}/{total}] naechster: CC{row['cc']}  {row.get('iridium_param', '')}")
+            print(f"\n[{done_total}/{total}] naechster: CC{row['cc']}  {row.get('iridium_param', '')}")
             print(f"  erwartet rdb-Pid {row.get('pid', '?')}  |  Blofeld-Pendant: "
                   f"{row.get('zugehoeriger_blofeld_param') or '-'} "
                   f"({row.get('nutzung_pct') or '-'}%, essential={row.get('essential') or '-'})")
@@ -692,7 +692,7 @@ def cmd_explore(args) -> int:
                   f"(last {entry['nrpn_last']}), {entry['n_msgs']} NRPNs")
             print(f"  gebucht: {csv_path.name} (os4_verified=ja, pid_os4={entry['pid_os4']}) + {log_path.name}")
             done += 1
-            done_total += 1
+            done_total += 1  # Anzeige zaehlt verifizierte Zeilen (inkl. frueherer Sessions)
             idx += 1
     finally:
         inp.close()

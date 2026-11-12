@@ -24,9 +24,11 @@ NEW_COLUMNS = ["pid_os4", "nrpn_min", "nrpn_max", "nrpn_last", "explore_ts", "ex
 class NrpnDecoder:
     """State-Machine ueber control_change-Messages eines gewaehlten Kanals.
 
-    feed(msg) -> NrpnEvent, sobald Pid (CC99+CC98) und Wert (CC6+CC38) komplett
-    sind; danach werden die Daten-Bytes zurueckgesetzt (Pid bleibt – der Dreh
-    am selben Parameter liefert danach weitere Events ohne neues CC99/98).
+    feed(msg) -> NrpnEvent, sobald Pid (CC99+CC98) gesetzt ist und ein Daten-Byte
+    kommt. CC6 (Data MSB) allein ist ein Event mit LSB=0 (beobachtet 2026-11-09:
+    Iridium sendet bei Wert 0 nur '06 00' ohne '26'); CC38 nutzt den letzten MSB.
+    Der Pid bleibt gesetzt – ein Dreh am selben Parameter liefert weitere Events
+    ohne neues CC99/98.
     """
 
     def __init__(self) -> None:
@@ -34,32 +36,39 @@ class NrpnDecoder:
         self._lsb: int | None = None
         self._dmsb: int | None = None
         self._dlsb: int | None = None
+        self._data_seen = False
 
     def _reset_all(self) -> None:
-        self._msb = self._lsb = self._dmsb = self._dlsb = None
+        self._msb = self._lsb = None
+        self._dmsb = self._dlsb = None
+        self._data_seen = False
 
     def feed(self, msg) -> NrpnEvent | None:
         if msg.type != "control_change":
             return None
         c, v = msg.control, msg.value
-        if c == 99:                      # NRPN MSB (127 = NRPN aus)
+        if c == 99:                      # NRPN MSB (127 = NRPN aus); neuer Pid braucht neues Data
             self._msb = None if v == 127 else v
+            self._data_seen = False
         elif c == 98:                    # NRPN LSB (127 = NRPN aus)
             self._lsb = None if v == 127 else v
-        elif c == 6:                     # Data MSB
+            self._data_seen = False
+        elif c == 6:                     # Data MSB allein: LSB implizit 0
             self._dmsb = v
-        elif c == 38:                    # Data LSB
+            self._dlsb = 0
+            self._data_seen = True
+        elif c == 38:                    # Data LSB: MSB bleibt letzter Stand
             self._dlsb = v
+            self._data_seen = True
         elif c == 121:                   # Reset All Controllers
             self._reset_all()
             return None
         else:                            # inkl. CC101/100 (RPN): ignorieren
             return None
-        if (self._msb is not None and self._lsb is not None
-                and self._dmsb is not None and self._dlsb is not None):
-            event = ((self._msb << 7) | self._lsb, (self._dmsb << 7) | self._dlsb)
-            self._dmsb = self._dlsb = None
-            return event
+        if self._msb is not None and self._lsb is not None and self._data_seen:
+            self._data_seen = False
+            return ((self._msb << 7) | self._lsb,
+                    ((self._dmsb or 0) << 7) | (self._dlsb or 0))
         return None
 
 

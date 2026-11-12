@@ -8,8 +8,18 @@ def test_decoder_mitschnitt_pid3113():
     d = NrpnDecoder()
     msgs = [mido.Message("control_change", control=c, value=v, channel=5)
             for c, v in [(99, 0x18), (98, 0x29), (6, 0x7F), (38, 0x7F)]]
-    events = [d.feed(m) for m in msgs]
-    assert [e for e in events if e] == [(3113, 16383)]  # (0x18<<7)|0x29, (0x7F<<7)|0x7F
+    events = [e for e in (d.feed(m) for m in msgs) if e]
+    # CC6 allein ist Event mit LSB=0, CC38 nutzt letzten MSB:
+    assert events == [(3113, 16256), (3113, 16383)]  # (0x18<<7)|0x29 = 3113
+
+
+def test_decoder_cc6_only_zero_aus_mitschnitt():
+    # Log-Zeilen 11-12 (2026-11-09): 'B5 06 00' OHNE folgendes '26 00' -> Wert 0 darf nicht verloren gehen
+    from bloridium.explore import NrpnDecoder
+    d = NrpnDecoder()
+    for c, v in [(99, 0x18), (98, 0x29), (6, 0x7F), (38, 0x7F)]:
+        d.feed(_cc(c, v))
+    assert d.feed(_cc(6, 0x00)) == (3113, 0)   # CC6 allein: MSB=0, LSB implizit 0
 
 
 def _cc(c, v, ch=5):
@@ -20,18 +30,18 @@ def test_decoder_sweep_multiple_values():
     from bloridium.explore import NrpnDecoder
     d = NrpnDecoder()
     seq = [_cc(99, 0x08), _cc(98, 0x02),        # Pid 1026
-           _cc(6, 10), _cc(38, 20),              # Wert 1300
-           _cc(6, 50), _cc(38, 60)]              # Wert 6460 (Pid bleibt gesetzt)
+           _cc(6, 10), _cc(38, 20),              # 1280 (LSB=0) dann 1300
+           _cc(6, 50), _cc(38, 60)]              # 6400 dann 6460 (Pid bleibt gesetzt)
     events = [e for e in (d.feed(m) for m in seq) if e]
-    assert events == [(1026, 1300), (1026, 6460)]
+    assert events == [(1026, 1280), (1026, 1300), (1026, 6400), (1026, 6460)]
 
 
 def test_decoder_reset_cases():
     from bloridium.explore import NrpnDecoder
     d = NrpnDecoder()
     assert d.feed(_cc(99, 0x18)) is None
-    assert d.feed(_cc(98, 0x29)) is None
-    assert d.feed(_cc(6, 0x7F)) is None
+    assert d.feed(_cc(98, 0x29)) is None          # Pid komplett, aber noch kein Data -> kein Event
+    assert d.feed(_cc(6, 0x7F)) == (3113, 16256)
     assert d.feed(_cc(38, 0x7F)) == (3113, 16383)
     d.feed(_cc(99, 127))                         # NRPN aus -> Pid reset
     assert d.feed(_cc(6, 1)) is None
@@ -51,8 +61,8 @@ def test_decoder_ignores_rpn_and_non_cc():
     assert d.feed(_cc(20, 99)) is None           # anderer CC
     d.feed(_cc(99, 1)); d.feed(_cc(98, 2))
     assert d.feed(_cc(101, 0)) is None           # RPN stoert nicht mitten im NRPN
-    assert d.feed(_cc(6, 5)) is None
-    assert d.feed(_cc(38, 6)) == (130, 646)      # (1<<7)|2 = 130, (5<<7)|6 = 646
+    assert d.feed(_cc(6, 5)) == (130, 640)       # (1<<7)|2 = 130, CC6 allein: LSB=0
+    assert d.feed(_cc(38, 6)) == (130, 646)      # CC38: MSB bleibt 5 -> (5<<7)|6
 
 
 # ---- Task 2: CSV-State, pending, book_row, Log ----
@@ -135,17 +145,21 @@ import json
 
 
 class _FakeIn:
-    """Liefert Messages erst, nachdem das erste input() kam (wie echt: Dreh nach dem Prompt)."""
+    """Eine Message-Batch pro Prompt (wie echt: Dreh erst nach Enter)."""
 
-    def __init__(self, msgs):
-        self._msgs = list(msgs)
-        self.release = False
+    def __init__(self, batches):
+        self._pending = [list(b) for b in batches]
+        self._cur = []
         self.closed = False
 
+    def release(self):
+        if self._pending:
+            self._cur = self._pending.pop(0)
+
     def poll(self):
-        if not self.release:
-            return None
-        return self._msgs.pop(0) if self._msgs else None
+        if self._cur:
+            return self._cur.pop(0)
+        return None
 
     def close(self):
         self.closed = True
@@ -159,15 +173,15 @@ def _nrpn_seq(pid, values, ch=5):
     return msgs
 
 
-def _run_explore(monkeypatch, tmp_path, argv_extra, inp_msgs, inputs):
+def _run_explore(monkeypatch, tmp_path, argv_extra, batches, inputs):
     from bloridium import cli, midi
     csv_p = _write_csv(tmp_path)
     log_p = tmp_path / "explore_log.jsonl"
-    fake = _FakeIn(inp_msgs)
+    fake = _FakeIn(batches)
     monkeypatch.setattr(midi, "open_input", lambda port: ("FAKE-IN", fake))
 
     def _input(prompt=""):
-        fake.release = True
+        fake.release()
         return next(inputs)
 
     monkeypatch.setattr("builtins.input", _input)
@@ -200,7 +214,7 @@ def test_explore_list_text_and_json(tmp_path, capsys):
 
 def test_explore_session_books_and_logs(tmp_path, capsys, monkeypatch):
     rc, csv_p, log_p, fake = _run_explore(
-        monkeypatch, tmp_path, [], _nrpn_seq(1024, [100, 200]), iter(["", "q"]))
+        monkeypatch, tmp_path, [], [_nrpn_seq(1024, [100, 200])], iter(["", "q"]))
     out = capsys.readouterr().out
     assert rc == 0 and fake.closed
     assert "ABWEICHUNG" in out and "1024" in out          # rdb-Pid 966 != 1024
@@ -208,7 +222,8 @@ def test_explore_session_books_and_logs(tmp_path, capsys, monkeypatch):
     _, rows = load_cc_list(csv_p)
     r0 = next(r for r in rows if r["cc"] == "0")
     assert r0["os4_verified"] == "ja" and r0["pid_os4"] == "1024"
-    assert r0["nrpn_min"] == "100" and r0["nrpn_max"] == "200" and r0["nrpn_last"] == "200"
+    # Events pro Wert: CC6 allein (LSB=0) + CC38 -> [0, 100, 128, 200]
+    assert r0["nrpn_min"] == "0" and r0["nrpn_max"] == "200" and r0["nrpn_last"] == "200"
     assert (tmp_path / "cc_list.csv.bak").exists()
     entries = [json.loads(l) for l in log_p.read_text(encoding="utf-8").strip().splitlines()]
     assert len(entries) == 1 and entries[0]["abweichung"] is True and entries[0]["pid_os4"] == 1024
@@ -221,13 +236,13 @@ def test_explore_session_sends_nothing(tmp_path, monkeypatch):
         raise AssertionError("explore darf kein MIDI-Out oeffnen/senden")
 
     monkeypatch.setattr(mido, "open_output", _boom)
-    rc, *_ = _run_explore(monkeypatch, tmp_path, [], _nrpn_seq(966, [1]), iter(["", "q"]))
+    rc, *_ = _run_explore(monkeypatch, tmp_path, [], [_nrpn_seq(966, [1])], iter(["", "q"]))
     assert rc == 0
 
 
 def test_explore_empty_capture_hints_and_stays(tmp_path, capsys, monkeypatch):
     rc, csv_p, log_p, _ = _run_explore(
-        monkeypatch, tmp_path, [], [_cc(20, 99)], iter(["", "q"]))   # nur CC, kein NRPN
+        monkeypatch, tmp_path, [], [[_cc(20, 99)]], iter(["", "q"]))   # nur CC, kein NRPN
     out = capsys.readouterr().out
     assert rc == 0
     assert "kein NRPN" in out and "Send NRPN" in out
@@ -235,6 +250,17 @@ def test_explore_empty_capture_hints_and_stays(tmp_path, capsys, monkeypatch):
     _, rows = load_cc_list(csv_p)
     assert all(r["os4_verified"] == "nein" for r in rows)   # nichts gebucht
     assert not log_p.exists()
+
+
+def test_explore_progress_counter_counts_each_booking_once(tmp_path, capsys, monkeypatch):
+    rc, csv_p, log_p, _ = _run_explore(
+        monkeypatch, tmp_path, [],
+        [_nrpn_seq(966, [10]), _nrpn_seq(967, [20])],   # zwei Buchungen
+        iter(["", "", "q"]))
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "[2/4]" in out        # nach 2 Buchungen – nicht [4/4]
+    assert "[4/4]" not in out
 
 
 def test_explore_no_in_port_exit_2(tmp_path, capsys, monkeypatch):
