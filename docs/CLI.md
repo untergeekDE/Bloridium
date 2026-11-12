@@ -83,6 +83,26 @@ bloridium cc ... --synth blofeld              # Blofeld (Single Mode, MIDI ch5)
   am Iridium ignoriert → dafür qpat-Re-Import oder MIDI Learn am Gerät.
 - ⚠️ **CC7 = Output Level (0 = stumm!)** – `cc --raw 7 0` wird ohne `--force` verweigert.
 
+## explore – OS4-Pid-Exploration am Iridium (NRPN-Mitschnitt)
+```
+bloridium explore [--essential] [--grep PAT] [--only-cc 0,2,7]
+bloridium explore --list [--json]
+bloridium explore [--csv PATH] [--log PATH] [--port NAME] [--channel N] [--listen S]
+```
+- Interaktive Session: zeigt den nächsten offenen Parameter aus
+  `docs/midi-maps/iridium_os4_cc_list.csv` (essential zuerst, dann Nutzung %),
+  du drehst am Panel, Enter → NRPN dekodieren (Pid = CC99/98, Wert = CC6/38, 14-bit)
+  und buchen: CSV (`os4_verified=ja`, `pid_os4`, min/max/last; einmalig `.bak`) +
+  `recordings/explore_log.jsonl`. Abweichung zum rdb-Pid → **ABWEICHUNG**.
+  `s` = weiter ohne Buchung, `q` = Ende (fortsetzbar – die CSV ist der State).
+- **Rein lesend** – sendet kein MIDI. Am Iridium: Global > MIDI = an, Send NRPN = on,
+  Part 1 aktiv (Default `--channel 5` = ch6).
+- Iridium-Panel-NRPN wurde bisher nur über die **USB-Endpunkte** gesehen (ch6);
+  Launchpad-DIN liefert kein Panel-NRPN (Check 2026-11-12, siehe HANDOVER) →
+  bei leerem Fang Iridium-USB kurz anstecken und
+  `--port "Iridium Keyboard (MIDI 2.0) MIDI 2.0"` setzen.
+- `--list` zeigt den Verifikations-Status aller 116 CCs (braucht kein MIDI).
+
 ## sim – Ähnlichkeits-Score Blofeld↔Iridium (Skripte, siehe README)
 
 - `scripts/sim_compare.py --npy A.npy B.npy` – offline aus .npy-Takes
