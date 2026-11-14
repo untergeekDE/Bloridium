@@ -217,5 +217,10 @@ verifizieren), dann TDD-Implementierung (test_sim_embed.py zuerst).
   `mode=audio, score=85`, deutsche summary + differences.
 - **Aufnahme-Daten**: von den 4 .npy-Paaren ist nur `check_20261108_152813` brauchbar
   (Iridium env 4.6e-2); die 3 `ab_A043_*`-Iridium-Takes sind ~1e-5 = stumm
-  (vgl. sim_log „stille Aufnahme“). Eval wertet daher primär das check-Paar aus;
-  frische Paare können jetzt (Hardware wieder dran) per `sim compare --live` nachgelegt werden.
+  (vgl. sim_log „stille Aufnahme“). Frisches Live-Paar nachgelegt 2026-11-14
+  (`ab_A043_20261114_153000`, A043 vs PC114 @ C5): Phase A 93.08 / embed 56.61 / llm 85
+  („rau, körnig“) — siehe `docs/PHASEB-EVAL-2026-11-14.md`.
+- **saina-helm-3-0.8b (Decision-Modell) nicht nutzbar** via ollama 0.40.16: chat/generate →
+  400; `/v1/systemone` → llama-server „wrong number of tensors; expected 326, got 320“.
+  LLM-Urteil bleibt lfm3-omni:2b (chat + audio). `/v1/systemone` + Spektrogramm-PNGs als
+  Option für zukünftige kompatible Decision-Modelle vorgemerkt.
