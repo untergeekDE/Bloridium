@@ -10,7 +10,9 @@ Spec: docs/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md
 
 from __future__ import annotations
 
+import base64
 import json
+import re
 import shutil
 import subprocess
 import tempfile
@@ -18,6 +20,7 @@ import wave
 from pathlib import Path
 
 import numpy as np
+import requests
 
 from bloridium import sim
 
@@ -138,3 +141,96 @@ class ClapBackend:
         if r.returncode != 0:
             raise RuntimeError(f"CLAP-Binary exit {r.returncode}: {r.stderr.strip()[:200]}")
         return np.asarray(json.loads(r.stdout), dtype=np.float32)
+
+
+DEFAULT_JUDGE_PROMPT = (
+    "Du bekommst zwei kurze Audio-Clips: A ist das Vorbild (Blofeld), B der "
+    "uebertragene Sound (Waldorf Iridium). Bewerte, wie aehnlich B an A klingt. "
+    "Antworte AUSSCHLIESSLICH mit einem JSON-Objekt im Format "
+    '{"score": 0-100, "summary": "...", "differences": ["...", ...]} '
+    " Dabei ist 100 = nicht unterscheidbar, 0 = voellig verschiedener Klang. "
+    "differences listet die auffaelligsten klanglichen Unterschiede von B zu A auf."
+)
+
+
+class OllamaBackend:
+    """LLM-Urteil ueber ollama (/api/chat). Modus: Audio direkt (`audio`-Feld),
+    Fallback bei 4xx: Spektrogramm-PNGs (`images`-Feld). Server muss laufen
+    (Menubar-App / systemd); fetch_models.py pullt nur das Modell.
+    """
+
+    def __init__(self, model: str = DEFAULT_OLLAMA_MODEL, host: str = DEFAULT_OLLAMA_HOST):
+        self.model = model
+        self.host = host.rstrip("/")
+
+    def available(self) -> bool:
+        """True wenn der Server antwortet UND das Modell gepullt ist."""
+        try:
+            r = requests.get(f"{self.host}/api/tags", timeout=5)
+            if r.status_code != 200:
+                return False
+            names = [m.get("name", "") for m in r.json().get("models", [])]
+            return any(n == self.model or n.startswith(self.model + ":") for n in names)
+        except Exception:
+            return False
+
+    def judge(self, x_a: np.ndarray, x_b: np.ndarray, sr: int,
+              prompt: str = DEFAULT_JUDGE_PROMPT) -> dict:
+        """Vergleicht zwei Clips -> {score, summary, differences, mode, model}."""
+        try:
+            return self._chat(x_a, x_b, sr, prompt, mode="audio")
+        except _HttpError as e:
+            if not (400 <= e.status < 500):
+                raise RuntimeError(f"ollama-Urteil fehlgeschlagen: {e}") from e
+            return self._chat(x_a, x_b, sr, prompt, mode="spec")
+
+    def _chat(self, x_a, x_b, sr, prompt, mode) -> dict:
+        with tempfile.TemporaryDirectory() as td:
+            if mode == "audio":
+                a64, b64 = self._wav_b64(x_a, sr, Path(td) / "a.wav"), \
+                           self._wav_b64(x_b, sr, Path(td) / "b.wav")
+                extra = {"audio": [a64, b64]}
+            else:
+                pa, pb = Path(td) / "a.png", Path(td) / "b.png"
+                render_spec_png(x_a, sr, pa)
+                render_spec_png(x_b, sr, pb)
+                extra = {"images": [base64.b64encode(pa.read_bytes()).decode(),
+                                    base64.b64encode(pb.read_bytes()).decode()]}
+            payload = {"model": self.model, "stream": False,
+                       "messages": [{"role": "user", "content": prompt, **extra}]}
+            r = requests.post(f"{self.host}/api/chat", json=payload, timeout=300)
+            if r.status_code != 200:
+                raise _HttpError(r.status_code, r.text[:200])
+            content = r.json()["message"]["content"]
+        obj = _extract_json(content)
+        if obj is None:
+            raise RuntimeError(f"ollama-Antwort ohne JSON: {content[:120]!r}")
+        score = int(np.clip(int(obj.get("score", 0)), 0, 100))
+        diffs = obj.get("differences", [])
+        if not isinstance(diffs, list):
+            diffs = [str(diffs)]
+        return {"score": score, "summary": str(obj.get("summary", "")),
+                "differences": [str(d) for d in diffs], "mode": mode, "model": self.model}
+
+    @staticmethod
+    def _wav_b64(x, sr, path) -> str:
+        write_wav(x, sr, path)
+        return base64.b64encode(Path(path).read_bytes()).decode()
+
+
+class _HttpError(Exception):
+    def __init__(self, status: int, text: str):
+        super().__init__(f"HTTP {status}: {text}")
+        self.status = status
+
+
+def _extract_json(text: str) -> dict | None:
+    """Erstes {...}-Objekt im Text finden und parsen (LLM schreibt gern Prosa drumherum)."""
+    m = re.search(r"\{.*\}", text, re.DOTALL)
+    if not m:
+        return None
+    try:
+        obj = json.loads(m.group(0))
+    except json.JSONDecodeError:
+        return None
+    return obj if isinstance(obj, dict) else None

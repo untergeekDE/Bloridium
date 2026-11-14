@@ -164,3 +164,95 @@ def test_clap_backend_error_wrapped(fake_clap_cpp, tmp_path, monkeypatch):
     b = sim_embed.ClapBackend(model)
     with pytest.raises(RuntimeError, match="CLAP"):
         b.embed(sine(440.0, dur=0.5), SR)
+
+
+# ---------- Task 4: OllamaBackend + DEFAULT_JUDGE_PROMPT ----------
+
+def _resp(status=200, payload=None):
+    return SimpleNamespace(status_code=status, json=lambda: payload or {},
+                           text=json.dumps(payload or {}))
+
+
+def _chat_payload(content):
+    return {"message": {"role": "assistant", "content": content}}
+
+
+def test_default_prompt_deutsch_mit_anker_und_contract():
+    p = sim_embed.DEFAULT_JUDGE_PROMPT
+    assert "100" in p and "nicht unterscheidbar" in p
+    assert '"score"' in p and '"summary"' in p and '"differences"' in p
+
+
+def test_ollama_available_true_false(monkeypatch):
+    b = sim_embed.OllamaBackend(model="lfm3-omni:2b", host="http://x:1")
+    monkeypatch.setattr(sim_embed.requests, "get",
+                        lambda url, timeout=5: _resp(200, {"models": [{"name": "lfm3-omni:2b"}]}))
+    assert b.available() is True
+    monkeypatch.setattr(sim_embed.requests, "get",
+                        lambda url, timeout=5: _resp(200, {"models": [{"name": "other:1"}]}))
+    assert b.available() is False
+
+    def boom(url, timeout=5):
+        raise ConnectionError("down")
+    monkeypatch.setattr(sim_embed.requests, "get", boom)
+    assert b.available() is False
+
+
+def test_judge_audio_mode_ok(monkeypatch, tmp_path):
+    calls = []
+
+    def fake_post(url, json=None, timeout=60):
+        calls.append(json)
+        return _resp(200, _chat_payload('{"score": 87, "summary": "nah dran", "differences": ["heller"]}'))
+
+    monkeypatch.setattr(sim_embed.requests, "post", fake_post)
+    b = sim_embed.OllamaBackend()
+    r = b.judge(sine(440.0, 0.5), sine(450.0, 0.5), SR)
+    assert r["mode"] == "audio" and r["score"] == 87
+    assert r["summary"] == "nah dran" and r["differences"] == ["heller"]
+    assert r["model"] == sim_embed.DEFAULT_OLLAMA_MODEL
+    # Audio-Modus: base64-WAVs im Payload
+    msgs = calls[0]["messages"]
+    assert "audio" in msgs[0] and len(msgs[0]["audio"]) == 2
+
+
+def test_judge_falls_back_to_spec_on_400(monkeypatch):
+    calls = []
+
+    def fake_post(url, json=None, timeout=60):
+        calls.append(json)
+        if "audio" in calls[-1]["messages"][0]:
+            return _resp(400, {"error": "audio unsupported"})
+        return _resp(200, _chat_payload('{"score": 55, "summary": "s", "differences": []}'))
+
+    monkeypatch.setattr(sim_embed.requests, "post", fake_post)
+    b = sim_embed.OllamaBackend()
+    r = b.judge(sine(440.0, 0.5), sine(220.0, 0.5), SR)
+    assert r["mode"] == "spec" and r["score"] == 55
+    assert "images" in calls[-1]["messages"][0] and len(calls[-1]["messages"][0]["images"]) == 2
+
+
+def test_judge_parses_json_inside_prose(monkeypatch):
+    monkeypatch.setattr(sim_embed.requests, "post",
+                        lambda url, json=None, timeout=60: _resp(
+                            200, _chat_payload('Hier das Urteil:\n{"score": 42, "summary": "x", "differences": ["a", "b"]} Ende.')))
+    b = sim_embed.OllamaBackend()
+    r = b.judge(sine(440.0, 0.5), sine(440.0, 0.5), SR)
+    assert r["score"] == 42 and r["differences"] == ["a", "b"]
+
+
+def test_judge_invalid_json_raises(monkeypatch):
+    monkeypatch.setattr(sim_embed.requests, "post",
+                        lambda url, json=None, timeout=60: _resp(200, _chat_payload("kein JSON hier")))
+    b = sim_embed.OllamaBackend()
+    with pytest.raises(RuntimeError, match="ollama"):
+        b.judge(sine(440.0, 0.5), sine(440.0, 0.5), SR)
+
+
+def test_judge_score_geclippt_0_100(monkeypatch):
+    monkeypatch.setattr(sim_embed.requests, "post",
+                        lambda url, json=None, timeout=60: _resp(
+                            200, _chat_payload('{"score": 250, "summary": "s", "differences": []}')))
+    b = sim_embed.OllamaBackend()
+    r = b.judge(sine(440.0, 0.5), sine(440.0, 0.5), SR)
+    assert r["score"] == 100
