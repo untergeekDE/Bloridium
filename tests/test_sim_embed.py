@@ -1,6 +1,10 @@
-"""sim_embed.py – Phase B: reine Helfer (TDD Task 2: write_wav/render_spec_png/embed_compare)."""
+"""sim_embed.py – Phase B (TDD Task 2: Helfer, Task 3: ClapBackend)."""
 
+import json
+import subprocess
+import sys
 import wave
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -68,3 +72,95 @@ def test_embed_compare_edges():
     assert rn["embed_score"] == 0.0  # negativ geclippt
     rz = sim_embed.embed_compare(np.zeros(3), np.array([1.0, 0.0, 0.0]))
     assert rz["embed_cos"] == 0.0 and rz["embed_score"] == 0.0  # Null-Vektor kein Crash
+
+
+# ---------- Task 3: ClapBackend ----------
+
+class _FakeCLAP:
+    """Ersatz fuer clap_cpp.CLAP: zeichnet Aufruf auf, gibt Einheitsvektor zurueck."""
+    instances = []
+
+    def __init__(self, path, threads=0):
+        self.path = path
+        self.calls = []
+        _FakeCLAP.instances.append(self)
+
+    def encode_audio(self, pcm, sample_rate=48000, crop_offset=0):
+        self.calls.append({"n": len(pcm), "sr": sample_rate})
+        v = np.zeros(512, dtype=np.float32)
+        v[0] = 1.0
+        return v.tolist()
+
+
+@pytest.fixture
+def fake_clap_cpp(monkeypatch):
+    _FakeCLAP.instances = []
+    fake_mod = SimpleNamespace(CLAP=_FakeCLAP)
+    monkeypatch.setitem(sys.modules, "clap_cpp", fake_mod)
+    return fake_mod
+
+
+def test_clap_backend_embed_shape_norm(fake_clap_cpp, tmp_path):
+    model = tmp_path / "m.gguf"
+    model.write_bytes(b"x")
+    b = sim_embed.ClapBackend(model)
+    v = b.embed(sine(440.0, dur=1.0), SR)
+    assert v.shape == (512,)
+    assert v.dtype == np.float32
+    assert np.linalg.norm(v) == pytest.approx(1.0)
+    assert b._clap.calls[0]["sr"] == 48000
+
+
+def test_clap_backend_resamples_non_48k(fake_clap_cpp, tmp_path):
+    model = tmp_path / "m.gguf"
+    model.write_bytes(b"x")
+    b = sim_embed.ClapBackend(model)
+    x = sine(440.0, dur=1.0, sr=44100)  # 44100 samples
+    b.embed(x, 44100)
+    call = b._clap.calls[0]
+    assert call["sr"] == 48000
+    assert call["n"] == int(round(44100 * 48000 / 44100))
+
+
+def test_clap_backend_different_lengths_ok(fake_clap_cpp, tmp_path):
+    model = tmp_path / "m.gguf"
+    model.write_bytes(b"x")
+    b = sim_embed.ClapBackend(model)
+    for n in (126080, 133969):
+        v = b.embed(np.zeros(n, dtype=np.float32), SR)
+        assert v.shape == (512,)
+
+
+def test_clap_backend_missing_model_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        sim_embed.ClapBackend(tmp_path / "fehlt.gguf")
+
+
+def test_clap_backend_subprocess_fallback(monkeypatch, tmp_path):
+    model = tmp_path / "m.gguf"
+    model.write_bytes(b"x")
+    monkeypatch.setitem(sys.modules, "clap_cpp", None)  # import schlaegt fehl
+    monkeypatch.setattr(sim_embed.shutil, "which", lambda name: "/fake/clap" if name == "clap" else None)
+    vec = [0.0] * 511 + [1.0]
+
+    def fake_run(cmd, **kw):
+        assert cmd[0] == "/fake/clap" and "--audio" in cmd
+        return SimpleNamespace(returncode=0, stdout=json.dumps(vec))
+
+    monkeypatch.setattr(sim_embed.subprocess, "run", fake_run)
+    b = sim_embed.ClapBackend(model)
+    v = b.embed(sine(440.0, dur=0.5), SR)
+    assert v.shape == (512,) and np.linalg.norm(v) == pytest.approx(1.0)
+
+
+def test_clap_backend_error_wrapped(fake_clap_cpp, tmp_path, monkeypatch):
+    model = tmp_path / "m.gguf"
+    model.write_bytes(b"x")
+
+    def boom(self, pcm, sample_rate=48000, crop_offset=0):
+        raise ValueError("kaputt")
+
+    monkeypatch.setattr(_FakeCLAP, "encode_audio", boom)
+    b = sim_embed.ClapBackend(model)
+    with pytest.raises(RuntimeError, match="CLAP"):
+        b.embed(sine(440.0, dur=0.5), SR)
