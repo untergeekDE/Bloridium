@@ -7,6 +7,8 @@ bipolar (Mitte 64) -> raw/127 (0.5 ~ Mitte). Enums siehe Tabellen unten
 
 from __future__ import annotations
 
+import math
+
 # Enum-Tabellen (display -> value) – Filter-Werte aus eigenen OS4-Exporten
 # (dumps/export-001, qpat v14); ACHTUNG: Nummerierung weicht von aelteren Files ab!
 OSC_TYPE = {"Wavetable": 0.0, "Waveform": 1.0, "Particle": 2.0, "Resonator": 3.0, "Off": 4.0}
@@ -35,6 +37,17 @@ FX_TYPE = {"Off": 0.0, "Phaser": 1.0, "Chorus": 2.0, "Flanger": 3.0, "Delay": 4.
 BLOFELD_SHAPE_TO_IRIDIUM = {
     "off": ("Off", None), "Pulse": ("Waveform", "Square"), "Saw": ("Waveform", "Sawtooth"),
     "Triangle": ("Waveform", "Triangle"), "Sine": ("Waveform", "Sine"),
+}
+# Blofeld-Wavetable (Shape-Label, SHAPES ab Index 5) -> Iridium OscN WavetableTable-ID.
+# IDs v14 aus eigenen OS4-Exporten + Factory-Dumps (z. B. dumps/00003-WT Probe.qpat:
+# Osc1WavetableTable 2.0 = "Mallet Syn"). Namen von Blofeld-Seite (SHAPES-Liste).
+BLOFELD_WAVETABLE_TO_IRIDIUM = {
+    "Resonant": 0.0, "MalletSyn": 2.0, "Bellish": 4.0, "Saw-Sweep": 6.0, "Add Harm": 9.0,
+    "Reso 3 HP": 10.0, "Clipper": 13.0, "Organ Syn": 14.0, "SquareSaw": 15.0,
+    "Polated": 17.0, "Robotic": 20.0, "StrongHrm": 21.0, "2 Echoes": 25.0,
+    "Formant 2": 26.0, "FmnVocal": 27.0, "SawSync 3": 34.0, "PulSync 1": 35.0,
+    "PulSync 3": 37.0, "K+Strong1": 47.0, "1-2-3-4-5": 50.0, "Vibes": 62.0,
+    "Glassy": 79.0,
 }
 # Blofeld Filter-Type (Spec 4.4) -> Iridium Filter12Type (v14-Werte).
 # Notch/Comb sind Naeherungen (echte Comb-/PPG-Modelle sitzen im DigiFormer,
@@ -71,7 +84,10 @@ MATRIX_DST = {"Off": 0.0, "Pitch": 1.0, "Osc1 Pitch": 2.0, "Osc2 Pitch": 3.0, "O
               "Filter1 Cutoff": 100.0, "Filter1 Reso": 101.0,
               "Filter2 Cutoff": 103.0, "Filter2 Reso": 105.0,
               "Filt1Env Attack": 113.0, "Filt1Env Sustain": 114.0, "Filt1Env Decay": 123.0,
-              "Volume": 112.0, "Pan": 144.0}
+              "Volume": 112.0, "Pan": 144.0,
+              # Wavetable-Position / Waveform-Warp (v14-Werte aus eigenen OS4-Exporten)
+              "WT1 Position": 11.0, "WT2 Position": 39.0, "WT3 Position": 67.0,
+              "WF1 Warp": 18.0, "WF2 Warp": 46.0, "WF3 Warp": 74.0}
 # Blofeld Mod-Source -> Iridium MatrixSrc-Display (Press-Kombis approx. auf After Touch)
 BLOFELD_MOD_SRC = {
     "LFO 1": "LFO 1", "LFO 2": "LFO 2", "LFO 3": "LFO 3",
@@ -99,6 +115,69 @@ def norm(raw: int) -> float:
     return max(0.0, min(1.0, raw / 127.0))
 
 
+# ---- Glide Rate: Zeit-Kalibrierung (beide Seiten log-Skala in der Zeit) ----
+# Blofeld "Glide Rate" raw 0..127 ist NICHT linear in der Zeit (Blofeld-Handbuch: niedrige
+# Werte = Millisekunden, hohe = mehrere Sekunden). Iridium "GlideRate" norm 0..1 ebenso
+# nicht. Lineares norm() setzt deshalb zu hohe Werte (Beobachtung 2026-11-09: A073 Chord
+# Hose raw 48 -> norm 0.378 -> "Glide Rate 0.29sec" am Iridium, deutlich laenger als am
+# Blofeld). Anker (gemessen/dokumentiert):
+#   - Blofeld raw 20 <-> Iridium norm 0.15: Don-Solaris-Factory-Paare (Blofeld Rate 20 =
+#     Iridium GlideRate 0.15); 0.15 ist das Iridium-Default = 0.045 s (Handbuch) ->
+#     t_blo(20) = 0.045 s.
+#   - Iridium norm 0.378 zeigt am Geraet "0.29 s" (Display abgelesen bei A073-Import).
+#   - Blofeld raw 127 = "several seconds" (Handbuch) -> konservativ 5 s.
+# Beide Kurven exponential in der Zeit; Mapping raw -> norm ueber t_blo(raw) = t_irr(norm).
+GLIDE_BLO_T_AT_20 = 0.045   # s bei raw 20 (Don-Solaris-Anker)
+GLIDE_BLO_T_MAX = 5.0       # s bei raw 127 ("several seconds", konservativ)
+GLIDE_IRR_ANCHORS = ((0.15, 0.045), (0.378, 0.29))   # (norm, s am Geraet)
+
+
+def blofeld_glide_seconds(raw: int) -> float:
+    """Blofeld Glide Rate raw 0..127 -> Gleitzeit in s (exponential)."""
+    raw = max(0, min(127, int(raw)))
+    return GLIDE_BLO_T_AT_20 * (GLIDE_BLO_T_MAX / GLIDE_BLO_T_AT_20) ** ((raw - 20) / 107.0)
+
+
+def iridium_glide_seconds(norm_v: float) -> float:
+    """Iridium GlideRate norm 0..1 -> Gleitzeit in s (exponential durch die Anker)."""
+    (n0, t0), (n1, t1) = GLIDE_IRR_ANCHORS
+    return t0 * (t1 / t0) ** ((norm_v - n0) / (n1 - n0))
+
+
+def glide_rate_norm(raw: int) -> float:
+    """Blofeld Glide Rate raw -> Iridium GlideRate norm ueber gleiche Gleitzeit."""
+    t = blofeld_glide_seconds(raw)
+    (n0, t0), (n1, t1) = GLIDE_IRR_ANCHORS
+    n = n0 + (n1 - n0) * math.log(t / t0) / math.log(t1 / t0)
+    return max(0.0, min(1.0, n))
+
+
+# ---- LFO-Clock: Blofeld Sync-Speed (SysEx-Doc 4.6) -> Iridium SyncRatio ----
+# Blofeld LFO Speed raw (Sync=1): raw//2 -> bars pro Zyklus (Fraktionen < 1 bar dezimal)
+BLO_LFO_BARS = [1280, 1152, 1024, 896, 768, 640, 576, 512, 448, 384, 320, 288, 256, 224, 192,
+                160, 144, 128, 112, 96, 80, 72, 64, 56, 48, 40, 36, 32, 28, 24, 20, 18, 16,
+                14, 12, 10, 9, 8, 7, 6, 5, 4, 3.5, 3, 2.5, 2, 1.5, 1,
+                0.5, 2/3, 0.5, 0.375, 1/3, 0.25, 0.1875, 1/6, 0.125, 0.09375, 1/12, 0.0625,
+                0.046875, 1/24, 0.03125, 1/48]
+# Iridium LfoN SyncRatio-Index -> beats pro Zyklus (Display-Werte eigener OS4-Exporte:
+# 0->1024, 11->24, 12->16, 15->6, 16->1/1=4 beats, 22->1/8=.5, 23->1/16 dot=.375, 24->1/16=.25)
+IRR_SYNC_BEATS = [1024, 768, 512, 384, 256, 192, 128, 96, 64, 48, 32, 24, 16, 12, 8, 6, 4,
+                  3, 2, 1.5, 1, 0.75, 0.5, 0.375, 0.25, 0.1875, 0.125, 0.0833]
+
+
+def blofeld_lfo_clock_beats(raw: int) -> float:
+    """Blofeld LFO Clock-Index (Sync=1) -> beats pro Zyklus (1 bar = 4 beats)."""
+    bars = BLO_LFO_BARS[min(max(raw, 0) // 2, len(BLO_LFO_BARS) - 1)]
+    return bars * 4.0
+
+
+def iridium_sync_ratio_index(beats: float) -> int:
+    """Naechster Iridium SyncRatio-Index fuer eine beats/Zyklus-Zahl (log-Distanz)."""
+    lb = [math.log(b) for b in IRR_SYNC_BEATS]
+    t = math.log(max(beats, 1e-6))
+    return min(range(len(lb)), key=lambda i: abs(lb[i] - t))
+
+
 def amt_bipolar(raw: int) -> float:
     """Blofeld Mod-Amount (bipolar, Mitte 64 = 0) -> Iridium Matrix-Amount 0..1
     zentriert um 0.5:  64 -> 0.5 (neutral), 127 -> 1.0, 0 -> 0.0.
@@ -123,6 +202,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     shape_raw_idx = [8, 24, 40]     # SDATA-Indizes OscN Shape
     oct_idx = [1, 17, 33]
     semi_idx = [2, 18, 34]
+    osc_is_wavetable = {}
     for n in (1, 2, 3):
         raw_shape = sdata[shape_raw_idx[n - 1]]
         # Shape-Label aus parsed params holen
@@ -133,9 +213,24 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             otype, wf = "Wavetable", None
         else:
             otype, wf = "Off", None
+        osc_is_wavetable[n] = (otype == "Wavetable")
         setp(f"Osc{n}Type", OSC_TYPE[otype], otype)
         if wf:
             setp(f"Osc{n}WaveformShape", WF_SHAPE[wf], wf)
+        if otype == "Wavetable":
+            # Wavetable-Auswahl: Blofeld-Wavetable-Name -> Iridium OscN WavetableTable-ID
+            # (IDs v14 aus eigenen OS4-Exporten, z. B. MalletSyn -> 2 "Mallet Syn").
+            # Ohne Bridge-Eintrag bleibt das Template-Table (0 "Resonant") stehen.
+            tbl = BLOFELD_WAVETABLE_TO_IRIDIUM.get(shape_label if isinstance(shape_label, str) else "")
+            if tbl is not None:
+                setp(f"Osc{n}WavetableTable", tbl, shape_label)
+            else:
+                unmapped.append(f"Osc {n} Wavetable {shape_label!r} (kein Iridium-Aequivalent)")
+            # Beim Blofeld ist "Pulsewidth" bei Wavetable-Osc die Wave-Position
+            setp(f"Osc{n}WavetablePosition", norm(p[f"Osc {n} Pulsewidth"]))
+            setp(f"Osc{n}WavetableBrilliance", norm(p[f"Osc {n} Brilliance"]))
+        else:
+            setp(f"Osc{n}WaveformPW", norm(p[f"Osc {n} Pulsewidth"]), "")
         # CoarsePitch: Blofeld Octave (raw 64 = 8', Schritte 12) + Semitone (raw 64 = 0)
         oct_up = (64 - sdata[oct_idx[n - 1]]) / 12.0
         semi = sdata[semi_idx[n - 1]] - 64
@@ -143,20 +238,24 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp(f"Osc{n}FinePitch", norm(p[f"Osc {n} Detune"]), "")
         setp(f"Osc{n}Vol", norm(p[f"Mixer Osc {n} Level"]), "")
         setp(f"Osc{n}Pan", norm(p[f"Mixer Osc {n} Balance"]), "")
-        setp(f"Osc{n}WaveformPW", norm(p[f"Osc {n} Pulsewidth"]), "")
         for k in ("Bend Range", "Keytrack", "FM Source", "FM Amount", "PWM Source",
-                  "PWM Amount", "Limit WT", "Brilliance"):
+                  "PWM Amount", "Limit WT"):
             unmapped.append(f"Osc {n} {k}")
+        if otype != "Wavetable":
+            unmapped.append(f"Osc {n} Brilliance")
     unmapped += ["Osc 2 Sync to O3", "Osc Pitch Source", "Osc Pitch Amount"]
 
     # --- Glide / Unisono ---
     setp("GlideOnOff", 1.0 if p.get("Glide") else 0.0, "On" if p.get("Glide") else "Off")
-    setp("GlideRate", norm(p.get("Glide Rate", 0)))
+    # Glide Rate zeit-kalibriert (log-Skala), nicht linear: norm() setzte zu hohe Werte
+    _gr = p.get("Glide Rate", 0)
+    setp("GlideRate", glide_rate_norm(_gr), f"~{blofeld_glide_seconds(_gr):.3f}s")
     setp("UnisonoCount", norm((p.get("Allocation/Unisono", 0) >> 5) & 0x07 or 1))
     setp("UnisonoDetune", norm(p.get("Unisono Detune", 0)))
 
     # --- Mixer extras ---
-    setp("RingmodOsc12", norm(p.get("Mixer RingMod Level", 0))) if "RingmodOsc12" else None
+    # Key heisst im Template/Device "RingModOsc1ToOsc2" (nicht "RingmodOsc12"!)
+    setp("RingModOsc1ToOsc2", norm(p.get("Mixer RingMod Level", 0)))
     unmapped += ["Mixer Noise Level/Balance/Colour (kein direktes qpat-Key)"]
 
     # --- Filter ---
@@ -219,10 +318,24 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             setp(ik, norm(p[f"Envelope {n} {bk}"]))
 
     # --- LFO ---
+    # ACHTUNG Key-Namen: Template/Device kennen "Lfo1Speed" (klein), NICHT "LFO1Speed"!
+    # (falsch: LFO1Speed -> eigener Key, Device ignoriert ihn, LFO lief auf Template-Default
+    # 0.5 -> hörbares Tremolo, z.B. A022 Slot 14 LFO2->Volume). Ausserdem: Blofeld Speed raw
+    # ist bei Sync=1 ein Clock-Index (SysEx-Doc 4.6, bars/Zyklus, z.B. raw 14 = 512 bars =
+    # praktisch statisch) -> als free Speed gemappt wurde daraus norm(14)=0.11 -> Tremolo.
+    # Iridium: LfoN Sync + SyncRatio (beats/Zyklus, Index) + Speed (nur free).
     for n in (1, 2, 3):
         raw = sdata[161 + (n - 1) * 12]  # LFO N Speed (Clock-Index)
-        setp(f"LFO{n}Speed", norm(raw))
-        unmapped.append(f"LFO {n} Shape/Sync/Delay/Fade/Keytrack")
+        sync = p.get(f"LFO {n} Sync", 0)
+        setp(f"Lfo{n}Sync", 1.0 if sync else 0.0, "On" if sync else "Off")
+        if sync:
+            beats = blofeld_lfo_clock_beats(raw)
+            idx = iridium_sync_ratio_index(beats)
+            setp(f"Lfo{n}SyncRatio", float(idx), f"{beats:.2f} beats")
+            setp(f"Lfo{n}Speed", norm(raw))
+        else:
+            setp(f"Lfo{n}Speed", norm(raw))
+        unmapped.append(f"LFO {n} Shape/Delay/Fade/Keytrack")
 
     # --- Routing: Blofeld Osc->Mixer->F1->F2->Amp entspricht Iridium
     #     Osc Destination 'DF 0 Fil 100' (100 % in den Filter) + 'Filter > Former' ---
@@ -231,10 +344,13 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     setp("FilterFormerRouting", FILTER_FORMER_ROUTING["Filter > Former"], "Filter > Former")
     if p.get("Filter Routing") == 1:  # Blofeld seriell -> F1/F2 linked
         setp("FilterLink", FILTER_LINK["Linked"], "Linked")
-    # Filter-Keytrack bipolar (Blofeld Mitte 64 -> 0.5)
+    # Filter-Keytrack: Blofeld raw 0..127 = -200%..+196% (64 = 0%, Offset-Binaer!),
+    # Iridium FilterNKeytrack norm 0..1 = -200%..+200% (0.5 = 0%) -> direkt norm(raw).
+    # ACHTUNG: frueheres (kt-64)/64 lieferte -1..+1 (raw 64 -> 0.0 = "-200%" am Iridium!)
+    # Anker: Don-Solaris-Paare raw 64 -> 0.5000, raw 96 -> 0.7500 (norm(96)=0.756).
     for n in (1, 2):
         kt = p[f"Filter {n} Keytrack"]
-        setp(f"Filter{n}Keytrack", max(0.0, min(1.0, (kt - 64) / 64.0)))
+        setp(f"Filter{n}Keytrack", norm(kt))
 
     # --- Modulation/Matrix: Blofeld 16 Slots -> Iridium Matrix-Slots ---
     slot = 0
@@ -247,6 +363,14 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         slot += 1
         s_disp = BLOFELD_MOD_SRC.get(src)
         d_disp = BLOFELD_MOD_DST.get(dst)
+        if d_disp is None and isinstance(dst, str) and dst.endswith("PW/Wave"):
+            # Blofeld "O1 PW/Wave": bei Wavetable-Osc die WT-Position, sonst WF-Warp (PW)
+            try:
+                on = int(dst[1])
+            except (ValueError, IndexError):
+                on = 0
+            if 1 <= on <= 3:
+                d_disp = f"WT{on} Position" if osc_is_wavetable.get(on) else f"WF{on} Warp"
         if s_disp and d_disp:
             setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
             setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)

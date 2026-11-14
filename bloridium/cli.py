@@ -17,7 +17,9 @@ import re
 import sys
 from pathlib import Path
 
-from . import audio, blofeld_dump as bd, db, editor, midi, qpat, workflow
+import numpy as np
+
+from . import audio, blofeld_dump as bd, db, editor, midi, qpat, sim, sim_embed, workflow
 
 REPO = workflow.REPO
 
@@ -74,7 +76,27 @@ def build_parser() -> argparse.ArgumentParser:
     ab.add_argument("--list", action="store_true", help="statt messen: Runs auflisten")
     ab.add_argument("--diff", nargs=2, metavar=("ID1", "ID2"), default=None, help="zwei Runs vergleichen")
     ab.add_argument("--rec-dir", default=None, help="Ziel fuer .npy/.json (Default: recordings/)")
+    ab.add_argument("--embed", action="store_true", help="Phase B: CLAP-Embedding-Score ins report.json")
+    ab.add_argument("--llm", action="store_true", help="Phase B: ollama-LLM-Urteil ins report.json")
+    ab.add_argument("--strict", action="store_true", help="fehlendes Backend -> Exit 3 statt Degrade")
+    ab.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
     ab.set_defaults(func=cmd_ab)
+
+    sm = sub.add_parser("sim", help="Sound-Aehnlichkeit Blofeld vs Iridium (Phase A + Phase B)")
+    ssub = sm.add_subparsers(dest="sim_cmd", required=True)
+    sc = ssub.add_parser("compare", help="zwei Signale vergleichen (--npy offline oder --live)")
+    sc.add_argument("--npy", nargs=2, metavar=("A", "B"), help="offline: zwei .npy vergleichen")
+    sc.add_argument("--live", action="store_true", help="live messen (beide Synths spielen)")
+    sc.add_argument("--note", type=int, default=60)
+    sc.add_argument("--dur", type=float, default=1.6)
+    sc.add_argument("--blofeld", default="A043")
+    sc.add_argument("--iridium-slot", default="?")
+    sc.add_argument("--log", default=str(sim.DEFAULT_LOG))
+    sc.add_argument("--embed", action="store_true", help="Phase B: CLAP-Embedding-Score")
+    sc.add_argument("--llm", action="store_true", help="Phase B: ollama-LLM-Urteil")
+    sc.add_argument("--strict", action="store_true", help="fehlendes Backend -> Exit 3")
+    sc.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
+    sc.set_defaults(func=cmd_sim_compare)
 
     qp = sub.add_parser("qpat", help=".qpat-Dateien inspizieren/registrieren")
     qsub = qp.add_subparsers(dest="qpat_cmd", required=True)
@@ -398,7 +420,12 @@ def cmd_ab(args) -> int:
     rec_dir = Path(args.rec_dir) if args.rec_dir else workflow.RECORDINGS
     try:
         report = workflow.measure_ab(note=args.note, dur=args.dur, label=args.label,
-                                     rec_dir=rec_dir, sound_location=_canon_loc(args.sound) if args.sound else None)
+                                     rec_dir=rec_dir, sound_location=_canon_loc(args.sound) if args.sound else None,
+                                     embed=args.embed, llm=args.llm,
+                                     models_dir=args.models_dir, strict=args.strict)
+    except sim_embed.BackendError as e:
+        print(f"FEHLER (strict, Backend): {e}", file=sys.stderr)
+        return 3
     except RuntimeError as e:
         # I1: MIDI-Port oder Audio-Device nicht erreichbar -> Exit 2 + Port-Liste
         print(f"FEHLER: {e}", file=sys.stderr)
@@ -419,9 +446,61 @@ def cmd_ab(args) -> int:
     edges = report["band_edges_hz"]
     for k, d in enumerate(report["band_delta_db"]):
         print(f"  {edges[k]:7.0f}-{edges[k+1]:7.0f} Hz: {d:+6.1f} dB {'#' * max(0, int(round(d)))}")
+    if report.get("embed") is not None:
+        print(f"Phase B embed: cos {report['embed']['embed_cos']} "
+              f"embed_score {report['embed']['embed_score']} "
+              f"combined {report['sim']['combined']}")
+    if report.get("llm"):
+        l = report["llm"]
+        print(f"Phase B llm[{l.get('mode')}] score={l.get('score')}: {l.get('summary')} "
+              f"diff={l.get('differences')}")
+    if report.get("sim", {}).get("backend_error"):
+        print(f"backend_error: {report['sim']['backend_error']}", file=sys.stderr)
     print(f"gespeichert: {report['files']['report']}")
     print("Hinweis: naechster Schritt am Iridium ggf. 'edit' der .qpat -> neu importieren -> wieder 'ab'.")
     return 0
+
+
+# ---- sim compare (Phase A + Phase B) ---------------------------------------
+
+def cmd_sim_compare(args) -> int:
+    if args.npy:
+        a = np_load_mono(args.npy[0])
+        b = np_load_mono(args.npy[1])
+        meta = {"mode": "npy"}
+        names = (str(args.npy[0]), str(args.npy[1]))
+    elif args.live:
+        try:
+            blo_x, irr_x = workflow.record_ab_pair(note=args.note, dur=args.dur)
+        except RuntimeError as e:
+            print(f"FEHLER: {e}", file=sys.stderr)
+            ports = midi.list_ports()
+            print(f"verfuegbare MIDI-Ports OUT: {ports['out']}", file=sys.stderr)
+            print(f"verfuegbare MIDI-Ports IN : {ports['in']}", file=sys.stderr)
+            return 2
+        a = np.asarray(blo_x, dtype=np.float64).mean(axis=0)
+        b = np.asarray(irr_x, dtype=np.float64).mean(axis=0)
+        meta = {"mode": "live", "note": args.note, "blofeld": args.blofeld,
+                "iridium_slot": args.iridium_slot}
+        names = (f"blofeld:{args.blofeld}", f"iridium:{args.iridium_slot}")
+    else:
+        print("entweder --npy A B oder --live", file=sys.stderr)
+        return 2
+    clap, ollama = sim_embed.build_backends(args.models_dir, args.embed, args.llm)
+    try:
+        r = sim_embed.score_pair_embed(a, b, sr=audio.SAMPLERATE, meta=meta,
+                                       log_path=args.log, clap=clap, ollama=ollama,
+                                       use_llm=args.llm, strict=args.strict)
+    except sim_embed.BackendError as e:
+        print(f"FEHLER (strict, Backend): {e}", file=sys.stderr)
+        return 3
+    sim_embed.print_result(r, *names)
+    return 0 if r["score"] is not None else 1
+
+
+def np_load_mono(p) -> np.ndarray:
+    x = np.asarray(np.load(p), dtype=np.float64)
+    return x.mean(axis=0) if x.ndim > 1 else x.ravel()
 
 
 # ---- qpat info -------------------------------------------------------------

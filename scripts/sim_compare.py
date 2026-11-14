@@ -41,50 +41,12 @@ def _meta(pairs) -> dict:
     return d
 
 
-def print_result(r: dict, a_name: str, b_name: str) -> None:
-    print(f"Score {a_name} vs {b_name}: {r['score']} ({r['verdict']})  "
-          f"spec_cos={r.get('spec_cos')} env_dtw={r.get('env_dtw')}")
-    if r.get("embed_score") is not None:
-        print(f"  embed_cos={r.get('embed_cos')} embed_score={r.get('embed_score')} "
-              f"combined={r.get('combined')}")
-    if r.get("llm"):
-        print(f"  llm[{r['llm'].get('mode')}] score={r['llm'].get('score')}: "
-              f"{r['llm'].get('summary')}")
-    if r.get("backend_error"):
-        print(f"  backend_error: {r['backend_error']}")
-    deltas = r.get("band_delta_db") or []
-    if deltas:
-        top = sorted(range(len(deltas)), key=lambda i: -abs(deltas[i]))[:5]
-        print("Top-Band-Deltas (dB): " + ", ".join(f"band{i}: {deltas[i]:+.1f}" for i in top))
-
-
-def _backends(models_dir, want_embed, want_llm):
-    """ClapBackend/OllamaBackend bauen; fehlt etwas -> WARNUNG + None (Degrade)."""
-    clap = None
-    if want_embed:
-        gguf = Path(models_dir) / sim_embed.CLAP_GGUF_NAME
-        if gguf.exists():
-            try:
-                clap = sim_embed.ClapBackend(gguf)
-            except Exception as e:
-                print(f"WARNUNG clap: {e}", file=sys.stderr)
-        else:
-            print(f"WARNUNG: {gguf} fehlt (scripts/fetch_models.py) – embed deaktiviert",
-                  file=sys.stderr)
-    ollama = None
-    if want_llm:
-        o = sim_embed.OllamaBackend()
-        if o.available():
-            ollama = o
-        else:
-            print("WARNUNG: ollama nicht verfuegbar (Server/Modell) – llm deaktiviert",
-                  file=sys.stderr)
-    return clap, ollama
+print_result = sim_embed.print_result  # gemeinsame Ausgabe (sim_embed)
 
 
 def _score_pair(args, a, b, meta):
     """Backends bauen + score_pair_embed; strict-Fehler -> RuntimeError durchreichen."""
-    clap, ollama = _backends(args.models_dir, args.embed, args.llm)
+    clap, ollama = sim_embed.build_backends(args.models_dir, args.embed, args.llm)
     return sim_embed.score_pair_embed(a, b, sr=audio.SAMPLERATE, meta=meta,
                                       log_path=args.log, clap=clap, ollama=ollama,
                                       use_llm=args.llm, strict=args.strict)

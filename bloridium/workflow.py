@@ -13,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import audio, blofeld_dump as bd, midi, qpat, qpat_map, waldorf
+from . import audio, blofeld_dump as bd, midi, qpat, qpat_map, sim_embed, waldorf
 
 # Repo-Root (worktree-sicher): zwei Ebenen ueber diesem File
 REPO = Path(__file__).resolve().parent.parent
@@ -204,15 +204,12 @@ def band_energies(x: np.ndarray, sr: int = audio.SAMPLERATE, n_bands: int = 8,
     return np.array(bands), edges
 
 
-def measure_ab(note: int = 36, dur: float = 3.0, label: str = "ab",
-               rec_dir=None, sound_location: str | None = None) -> dict:
-    """Spielt eine Note auf beiden Synths und misst A/B ueber das Scarlett.
+def record_ab_pair(note: int = 36, dur: float = 3.0):
+    """Spielt eine Note auf beiden Synths (Part 1 = ch6 am Iridium, monophon) und
+    nimmt ueber das Scarlett auf. All Notes Off (CC123) vorher auf allen 16 Kanaelen.
 
-    Macht vorher All Notes Off (CC123) auf allen 16 Kanaelen beider Synths.
-    Speichert .npy + report.json nach rec_dir. Rueckgabe: report dict.
+    Rueckgabe: (blo_x, irr_x) – jeweils Stereo-Rows (2, samples) der Scarlett-Kanaele.
     """
-    rec_dir = Path(rec_dir or RECORDINGS)
-    rec_dir.mkdir(parents=True, exist_ok=True)
     with midi.connect("blofeld") as blo, midi.connect("iridium") as irr:
         for s in (blo, irr):
             for ch in range(16):
@@ -229,9 +226,24 @@ def measure_ab(note: int = 36, dur: float = 3.0, label: str = "ab",
             for ch in range(16):
                 blo.control_change(123, 0, channel=ch)
                 irr.control_change(123, 0, channel=ch)
-
     b_ch, i_ch = audio.CHANNELS["blofeld"], audio.CHANNELS["iridium"]
-    blo_x, irr_x = data[b_ch, :], data[i_ch, :]
+    return data[b_ch, :], data[i_ch, :]
+
+
+def measure_ab(note: int = 36, dur: float = 3.0, label: str = "ab",
+               rec_dir=None, sound_location: str | None = None, *,
+               embed: bool = False, llm: bool = False,
+               models_dir=None, strict: bool = False) -> dict:
+    """Spielt eine Note auf beiden Synths und misst A/B ueber das Scarlett.
+
+    Speichert .npy + report.json nach rec_dir. Rueckgabe: report dict.
+    embed/llm (Phase B): report erhaelt zusaetzlich Keys "sim" (Phase A + combined),
+    "embed" ({embed_cos, embed_score}|None) und "llm" (Urteil|None) – als JSON-Blob
+    im report_json, ohne DB-Schema-Wechsel. log_path=None: kein sim_log.jsonl-Eintrag.
+    """
+    rec_dir = Path(rec_dir or RECORDINGS)
+    rec_dir.mkdir(parents=True, exist_ok=True)
+    blo_x, irr_x = record_ab_pair(note, dur)
     mb, mi = audio.measure(blo_x), audio.measure(irr_x)
     pb, pi = float(np.max(mb["peak_dbfs"])), float(np.max(mi["peak_dbfs"]))
     cb, ci = spectral_centroid(blo_x), spectral_centroid(irr_x)
@@ -251,5 +263,21 @@ def measure_ab(note: int = 36, dur: float = 3.0, label: str = "ab",
         "files": {"blofeld_npy": str(blo_path), "iridium_npy": str(irr_path),
                   "report": str(rep_path)},
     }
+    if embed or llm:
+        clap, ollama = sim_embed.build_backends(
+            models_dir or sim_embed.DEFAULT_MODELS_DIR, embed, llm)
+        bx = np.asarray(blo_x, dtype=np.float64).mean(axis=0)
+        ix = np.asarray(irr_x, dtype=np.float64).mean(axis=0)
+        r = sim_embed.score_pair_embed(
+            bx, ix, sr=audio.SAMPLERATE,
+            meta={"label": label, "sound_location": sound_location, "note": note,
+                  "mode": "ab"},
+            log_path=None, clap=clap, ollama=ollama, use_llm=llm, strict=strict)
+        report["sim"] = {k: r[k] for k in ("score", "spec_cos", "env_dtw", "verdict",
+                                           "combined", "backend_error")}
+        report["embed"] = ({"embed_cos": r["embed_cos"], "embed_score": r["embed_score"]}
+                           if r["embed_score"] is not None else None)
+        report["llm"] = r["llm"]
+
     rep_path.write_text(json.dumps(report, indent=2))
     return report

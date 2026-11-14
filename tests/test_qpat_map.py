@@ -34,8 +34,33 @@ def test_filter_former_routing_linear(overrides):
 
 
 def test_filter_keytrack_bipolar(overrides):
-    # Blofeld F1 Keytrack 96 (64 = Mitte) -> (96-64)/64 = 0.5
-    assert overrides["Filter1Keytrack"][0] == pytest.approx(0.5)
+    # Blofeld F1 Keytrack raw 0..127 = -200%..+196% (64 = 0%, Offset-Binaer);
+    # Iridium Filter1Keytrack norm 0..1 = -200%..+200% (0.5 = 0%) -> norm(raw).
+    # Anker Don-Solaris: raw 64 -> 0.5000, raw 96 -> 0.7500. A043 hat raw 96.
+    assert overrides["Filter1Keytrack"][0] == pytest.approx(96 / 127)
+
+
+def test_filter_keytrack_neutral_64_maps_to_half():
+    # A019 Tines DocT: F1 Keytrack 64 (0%) darf NICHT -200% (norm 0) werden
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / "dumps/blofeld_sndd_A019_20261108_233101.bin"))
+    ov, _unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Filter1Keytrack"][0] == pytest.approx(64 / 127)
+    assert ov["Filter2Keytrack"][0] == pytest.approx(64 / 127)
+
+
+def test_a019_wavetable_mapped():
+    # A019: Osc1 Shape = MalletSyn -> Iridium Wavetable (Type 0), Table 2 "Mallet Syn",
+    # Position aus Pulsewidth (Blofeld "PW/Wave"), Mod-Slot auf WT1 Position (Dst 11)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / "dumps/blofeld_sndd_A019_20261108_233101.bin"))
+    ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc1Type"] == (0.0, "Wavetable")
+    assert ov["Osc1WavetableTable"][0] == 2.0
+    assert ov["Osc1WavetablePosition"][0] == pytest.approx(14 / 127)   # Osc1 Pulsewidth = 14
+    assert "Osc1WavetableBrilliance" in ov
+    assert "Osc1WaveformPW" not in ov
+    dst_vals = [ov[k][0] for k in ov if k.startswith("MatrixDst")]
+    assert 11.0 in dst_vals   # WT1 Position (Mod-Slots 1 und 5: Env3/PitchBend -> O1 PW/Wave)
+    assert not any("Wavetable" in u and "kein" in u for u in unmapped)
 
 
 def test_filter_types_v14_values(overrides):
@@ -87,6 +112,44 @@ def test_amp_velocity_maps_to_velocity_volume_slot(overrides):
     assert overrides["MatrixDst8"][0] == 112.0   # Volume (v14)
     assert overrides["MatrixAmount8"][0] == pytest.approx(0.5 + 0.5 * 64 / 127)
     assert overrides["MatrixOnOff8"][0] == 1.0
+
+
+def test_glide_rate_calibrated_not_linear():
+    # Anker: Blofeld raw 20 <-> Iridium norm 0.15 (Don-Solaris-Paare / Iridium-Default 0.045 s)
+    assert qpat_map.glide_rate_norm(20) == pytest.approx(0.15, abs=1e-9)
+    # A073 Chord Hose: raw 48 -> ~0.30. Lineares norm() waere 0.378 -> "0.29 s" am Geraet (zu hoch)
+    assert qpat_map.glide_rate_norm(48) == pytest.approx(0.30, abs=0.01)
+    assert qpat_map.glide_rate_norm(48) < 48 / 127
+    # monoton steigend und geclampt
+    vals = [qpat_map.glide_rate_norm(v) for v in range(0, 128)]
+    assert all(0.0 <= v <= 1.0 for v in vals)
+    assert all(b >= a for a, b in zip(vals, vals[1:]))
+
+
+def test_a073_glide_rate_in_overrides():
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / "dumps/blofeld_sndd_A073_20261108_233117.bin"))
+    ov, _unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["GlideOnOff"] == (1.0, "On")
+    assert ov["GlideRate"][0] == pytest.approx(0.30, abs=0.01)
+
+
+def test_lfo_sync_mapped_with_template_keys():
+    # A022 ModWheelOrgDrive: LFO1 Sync=1 raw 42 (72 bars), LFO2 Sync=1 raw 14 (512 bars),
+    # LFO3 Sync=0 raw 30. Falsch war "LFO1Speed" (Key existiert nicht im Template; Device
+    # lief auf Default 0.5 -> Tremolo) und Clock-Index als free Speed.
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / "dumps/blofeld_sndd_A022_20261108_233105.bin"))
+    ov, _unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    assert "LFO1Speed" not in ov and "Lfo1Speed" in ov
+    assert ov["Lfo1Sync"] == (1.0, "On")
+    assert ov["Lfo2Sync"] == (1.0, "On")
+    assert ov["Lfo3Sync"] == (0.0, "Off")
+    # 512 bars = 2048 beats -> groesster verfuegbarer Ratio (Index 0 = 1024)
+    assert ov["Lfo2SyncRatio"][0] == 0.0
+    # 72 bars = 288 beats -> naechster Index ~4 (256 beats)
+    assert ov["Lfo1SyncRatio"][0] in (3.0, 4.0)
+    assert ov["Lfo3Speed"][0] == pytest.approx(30 / 127)
+    # Ringmod-Key heisst im Template RingModOsc1ToOsc2
+    assert "RingModOsc1ToOsc2" in ov
 
 
 def test_converted_file_is_version_14(parsed, tmp_path):

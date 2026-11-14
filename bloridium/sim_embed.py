@@ -15,6 +15,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import wave
 from pathlib import Path
@@ -239,6 +240,52 @@ def _extract_json(text: str) -> dict | None:
 PROMPT_ID = "judge-v1"
 
 
+class BackendError(RuntimeError):
+    """strict=True und Backend fehlt/kaputt (unterscheidbar von Hardware-Fehlern)."""
+
+
+def build_backends(models_dir, want_embed: bool, want_llm: bool):
+    """(ClapBackend|None, OllamaBackend|None); fehlt etwas -> WARNUNG auf stderr + None."""
+    clap = None
+    if want_embed:
+        gguf = Path(models_dir) / CLAP_GGUF_NAME
+        if gguf.exists():
+            try:
+                clap = ClapBackend(gguf)
+            except Exception as e:
+                print(f"WARNUNG clap: {e}", file=sys.stderr)
+        else:
+            print(f"WARNUNG: {gguf} fehlt (scripts/fetch_models.py) – embed deaktiviert",
+                  file=sys.stderr)
+    ollama = None
+    if want_llm:
+        o = OllamaBackend()
+        if o.available():
+            ollama = o
+        else:
+            print("WARNUNG: ollama nicht verfuegbar (Server/Modell) – llm deaktiviert",
+                  file=sys.stderr)
+    return clap, ollama
+
+
+def print_result(r: dict, a_name: str, b_name: str) -> None:
+    """Einheitliche Ausgabe fuer Skripte und CLI."""
+    print(f"Score {a_name} vs {b_name}: {r['score']} ({r['verdict']})  "
+          f"spec_cos={r.get('spec_cos')} env_dtw={r.get('env_dtw')}")
+    if r.get("embed_score") is not None:
+        print(f"  embed_cos={r.get('embed_cos')} embed_score={r.get('embed_score')} "
+              f"combined={r.get('combined')}")
+    if r.get("llm"):
+        print(f"  llm[{r['llm'].get('mode')}] score={r['llm'].get('score')}: "
+              f"{r['llm'].get('summary')}")
+    if r.get("backend_error"):
+        print(f"  backend_error: {r['backend_error']}")
+    deltas = r.get("band_delta_db") or []
+    if deltas:
+        top = sorted(range(len(deltas)), key=lambda i: -abs(deltas[i]))[:5]
+        print("Top-Band-Deltas (dB): " + ", ".join(f"band{i}: {deltas[i]:+.1f}" for i in top))
+
+
 def _fehler_result(error: str) -> dict:
     """Stabiles Fehler-Schema: Backend-Keys immer vorhanden (null), nie fehlend."""
     return {"score": None, "verdict": "fehler", "error": error,
@@ -286,11 +333,11 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
         except Exception as e:
             errors.append(f"clap: {e}")
             if strict:
-                raise RuntimeError(errors[-1]) from e
+                raise BackendError(errors[-1]) from e
     else:
         errors.append("clap: nicht konfiguriert (kein GGUF/Modell)")
         if strict:
-            raise RuntimeError(errors[-1])
+            raise BackendError(errors[-1])
 
     if result["embed_score"] is not None:
         result["combined"] = round(0.5 * base["score"] + 0.5 * result["embed_score"], 2)
@@ -304,11 +351,11 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
             except Exception as e:
                 errors.append(f"ollama: {e}")
                 if strict:
-                    raise RuntimeError(errors[-1]) from e
+                    raise BackendError(errors[-1]) from e
         else:
             errors.append("ollama: nicht verfuegbar (Server/Modell fehlt)")
             if strict:
-                raise RuntimeError(errors[-1])
+                raise BackendError(errors[-1])
 
     result["backend_error"] = "; ".join(errors) if errors else None
     if log_path:
