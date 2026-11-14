@@ -176,8 +176,16 @@ class OllamaBackend:
             return False
 
     def judge(self, x_a: np.ndarray, x_b: np.ndarray, sr: int,
-              prompt: str = DEFAULT_JUDGE_PROMPT) -> dict:
-        """Vergleicht zwei Clips -> {score, summary, differences, mode, model}."""
+              prompt: str = DEFAULT_JUDGE_PROMPT,
+              peak_a: float | None = None, peak_b: float | None = None) -> dict:
+        """Vergleicht zwei Clips -> {score, summary, differences, mode, model}.
+
+        peak_a/peak_b (dBFS): wenn gesetzt, landen die Pegel im Prompt — ein deutlich
+        leiseres B darf nicht als 'aehnlich' durchgehen (Kalibrierung)."""
+        if peak_a is not None and peak_b is not None:
+            prompt = (prompt + f"\nGemessene Pegel: A {peak_a:.1f} dBFS, B {peak_b:.1f} dBFS. "
+                      "Ist B deutlich leiser als A (>12 dB), ist das ein massiver Unterschied — "
+                      "senke score entsprechend (nahezu unhoerbares B = sehr niedriger score).")
         try:
             return self._chat(x_a, x_b, sr, prompt, mode="audio")
         except _HttpError as e:
@@ -237,7 +245,14 @@ def _extract_json(text: str) -> dict | None:
     return obj if isinstance(obj, dict) else None
 
 
-PROMPT_ID = "judge-v1"
+PROMPT_ID = "judge-v2-pegel"  # v2: Pegel im Prompt + Deckel bei >24 dB Unterschied
+
+
+def peak_dbfs(x) -> float:
+    """Peak-Pegel in dBFS (Guard gegen Stille)."""
+    x = np.asarray(x, dtype=np.float64).ravel()
+    m = float(np.max(np.abs(x))) if x.size else 0.0
+    return 20.0 * float(np.log10(m + 1e-12))
 
 
 class BackendError(RuntimeError):
@@ -291,7 +306,7 @@ def _fehler_result(error: str) -> dict:
     return {"score": None, "verdict": "fehler", "error": error,
             "spec_cos": None, "env_dtw": None, "band_delta_db": None,
             "embed_cos": None, "embed_score": None, "combined": None,
-            "llm": None, "backend_error": None}
+            "llm": None, "backend_error": None, "peak_dbfs": None}
 
 
 def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
@@ -344,10 +359,17 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
     else:
         result["combined"] = base["score"]
 
+    peak_a = peak_dbfs(x_blo)
+    peak_b = peak_dbfs(x_irr)
     if use_llm:
         if ollama is not None and ollama.available():
             try:
-                result["llm"] = ollama.judge(x_blo, x_irr, sr, prompt=judge_prompt)
+                result["llm"] = ollama.judge(x_blo, x_irr, sr, prompt=judge_prompt,
+                                             peak_a=peak_a, peak_b=peak_b)
+                # Harter Deckel: B >24 dB leiser als A -> LLM-Score kapppen (unhörbar != aehnlich)
+                if peak_b < peak_a - 24.0:
+                    result["llm"]["score"] = min(result["llm"]["score"], 30)
+                    result["llm"]["level_penalty"] = True
             except Exception as e:
                 errors.append(f"ollama: {e}")
                 if strict:
@@ -356,6 +378,7 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
             errors.append("ollama: nicht verfuegbar (Server/Modell fehlt)")
             if strict:
                 raise BackendError(errors[-1])
+    result["peak_dbfs"] = {"a": round(peak_a, 2), "b": round(peak_b, 2)}
 
     result["backend_error"] = "; ".join(errors) if errors else None
     if log_path:

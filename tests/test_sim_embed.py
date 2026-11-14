@@ -266,7 +266,7 @@ REC = sim_embed.REPO / "recordings"
 PAAR = ("check_20261108_152813_blofeld.npy", "check_20261108_152813_iridium.npy")
 
 SCHEMA_KEYS = {"score", "spec_cos", "env_dtw", "band_delta_db", "verdict", "error",
-               "embed_cos", "embed_score", "combined", "llm", "backend_error"}
+               "embed_cos", "embed_score", "combined", "llm", "backend_error", "peak_dbfs"}
 
 
 class _FakeClap:
@@ -284,7 +284,7 @@ class _FakeOllama:
     def available(self):
         return True
 
-    def judge(self, x_a, x_b, sr, prompt=None):
+    def judge(self, x_a, x_b, sr, prompt=None, peak_a=None, peak_b=None):
         return {"score": 90, "summary": "nah", "differences": ["d"], "mode": "audio",
                 "model": self.model}
 
@@ -358,3 +358,31 @@ def test_llm_called_when_use_llm(tmp_path):
     entry = json.loads(log.read_text().strip())
     assert entry["meta"]["backends"]["ollama"] == "fake-omni:1"
     assert entry["meta"]["backends"]["llm"] is True
+
+
+def test_judge_prompt_mit_pegeln(monkeypatch):
+    seen = {}
+
+    def fake_post(url, json=None, timeout=60):
+        seen["content"] = json["messages"][0]["content"]
+        return _resp(200, _chat_payload('{"score": 50, "summary": "s", "differences": []}'))
+
+    monkeypatch.setattr(sim_embed.requests, "post", fake_post)
+    b = sim_embed.OllamaBackend()
+    b.judge(sine(440.0, 0.5), sine(440.0, 0.5), SR, peak_a=-6.0, peak_b=-40.0)
+    assert "-6.0 dBFS" in seen["content"] and "-40.0 dBFS" in seen["content"]
+
+
+def test_llm_level_penalty_deckelt_score(tmp_path):
+    # B 30 dB leiser als A -> LLM-Score wird auf 30 gedeckelt
+    loud = sine(440.0, 1.0, amp=0.5)          # ~-6 dBFS
+    quiet = sine(440.0, 1.0, amp=0.5 / 1000)   # ~-66 dBFS
+    r = sim_embed.score_pair_embed(loud, quiet, sr=SR, log_path=None,
+                                   clap=_FakeClap(), ollama=_FakeOllama(), use_llm=True)
+    assert r["llm"]["score"] == 30 and r["llm"]["level_penalty"] is True
+    assert r["peak_dbfs"]["b"] < r["peak_dbfs"]["a"] - 24
+    # bei aehnlichen Pegeln kein Deckel
+    r2 = sim_embed.score_pair_embed(loud, sine(441.0, 1.0, amp=0.5), sr=SR,
+                                    log_path=None, clap=_FakeClap(), ollama=_FakeOllama(),
+                                    use_llm=True)
+    assert r2["llm"]["score"] == 90 and "level_penalty" not in r2["llm"]

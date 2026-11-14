@@ -45,7 +45,7 @@ class _FakeOllama:
     def available(self):
         return True
 
-    def judge(self, x_a, x_b, sr, prompt=None):
+    def judge(self, x_a, x_b, sr, prompt=None, peak_a=None, peak_b=None):
         return {"score": 77, "summary": "s", "differences": ["d"], "mode": "audio",
                 "model": self.model}
 
