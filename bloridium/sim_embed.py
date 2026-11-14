@@ -30,8 +30,8 @@ def write_wav(x: np.ndarray, sr: int, path: Path) -> None:
     """Mono-WAV (PCM16) via stdlib wave – float32 in [-1,1] -> int16, geclippt."""
     x = np.asarray(x, dtype=np.float64).ravel()
     x = np.clip(x, -1.0, 1.0)
-    pcm = np.round(x * 32767.0).astype(np.int16)
-    pcm = np.clip(pcm, -32768, 32767)
+    # erst float-seitig clippen, dann konvertieren (astype(int16) overflowt sonst!)
+    pcm = np.clip(np.round(x * 32768.0), -32768, 32767).astype(np.int16)
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with wave.open(str(path), "wb") as w:
