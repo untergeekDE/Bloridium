@@ -4,6 +4,8 @@
 Offline:  python3 scripts/sim_compare.py --npy A.npy B.npy [--log PATH] [--meta k=v ...]
 Live:     python3 scripts/sim_compare.py --live [--note 60] [--dur 1.6]
               [--blofeld A043] [--iridium-slot 207] [--log PATH] [--meta k=v ...]
+Phase B:  zusaetzlich --embed (CLAP-GGUF, models/) und --llm (ollama), --strict,
+          --models-dir; Exit 3 bei strict+fehlendem Backend, sonst Degrade (null im Log).
 
 .npy: shape (N,) oder (ch, N) – wird gemittelt. Live: spielt Note auf beiden
 Synths (Blofeld ch5, Iridium ch6-9), nimmt alle 20 Scarlett-Kanäle auf,
@@ -21,7 +23,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from bloridium import audio, midi, sim
+from bloridium import audio, midi, sim, sim_embed
 
 
 def _load_npy(p) -> np.ndarray:
@@ -42,27 +44,73 @@ def _meta(pairs) -> dict:
 def print_result(r: dict, a_name: str, b_name: str) -> None:
     print(f"Score {a_name} vs {b_name}: {r['score']} ({r['verdict']})  "
           f"spec_cos={r.get('spec_cos')} env_dtw={r.get('env_dtw')}")
+    if r.get("embed_score") is not None:
+        print(f"  embed_cos={r.get('embed_cos')} embed_score={r.get('embed_score')} "
+              f"combined={r.get('combined')}")
+    if r.get("llm"):
+        print(f"  llm[{r['llm'].get('mode')}] score={r['llm'].get('score')}: "
+              f"{r['llm'].get('summary')}")
+    if r.get("backend_error"):
+        print(f"  backend_error: {r['backend_error']}")
     deltas = r.get("band_delta_db") or []
     if deltas:
         top = sorted(range(len(deltas)), key=lambda i: -abs(deltas[i]))[:5]
         print("Top-Band-Deltas (dB): " + ", ".join(f"band{i}: {deltas[i]:+.1f}" for i in top))
 
 
-def run_npy(pa, pb, log, meta) -> int:
+def _backends(models_dir, want_embed, want_llm):
+    """ClapBackend/OllamaBackend bauen; fehlt etwas -> WARNUNG + None (Degrade)."""
+    clap = None
+    if want_embed:
+        gguf = Path(models_dir) / sim_embed.CLAP_GGUF_NAME
+        if gguf.exists():
+            try:
+                clap = sim_embed.ClapBackend(gguf)
+            except Exception as e:
+                print(f"WARNUNG clap: {e}", file=sys.stderr)
+        else:
+            print(f"WARNUNG: {gguf} fehlt (scripts/fetch_models.py) – embed deaktiviert",
+                  file=sys.stderr)
+    ollama = None
+    if want_llm:
+        o = sim_embed.OllamaBackend()
+        if o.available():
+            ollama = o
+        else:
+            print("WARNUNG: ollama nicht verfuegbar (Server/Modell) – llm deaktiviert",
+                  file=sys.stderr)
+    return clap, ollama
+
+
+def _score_pair(args, a, b, meta):
+    """Backends bauen + score_pair_embed; strict-Fehler -> RuntimeError durchreichen."""
+    clap, ollama = _backends(args.models_dir, args.embed, args.llm)
+    return sim_embed.score_pair_embed(a, b, sr=audio.SAMPLERATE, meta=meta,
+                                      log_path=args.log, clap=clap, ollama=ollama,
+                                      use_llm=args.llm, strict=args.strict)
+
+
+def run_npy(pa, pb, log, meta, args) -> int:
     a, b = _load_npy(pa), _load_npy(pb)
-    r = sim.score_pair(a, b, sr=audio.SAMPLERATE, meta=meta, log_path=log)
+    try:
+        r = _score_pair(args, a, b, meta)
+    except RuntimeError as e:
+        print(f"FEHLER (strict): {e}", file=sys.stderr)
+        return 3
     print_result(r, str(pa), str(pb))
     return 0 if r["score"] is not None else 1
 
 
-def run_live(note, dur, blofeld, slot, log, meta) -> int:
+def run_live(note, dur, blofeld, slot, log, meta, args) -> int:
     blo = midi.connect("blofeld")
     irr = midi.connect("iridium")
     try:
         for s in (blo, irr):
             for ch in range(16):
                 s.control_change(123, 0, channel=ch)   # All Notes Off
-                s.control_change(7, 127, channel=ch)     # Output Level voll
+        for ch in range(16):
+            blo.control_change(7, 127, channel=ch)       # nur Blofeld: Volume voll
+            # Iridium: CC7 NICHT senden -- mit rdb-.mimap ist CC7 = Filter1 Amount!
         time.sleep(0.4)
         blo.note_on(note=note, velocity=100, channel=blo.channel)
         for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
@@ -82,7 +130,11 @@ def run_live(note, dur, blofeld, slot, log, meta) -> int:
     ix = np.asarray(d[audio.CHANNELS["iridium"], :], dtype=np.float64).mean(axis=0)
     m = dict(meta)
     m.update({"mode": "live", "note": note, "blofeld": blofeld, "iridium_slot": slot})
-    r = sim.score_pair(bx, ix, sr=audio.SAMPLERATE, meta=m, log_path=log)
+    try:
+        r = _score_pair(args, bx, ix, m)
+    except RuntimeError as e:
+        print(f"FEHLER (strict): {e}", file=sys.stderr)
+        return 3
     print_result(r, f"blofeld:{blofeld}", f"iridium:{slot}")
     return 0 if r["score"] is not None else 1
 
@@ -97,12 +149,17 @@ def main(argv=None) -> int:
     ap.add_argument("--iridium-slot", default="?")
     ap.add_argument("--log", default=str(sim.DEFAULT_LOG))
     ap.add_argument("--meta", nargs="*", default=[], help="k=v Paare fürs Log")
+    ap.add_argument("--embed", action="store_true", help="Phase B: CLAP-Embedding-Score dazu")
+    ap.add_argument("--llm", action="store_true", help="Phase B: ollama-LLM-Urteil dazu")
+    ap.add_argument("--strict", action="store_true",
+                    help="fehlendes Backend ist hart (Exit 3) statt Degrade")
+    ap.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
     args = ap.parse_args(argv)
     meta = _meta(args.meta)
     if args.npy:
-        return run_npy(args.npy[0], args.npy[1], args.log, meta)
+        return run_npy(args.npy[0], args.npy[1], args.log, meta, args)
     if args.live:
-        return run_live(args.note, args.dur, args.blofeld, args.iridium_slot, args.log, meta)
+        return run_live(args.note, args.dur, args.blofeld, args.iridium_slot, args.log, meta, args)
     ap.error("entweder --npy A B oder --live")
     return 2
 
