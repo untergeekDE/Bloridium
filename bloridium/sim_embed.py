@@ -274,8 +274,8 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
 
     base = sim.compare(fa, fb)  # Phase A direkt (kein sim.score_pair -> kein Doppel-Log)
     result = dict(base)
-    result.update({"embed_cos": None, "embed_score": None, "combined": None,
-                   "llm": None, "backend_error": None})
+    result.update({"error": None, "embed_cos": None, "embed_score": None,
+                   "combined": None, "llm": None, "backend_error": None})
     errors = []
 
     if clap is not None:

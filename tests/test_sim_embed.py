@@ -261,9 +261,11 @@ def test_judge_score_geclippt_0_100(monkeypatch):
 # ---------- Task 5: score_pair_embed ----------
 
 REC = sim_embed.REPO / "recordings"
-PAAR = ("ab_A043_20261108_142609_blofeld.npy", "ab_A043_20261108_142609_iridium.npy")
+# Nur das check_-Paar hat eine nicht-stille Iridium-Seite (die ab_A043-Iridium-Takes
+# sind ~1e-5 = stumm, siehe sim_log "stille Aufnahme"); daher check_* als Real-Paar.
+PAAR = ("check_20261108_152813_blofeld.npy", "check_20261108_152813_iridium.npy")
 
-SCHEMA_KEYS = {"score", "spec_cos", "env_dtw", "band_delta_db", "verdict",
+SCHEMA_KEYS = {"score", "spec_cos", "env_dtw", "band_delta_db", "verdict", "error",
                "embed_cos", "embed_score", "combined", "llm", "backend_error"}
 
 
