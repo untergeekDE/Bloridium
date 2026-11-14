@@ -256,3 +256,103 @@ def test_judge_score_geclippt_0_100(monkeypatch):
     b = sim_embed.OllamaBackend()
     r = b.judge(sine(440.0, 0.5), sine(440.0, 0.5), SR)
     assert r["score"] == 100
+
+
+# ---------- Task 5: score_pair_embed ----------
+
+REC = sim_embed.REPO / "recordings"
+PAAR = ("ab_A043_20261108_142609_blofeld.npy", "ab_A043_20261108_142609_iridium.npy")
+
+SCHEMA_KEYS = {"score", "spec_cos", "env_dtw", "band_delta_db", "verdict",
+               "embed_cos", "embed_score", "combined", "llm", "backend_error"}
+
+
+class _FakeClap:
+    model_path = REC / "fake.gguf"  # nur Name fürs Log
+
+    def embed(self, x, sr):
+        v = np.zeros(512, dtype=np.float32)
+        v[0] = 1.0
+        return v
+
+
+class _FakeOllama:
+    model = "fake-omni:1"
+
+    def available(self):
+        return True
+
+    def judge(self, x_a, x_b, sr, prompt=None):
+        return {"score": 90, "summary": "nah", "differences": ["d"], "mode": "audio",
+                "model": self.model}
+
+
+def _load(p):
+    x = np.load(REC / p)
+    return x.mean(axis=0) if x.ndim > 1 else x
+
+
+def test_score_pair_embed_full_schema(tmp_path):
+    log = tmp_path / "log.jsonl"
+    r = sim_embed.score_pair_embed(_load(PAAR[0]), _load(PAAR[1]), sr=SR,
+                                   meta={"run": "t"}, log_path=log, clap=_FakeClap())
+    assert set(r.keys()) == SCHEMA_KEYS  # Schema stabil, auch ohne llm
+    assert r["embed_cos"] == pytest.approx(1.0)  # Fake liefert gleichen Vektor
+    assert r["embed_score"] == pytest.approx(100.0)
+    assert r["combined"] == pytest.approx(round(0.5 * r["score"] + 0.5 * 100.0, 2))
+    assert r["llm"] is None and r["backend_error"] is None
+    lines = log.read_text().strip().splitlines()
+    assert len(lines) == 1  # genau ein Log-Eintrag
+    entry = json.loads(lines[0])
+    assert entry["meta"]["run"] == "t"
+    assert entry["meta"]["backends"]["clap"] == "fake.gguf"
+    assert entry["meta"]["backends"]["ollama"] == "none"
+    assert set(entry["result"].keys()) == SCHEMA_KEYS
+
+
+def test_no_backend_degrades_not_raises(tmp_path):
+    log = tmp_path / "log.jsonl"
+    r = sim_embed.score_pair_embed(_load(PAAR[0]), _load(PAAR[1]), sr=SR,
+                                   log_path=log, clap=None)
+    assert r["score"] is not None
+    assert r["embed_cos"] is None and r["embed_score"] is None
+    assert r["combined"] == r["score"]  # Fallback: Phase A allein
+    assert r["backend_error"] and "clap" in r["backend_error"]
+    # Log-Schema bleibt stabil (null statt fehlend)
+    entry = json.loads(log.read_text().strip())
+    assert set(entry["result"].keys()) == SCHEMA_KEYS
+
+
+def test_strict_raises_on_missing_backend(tmp_path):
+    with pytest.raises(RuntimeError, match="clap"):
+        sim_embed.score_pair_embed(_load(PAAR[0]), _load(PAAR[1]), sr=SR,
+                                   log_path=None, clap=None, strict=True)
+
+
+def test_silence_verdict_fehler(tmp_path):
+    log = tmp_path / "log.jsonl"
+    r = sim_embed.score_pair_embed(np.zeros(SR), np.zeros(SR), sr=SR, log_path=log)
+    assert r["verdict"] == "fehler" and r["score"] is None
+    assert set(r.keys()) == SCHEMA_KEYS
+    assert len(log.read_text().strip().splitlines()) == 1
+
+
+def test_log_path_none_writes_nothing(tmp_path):
+    r = sim_embed.score_pair_embed(_load(PAAR[0]), _load(PAAR[1]), sr=SR,
+                                   log_path=None, clap=_FakeClap())
+    assert r["embed_score"] == 100.0
+    assert not (tmp_path / "log.jsonl").exists()
+
+
+def test_llm_called_when_use_llm(tmp_path):
+    r = sim_embed.score_pair_embed(_load(PAAR[0]), _load(PAAR[1]), sr=SR,
+                                   log_path=None, clap=_FakeClap(),
+                                   ollama=_FakeOllama(), use_llm=True)
+    assert r["llm"]["score"] == 90 and r["llm"]["mode"] == "audio"
+    entry_meta_keys = None
+    log = tmp_path / "l.jsonl"
+    sim_embed.score_pair_embed(_load(PAAR[0]), _load(PAAR[1]), sr=SR, log_path=log,
+                               clap=_FakeClap(), ollama=_FakeOllama(), use_llm=True)
+    entry = json.loads(log.read_text().strip())
+    assert entry["meta"]["backends"]["ollama"] == "fake-omni:1"
+    assert entry["meta"]["backends"]["llm"] is True

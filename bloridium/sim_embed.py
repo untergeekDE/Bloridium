@@ -234,3 +234,90 @@ def _extract_json(text: str) -> dict | None:
     except json.JSONDecodeError:
         return None
     return obj if isinstance(obj, dict) else None
+
+
+PROMPT_ID = "judge-v1"
+
+
+def _fehler_result(error: str) -> dict:
+    """Stabiles Fehler-Schema: Backend-Keys immer vorhanden (null), nie fehlend."""
+    return {"score": None, "verdict": "fehler", "error": error,
+            "spec_cos": None, "env_dtw": None, "band_delta_db": None,
+            "embed_cos": None, "embed_score": None, "combined": None,
+            "llm": None, "backend_error": None}
+
+
+def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
+                     log_path=DEFAULT_LOG, *, clap: ClapBackend | None = None,
+                     ollama: OllamaBackend | None = None, use_llm: bool = False,
+                     strict: bool = False, judge_prompt: str = DEFAULT_JUDGE_PROMPT) -> dict:
+    """Phase A + Embedding (+LLM) in einem Ergebnisdict; log_path=None -> kein Log.
+
+    Degrade-Regel: Backend fehlt/kaputt -> Felder null + backend_error, weiterrechnen;
+    strict=True -> RuntimeError. combined = 0.5*score + 0.5*embed_score (ohne Embedding:
+    combined = score). Genau ein JSONL-Eintrag pro Aufruf (wenn log_path gesetzt).
+    """
+    meta = dict(meta or {})
+    try:
+        fa = sim.features(x_blo, sr)
+        fb = sim.features(x_irr, sr)
+    except ValueError as e:
+        result = _fehler_result(str(e))
+        if log_path:
+            sim.log_run(result, meta, log_path)
+        return result
+    if float(fa["env_rms"].max()) < 1e-4 or float(fb["env_rms"].max()) < 1e-4:
+        result = _fehler_result("stille Aufnahme (env_rms max < 1e-4)")
+        if log_path:
+            sim.log_run(result, meta, log_path)
+        return result
+
+    base = sim.compare(fa, fb)  # Phase A direkt (kein sim.score_pair -> kein Doppel-Log)
+    result = dict(base)
+    result.update({"embed_cos": None, "embed_score": None, "combined": None,
+                   "llm": None, "backend_error": None})
+    errors = []
+
+    if clap is not None:
+        try:
+            ec = embed_compare(clap.embed(x_blo, sr), clap.embed(x_irr, sr))
+            result["embed_cos"] = ec["embed_cos"]
+            result["embed_score"] = ec["embed_score"]
+        except Exception as e:
+            errors.append(f"clap: {e}")
+            if strict:
+                raise RuntimeError(errors[-1]) from e
+    else:
+        errors.append("clap: nicht konfiguriert (kein GGUF/Modell)")
+        if strict:
+            raise RuntimeError(errors[-1])
+
+    if result["embed_score"] is not None:
+        result["combined"] = round(0.5 * base["score"] + 0.5 * result["embed_score"], 2)
+    else:
+        result["combined"] = base["score"]
+
+    if use_llm:
+        if ollama is not None and ollama.available():
+            try:
+                result["llm"] = ollama.judge(x_blo, x_irr, sr, prompt=judge_prompt)
+            except Exception as e:
+                errors.append(f"ollama: {e}")
+                if strict:
+                    raise RuntimeError(errors[-1]) from e
+        else:
+            errors.append("ollama: nicht verfuegbar (Server/Modell fehlt)")
+            if strict:
+                raise RuntimeError(errors[-1])
+
+    result["backend_error"] = "; ".join(errors) if errors else None
+    if log_path:
+        m = dict(meta)
+        m["backends"] = {
+            "clap": Path(clap.model_path).name if clap is not None else "none",
+            "ollama": ollama.model if ollama is not None else "none",
+            "llm": use_llm,
+            "prompt_id": PROMPT_ID,
+        }
+        sim.log_run(result, m, log_path)
+    return result
