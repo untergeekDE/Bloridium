@@ -85,7 +85,8 @@ def test_spearman_perfect_inverse_ties(ev):
     ev_mod, _ = ev
     assert ev_mod.spearman([1, 2, 3, 4], [10, 20, 30, 40]) == pytest.approx(1.0)
     assert ev_mod.spearman([1, 2, 3, 4], [40, 30, 20, 10]) == pytest.approx(-1.0)
-    assert ev_mod.spearman([1, 1, 2], [1, 2, 3]) == pytest.approx(1.0)  # Ties gemittelt
+    assert ev_mod.spearman([1, 1, 2], [5, 5, 9]) == pytest.approx(1.0)  # Ties auf beiden Seiten
+    assert ev_mod.spearman([1, 1, 2], [1, 2, 3]) == pytest.approx(0.866, abs=1e-3)  # Tie nur in x
     assert ev_mod.spearman([5], [5]) == 0.0  # n<2
 
 
