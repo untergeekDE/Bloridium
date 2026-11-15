@@ -14,6 +14,9 @@ docs/refs/*.zip
 *.egg-info/
 .superpowers/
 
+# Fremd-Sample-Packs / gekaufte Wellenformen (nie ins Repo)
+dumps/*/samples/
+
 # Laufzeit-Output (tracked Dateien bleiben erhalten)
 dumps/banks/
 transfer/
