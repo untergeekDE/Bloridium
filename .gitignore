@@ -16,3 +16,4 @@ docs/refs/*.zip
 
 # Laufzeit-Output (tracked Dateien bleiben erhalten)
 dumps/banks/
+transfer/
