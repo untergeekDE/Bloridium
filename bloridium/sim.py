@@ -75,8 +75,19 @@ def _dtw(a: np.ndarray, b: np.ndarray) -> float:
     return float(D[n, m] / (n + m))
 
 
+_DB_SCALE = 40.0  # 40 dB Differenz = dtw-Kosten 1.0 (deutlich hörbar) bei band_dtw
+
+
 def compare(fa: dict, fb: dict) -> dict:
-    """Score 0-100: 70 % Cosine auf frame-gemitteltem log_spec + 30 % (1-DTW) Hülle."""
+    """Score 0-100: 70 % Cosine auf frame-gemitteltem log_spec + 30 % (1-DTW) Hülle.
+
+    Phase A v2 (2026-11-15): zusaetzlich zeitaufgeloeste FFT-Metriken aus dem
+    log_spec (Bänder x Frames) — diagnostisch, Score-Formel bleibt kompatibel:
+      band_dtw    pro Band: DTW ueber die Zeit (dB/40, 0..1) -> WO in Frequenz
+      spec_dtw    Mittel ueber band_dtw
+      frame_cos   pro Frame: Cosine der (Mittelwert-bereinigten) Bandvektoren -> WANN
+      band_edges_hz  Frequenzgrenzen der Bänder fürs Log/Print
+    """
     sa = fa["log_spec"].mean(axis=1)
     sb = fb["log_spec"].mean(axis=1)
     denom = float(np.linalg.norm(sa) * np.linalg.norm(sb))
@@ -94,9 +105,33 @@ def compare(fa: dict, fb: dict) -> dict:
     score = max(0.0, min(100.0, score))
     verdict = "nahe" if score >= 85 else ("mittel" if score >= 60 else "weit")
     band_delta_db = (fb["log_spec"].mean(axis=1) - fa["log_spec"].mean(axis=1)).tolist()
+
+    # zeitaufgeloest: pro Band DTW ueber die Frames (dB skaliert), pro Frame Cosine
+    sa2, sb2 = fa["log_spec"], fb["log_spec"]
+    n_frames = min(sa2.shape[1], sb2.shape[1])
+    band_dtw = []
+    for b in range(sa2.shape[0]):
+        d = _dtw(sa2[b, :n_frames] / _DB_SCALE, sb2[b, :n_frames] / _DB_SCALE)
+        band_dtw.append(max(0.0, min(1.0, d)))
+    spec_dtw = float(np.mean(band_dtw)) if band_dtw else 1.0
+    frame_cos = []
+    for t in range(n_frames):
+        a = sa2[:, t] - sa2[:, t].mean()
+        b = sb2[:, t] - sb2[:, t].mean()
+        na, nb = float(np.linalg.norm(a)), float(np.linalg.norm(b))
+        if na == 0 and nb == 0:
+            frame_cos.append(1.0)          # beide Frames leer -> gleich
+        elif na == 0 or nb == 0:
+            frame_cos.append(0.0)          # nur einer leer -> voellig verschieden
+        else:
+            frame_cos.append(max(0.0, min(1.0, float(np.dot(a, b) / (na * nb)))))
     return {"score": round(score, 2), "spec_cos": round(spec_cos, 4),
             "env_dtw": round(env_dtw, 4), "band_delta_db": [round(v, 2) for v in band_delta_db],
-            "verdict": verdict}
+            "verdict": verdict,
+            "spec_dtw": round(spec_dtw, 4),
+            "band_dtw": [round(v, 4) for v in band_dtw],
+            "frame_cos": [round(v, 4) for v in frame_cos],
+            "band_edges_hz": [round(float(e), 1) for e in fa["band_edges"]]}
 
 
 def log_run(result: dict, meta: dict, path=DEFAULT_LOG) -> bool:

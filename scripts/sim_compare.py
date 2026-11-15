@@ -47,9 +47,12 @@ print_result = sim_embed.print_result  # gemeinsame Ausgabe (sim_embed)
 def _score_pair(args, a, b, meta):
     """Backends bauen + score_pair_embed; strict-Fehler -> RuntimeError durchreichen."""
     clap, ollama = sim_embed.build_backends(args.models_dir, args.embed, args.llm)
+    d1 = sim_embed.build_profile_backend(getattr(args, "profile", False),
+                                         getattr(args, "d1_model", sim_embed.DEFAULT_D1_MODEL))
     return sim_embed.score_pair_embed(a, b, sr=audio.SAMPLERATE, meta=meta,
                                       log_path=args.log, clap=clap, ollama=ollama,
-                                      use_llm=args.llm, strict=args.strict)
+                                      use_llm=args.llm, strict=args.strict,
+                                      profile_backend=d1)
 
 
 def run_npy(pa, pb, log, meta, args) -> int:
@@ -113,6 +116,9 @@ def main(argv=None) -> int:
     ap.add_argument("--meta", nargs="*", default=[], help="k=v Paare fürs Log")
     ap.add_argument("--embed", action="store_true", help="Phase B: CLAP-Embedding-Score dazu")
     ap.add_argument("--llm", action="store_true", help="Phase B: ollama-LLM-Urteil dazu")
+    ap.add_argument("--profile", action="store_true",
+                    help="Phase B: d1-omni noul-Profil (Erklaer-Schicht) dazu")
+    ap.add_argument("--d1-model", default=sim_embed.DEFAULT_D1_MODEL)
     ap.add_argument("--strict", action="store_true",
                     help="fehlendes Backend ist hart (Exit 3) statt Degrade")
     ap.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))

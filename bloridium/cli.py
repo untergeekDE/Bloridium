@@ -94,6 +94,9 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--log", default=str(sim.DEFAULT_LOG))
     sc.add_argument("--embed", action="store_true", help="Phase B: CLAP-Embedding-Score")
     sc.add_argument("--llm", action="store_true", help="Phase B: ollama-LLM-Urteil")
+    sc.add_argument("--profile", action="store_true",
+                    help="Phase B: d1-omni noul-Profil (Erklaer-Schicht) via /v1/systemone")
+    sc.add_argument("--d1-model", default=sim_embed.DEFAULT_D1_MODEL)
     sc.add_argument("--strict", action="store_true", help="fehlendes Backend -> Exit 3")
     sc.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
     sc.set_defaults(func=cmd_sim_compare)
@@ -487,10 +490,13 @@ def cmd_sim_compare(args) -> int:
         print("entweder --npy A B oder --live", file=sys.stderr)
         return 2
     clap, ollama = sim_embed.build_backends(args.models_dir, args.embed, args.llm)
+    d1 = sim_embed.build_profile_backend(getattr(args, "profile", False),
+                                         getattr(args, "d1_model", sim_embed.DEFAULT_D1_MODEL))
     try:
         r = sim_embed.score_pair_embed(a, b, sr=audio.SAMPLERATE, meta=meta,
                                        log_path=args.log, clap=clap, ollama=ollama,
-                                       use_llm=args.llm, strict=args.strict)
+                                       use_llm=args.llm, strict=args.strict,
+                                       profile_backend=d1)
     except sim_embed.BackendError as e:
         print(f"FEHLER (strict, Backend): {e}", file=sys.stderr)
         return 3

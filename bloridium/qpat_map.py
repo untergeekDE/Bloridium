@@ -82,9 +82,17 @@ MATRIX_SRC = {"Off": 0.0, "Amp Env": 1.0, "Filter1 Env": 2.0, "Filter2 Env": 3.0
 MATRIX_DST = {"Off": 0.0, "Pitch": 1.0, "Osc1 Pitch": 2.0, "Osc2 Pitch": 3.0, "Osc3 Pitch": 4.0,
               "Osc1 Mix": 5.0, "Osc2 Mix": 6.0, "Osc3 Mix": 7.0,
               "Filter1 Cutoff": 100.0, "Filter1 Reso": 101.0,
-              "Filter2 Cutoff": 103.0, "Filter2 Reso": 105.0,
+              # v14-Werte aus eigenen OS4-Exporten (dumps/export-0*/v14: 104='Filter2 Cutoff',
+              # 105='Filter2 Reso'); v8-Werte 103/71 duerfen in v14 NICHT verwendet werden
+              # (P0-1, ANALYSIS-2026-11-15: sonst landet der serielle DF-Env-Slot auf falschem
+              # Ziel -> DigiFormer bleibt zu, serielle Patches bis -64.8 dBFS)
+              "Filter2 Cutoff": 104.0, "Filter2 Reso": 105.0,
               "Filt1Env Attack": 113.0, "Filt1Env Sustain": 114.0, "Filt1Env Decay": 123.0,
-              "Volume": 112.0, "Pan": 144.0,
+              # Volume: v14-Exporte schweigen; v8-Slot-Tabellen kennen 112 UND 115,
+              # v15=152 -> 115.0 nehmen, am Geraet verifizieren (112 ist v9 'Filt1Env Sustain')
+              "Volume": 115.0, "Pan": 144.0,
+              "DF Amount": 95.0,   # v14: 95 (v8 war 71/74)
+              "DF Color": 96.0,    # v11: 96; in v14-Exporten nicht belegt -> am Geraet verifizieren
               # Wavetable-Position / Waveform-Warp (v14-Werte aus eigenen OS4-Exporten)
               "WT1 Position": 11.0, "WT2 Position": 39.0, "WT3 Position": 67.0,
               "WF1 Warp": 18.0, "WF2 Warp": 46.0, "WF3 Warp": 74.0}
@@ -185,6 +193,29 @@ def amt_bipolar(raw: int) -> float:
     return max(0.0, min(1.0, 0.5 + (raw - 64) / 254.0))
 
 
+# ---- Filter-Cutoff-Kalibrierung (2026-11-14) ----
+# Blofeld-Handbuch: Cutoff raw 0..127 skaliert in HALBTONSCHRITTEN, Anker raw 64 = 440 Hz
+# ("At a value of 64 and a Resonance value of 114, the filter oscillates with 440 Hz").
+# Iridium (calib 200-205, HANDOVER-2026-11-09): 17.8 Hz @ norm 0.10, 19912 Hz @ 1.00
+# -> log10(f) = 0.9117 + 3.387*norm.  Direkt norm(raw) war falsch (Befund 2026-11-14:
+# A001 raw 64 -> 416 Hz statt 440 Hz; seriell mit DF 199 Hz daempft das Note C5 um
+# ~40 dB -> Iridium -66 dBFS, "Filter laesst kaum etwas durch").
+IRIDIUM_CUTOFF_LOG_A = 0.9117   # log10(Hz) bei Iridium-norm 0
+IRIDIUM_CUTOFF_LOG_B = 3.387    # Dekaden pro norm
+BLOFELD_CUTOFF_ANCHOR_RAW = 64.0
+BLOFELD_CUTOFF_ANCHOR_HZ = 440.0
+
+
+def blofeld_cutoff_norm(raw) -> float:
+    """Blofeld Filter-Cutoff raw 0..127 -> Iridium FilterCutOff/DigiFormerAmount norm 0..1
+    ueber Hz-Bruecke (beide Skalen log; Blofeld in Halbtonschritten um 440 Hz @ raw 64)."""
+    raw = max(0, min(127, raw))
+    logf = math.log10(BLOFELD_CUTOFF_ANCHOR_HZ) \
+        + (raw - BLOFELD_CUTOFF_ANCHOR_RAW) / 12.0 * math.log10(2.0)
+    x = (logf - IRIDIUM_CUTOFF_LOG_A) / IRIDIUM_CUTOFF_LOG_B
+    return max(0.0, min(1.0, x))
+
+
 def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     """parsed: blofeld_dump.parse_sndd(). -> (overrides, unmapped)
 
@@ -230,9 +261,23 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             setp(f"Osc{n}WavetablePosition", norm(p[f"Osc {n} Pulsewidth"]))
             setp(f"Osc{n}WavetableBrilliance", norm(p[f"Osc {n} Brilliance"]))
         else:
-            setp(f"Osc{n}WaveformPW", norm(p[f"Osc {n} Pulsewidth"]), "")
-        # CoarsePitch: Blofeld Octave (raw 64 = 8', Schritte 12) + Semitone (raw 64 = 0)
-        oct_up = (64 - sdata[oct_idx[n - 1]]) / 12.0
+            # Blofeld-Handbuch: Pulsewidth wirkt NUR bei Shape 'Pulse' (raw 0 = <1%,
+            # raw 127 = 50%); bei Saw/Triangle/Sine "hat dieser Parameter keine Funktion".
+            # Am Iridium ist WaveformPW dagegen der Warp und wirkt AUCH bei Saw ->
+            # dort neutral 0.5, sonst wird aus Saegezahn eine Rechteckwelle
+            # (Befund 2026-11-14: A001 PW raw 100 -> norm=0.7874 = Rechteck statt Saw).
+            if shape_label == "Pulse":
+                setp(f"Osc{n}WaveformPW", norm(p[f"Osc {n} Pulsewidth"]) * 0.5, "")
+            else:
+                setp(f"Osc{n}WaveformPW", 0.5, "neutral (Blofeld PW ohne Funktion)")
+            # Kernels Count (OS4 zeigt WaveformDesity als "Kernels"): Blofeld hat keinen
+            # Kernel-Parameter -> 0.0 = 1 Welle, keine Kopien. Template-Default 0.22 liess
+            # A001 OSC2 als "Kernels 2.5" laufen (Befund 2026-11-14).
+            setp(f"Osc{n}WaveformDesity", 0.0, "1 Kernel (aus)")
+        # CoarsePitch: Blofeld Octave (raw 64 = 8', Schritte 12; raw > 64 = hoehere Oktave)
+        # ACHTUNG Vorzeichen: raw 52 = -12 semi (16'), raw 76 = +12 semi (4')!
+        # (alt: 64 - raw lieferte bei Osc3 raw 52 -> +12 statt -12, eine Oktave zu hoch)
+        oct_up = (sdata[oct_idx[n - 1]] - 64) / 12.0
         semi = sdata[semi_idx[n - 1]] - 64
         setp(f"Osc{n}CoarsePitch", 24.0 + 12.0 * oct_up + semi, f"{semi:+.0f} semi")
         setp(f"Osc{n}FinePitch", norm(p[f"Osc {n} Detune"]), "")
@@ -252,6 +297,11 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     setp("GlideRate", glide_rate_norm(_gr), f"~{blofeld_glide_seconds(_gr):.3f}s")
     setp("UnisonoCount", norm((p.get("Allocation/Unisono", 0) >> 5) & 0x07 or 1))
     setp("UnisonoDetune", norm(p.get("Unisono Detune", 0)))
+    # Aftertouch: Blofeld sendet Channel AT, aber das Template (und alle OS4-Exporte)
+    # steht auf AfterTouchDoPoly=1.0 'Poly AT' -> Matrix-Src 'After Touch' hoert dann
+    # NICHT auf Channel AT (P0-2, ANALYSIS-2026-11-15: A019 'reagiert nicht auf AT',
+    # A043 'starkes AT-Bending'). Global auf Mono/Channel AT stellen.
+    setp("AfterTouchDoPoly", 0.0, "Mono AT")
 
     # --- Mixer extras ---
     # Key heisst im Template/Device "RingModOsc1ToOsc2" (nicht "RingmodOsc12"!)
@@ -267,24 +317,40 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp("FilterState", 0.0, "Active")
     else:
         setp("FilterState", 1.0, "Bypass")  # F1 Bypass (0=Active, 1=Bypass in v14)
-    # F2 -> DigiFormer (Kette: Filter(F1) > Former(F2)); Filter2-Stufe wird 'Off'.
-    # Umgekehrt ('Former > Filter') waere der Former die F1-Position.
-    if BLOFELD_FILTER_TO_IRIDIUM.get(f2_label if isinstance(f2_label, str) else "") is None:
-        # F2 Bypass: Former bypass UND FilterLink 'Single' UND Filter2State 'Off' –
-        # 'Bypass' allein leaked das Dry-Signal am F1 vorbei (Filter "zu offen")
-        setp("DigiFormerType", DIGIFORMER_TYPE["Bypass"], "Bypass")
-        setp("DigiFormerAmount", 0.0)
+    # F2-Routing haengt vom Blofeld "Filter Routing" ab (Befund HANDOVER 2026-11-14):
+    # seriell (1): Kette F1 -> F2 -> Amp. Iridium: F2 wandert in den DigiFormer
+    #   (Routing 'Filter > Former', Filter2-Stufe 'Off', FilterLink 'Single' –
+    #   'Linked' machte B stumm, z.B. A008 FilterLink 7.0).
+    # parallel (0): F1 und F2 parallel. Iridium: F2 bleibt Filter 2 (Active),
+    #   Former = Bypass, Routing 'Parallel'.
+    seriell = p.get("Filter Routing") == 1
+    f2_bypass = BLOFELD_FILTER_TO_IRIDIUM.get(f2_label if isinstance(f2_label, str) else "") is None
+    if seriell:
+        if f2_bypass:
+            # F2 Bypass: Former bypass UND Filter2State 'Off' – 'Bypass' allein leaked
+            # das Dry-Signal am F1 vorbei (Filter "zu offen")
+            setp("DigiFormerType", DIGIFORMER_TYPE["Bypass"], "Bypass")
+            setp("DigiFormerAmount", 0.0)
+        else:
+            former = BLOFELD_FILTER2_TO_FORMER.get(f2_label if isinstance(f2_label, str) else "", "Nave LP24")
+            setp("DigiFormerType", DIGIFORMER_TYPE[former], former)
+            setp("DigiFormerAmount", blofeld_cutoff_norm(p["Filter 2 Cutoff"]))  # Cutoff -> Amount (Hz-Kalib)
+            setp("DigiFormerColor", norm(p["Filter 2 Resonance"]))  # approx: Reso -> Color
         setp("Filter2State", FILTER2_STATE["Off"], "Off")
         setp("FilterLink", FILTER_LINK["Single"], "Single")
+        setp("FilterFormerRouting", FILTER_FORMER_ROUTING["Filter > Former"], "Filter > Former")
     else:
-        former = BLOFELD_FILTER2_TO_FORMER.get(f2_label if isinstance(f2_label, str) else "", "Nave LP24")
-        setp("DigiFormerType", DIGIFORMER_TYPE[former], former)
-        setp("DigiFormerAmount", norm(p["Filter 2 Cutoff"]))    # approx: Cutoff -> Amount
-        setp("DigiFormerColor", norm(p["Filter 2 Resonance"]))  # approx: Reso -> Color
-        setp("Filter2State", FILTER2_STATE["Off"], "Off")
-    setp("Filter1CutOff", norm(p["Filter 1 Cutoff"]))
+        setp("FilterFormerRouting", FILTER_FORMER_ROUTING["Parallel"], "Parallel")
+        setp("DigiFormerType", DIGIFORMER_TYPE["Bypass"], "Bypass")
+        setp("DigiFormerAmount", 0.0)
+        if f2_bypass:
+            setp("Filter2State", FILTER2_STATE["Off"], "Off")
+            setp("FilterLink", FILTER_LINK["Single"], "Single")
+        else:
+            setp("Filter2State", FILTER2_STATE["Active"], "Active")
+    setp("Filter1CutOff", blofeld_cutoff_norm(p["Filter 1 Cutoff"]))
     setp("Filter1Reso", norm(p["Filter 1 Resonance"]))
-    setp("Filter2CutOff", norm(p["Filter 2 Cutoff"]))
+    setp("Filter2CutOff", blofeld_cutoff_norm(p["Filter 2 Cutoff"]))
     setp("Filter2Reso", norm(p["Filter 2 Resonance"]))
     setp("Filter1EnvAmount", norm(p["Filter 1 Env Amount"]))
     setp("Filter1VeloAmount", norm(p["Filter 1 Env Velocity"]))
@@ -338,12 +404,10 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         unmapped.append(f"LFO {n} Shape/Delay/Fade/Keytrack")
 
     # --- Routing: Blofeld Osc->Mixer->F1->F2->Amp entspricht Iridium
-    #     Osc Destination 'DF 0 Fil 100' (100 % in den Filter) + 'Filter > Former' ---
+    #     Osc Destination 'DF 0 Fil 100' (100 % in den Filter; Former-Anteil 0 –
+    #     Former ist seriell F2 bzw. parallel Bypass, siehe Filter-Block oben) ---
     for n in (1, 2, 3):
         setp(f"Osc{n}Destination", OSC_DESTINATION["DF 0 Fil 100"], "DF 0 Fil 100")
-    setp("FilterFormerRouting", FILTER_FORMER_ROUTING["Filter > Former"], "Filter > Former")
-    if p.get("Filter Routing") == 1:  # Blofeld seriell -> F1/F2 linked
-        setp("FilterLink", FILTER_LINK["Linked"], "Linked")
     # Filter-Keytrack: Blofeld raw 0..127 = -200%..+196% (64 = 0%, Offset-Binaer!),
     # Iridium FilterNKeytrack norm 0..1 = -200%..+200% (0.5 = 0%) -> direkt norm(raw).
     # ACHTUNG: frueheres (kt-64)/64 lieferte -1..+1 (raw 64 -> 0.0 = "-200%" am Iridium!)
@@ -401,6 +465,16 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp(f"MatrixDst{slot}", MATRIX_DST["Volume"], "Volume")
         setp(f"MatrixAmount{slot}", 0.5 + 0.5 * norm(amp_velo))
         setp(f"MatrixOnOff{slot}", 1.0, "Active")
+    # Seriell: Blofeld-Filter-Env oeffnet BEIDE Filter (F1 -> F2). Am Iridium bekommt
+    # Filter1 die Env (Filter1EnvAmount oben), der DigiFormer (F2-Ersatz) braucht einen
+    # eigenen Matrix-Slot -- sonst bleibt er statisch zu (Befund 2026-11-14: A001
+    # DF 199 Hz -> seriell ~40 dB Daempfung bei C5 -> Iridium -66 dBFS).
+    if seriell and not f2_bypass:
+        slot += 1
+        setp(f"MatrixSrc{slot}", MATRIX_SRC["Filter1 Env"], "Filter1 Env")
+        setp(f"MatrixDst{slot}", MATRIX_DST["DF Amount"], "DF Amount")
+        setp(f"MatrixAmount{slot}", amt_bipolar(p["Filter 1 Env Amount"]))
+        setp(f"MatrixOnOff{slot}", 1.0, "Active")
 
     # --- FX ---
     for n, key in ((1, "FX1Type"), (2, "FX2Type")):
@@ -422,6 +496,13 @@ def apply_to_template(template: dict, overrides: dict, name: str,
     """Template (parse_qpat-Ergebnis) + overrides -> neues params-Dict (alle Keys)."""
     params = {k: (v["value"], v["display"]) for k, v in template["params"].items()}
     params.update(overrides)
+    # v8-Template-Leck (P0-1, ANALYSIS-2026-11-15): Matrix-Slots, die das Mapping NICHT
+    # ueberschreibt, behalten ihre v8-Enum-Werte (z. B. Dst 71 'DF Amount', 145 'Reverb
+    # Gain'), die in einer v14-Datei auf falsche Ziele zeigen -> neutralisieren.
+    for i in range(1, 41):
+        if f"MatrixDst{i}" not in overrides:
+            params[f"MatrixDst{i}"] = (0.0, "Off")
+            params[f"MatrixOnOff{i}"] = (0.0, "Off")
     return {
         "name": name[:32], "creator": creator, "description": template.get("description", ""),
         "categories": template.get("categories", ["", "", "", ""]), "version": template.get("version", 14),

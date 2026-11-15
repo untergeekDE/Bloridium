@@ -180,3 +180,55 @@ def test_sim_live_ohne_ref_spielt_blofeld_mit(repo, tmp_path, monkeypatch):
     rows = [json.loads(l) for l in log.read_text().splitlines()]
     assert rows[0]["meta"]["blofeld"] == "live"
     assert rows[0]["result"]["score"] > 95.0   # gleiches Signal -> nahe
+
+
+def test_sim_manual_compare_wheel_sweep(repo, tmp_path, monkeypatch):
+    """--wheel 0,50,100: CC1=0/64/127 auf Blofeld ch5 UND Iridium ch6, Reset auf 0,
+    ein Log-Eintrag pro Wheel-Stufe mit meta.wheel_pct."""
+    import json
+    import sys
+    import numpy as np
+    sys.path.insert(0, str(repo / "scripts"))
+    import sim_manual_compare
+    from bloridium import audio, midi
+
+    sent = []
+
+    class FakeSynth:
+        def __init__(self, ch):
+            self.channel = ch
+        def control_change(self, cc, val, channel=0):
+            sent.append(("cc", cc, val, channel))
+        def program_change(self, pc, channel=0):
+            sent.append(("pc", -1, pc, channel))
+        def note_on(self, note, velocity, channel=0):
+            pass
+        def note_off(self, note, channel=0):
+            pass
+        def close(self):
+            pass
+
+    monkeypatch.setattr(midi, "connect",
+                        lambda name, ports=None: FakeSynth(4 if name == "blofeld" else 5))
+    sr = 48000
+
+    def fake_record(duration, channels=None, **kw):
+        n = int(duration * sr)
+        d = np.zeros((20, n))
+        d[2] = d[3] = 0.3 * np.sin(2 * np.pi * 220 * np.arange(n) / sr)
+        d[4] = d[5] = 0.3 * np.sin(2 * np.pi * 221 * np.arange(n) / sr)
+        return d
+    monkeypatch.setattr(audio, "record", fake_record)
+
+    log = tmp_path / "log.jsonl"
+    rc = sim_manual_compare.main(["A001", "--irr-pc", "108", "--notes", "72",
+                                  "--wheel", "0,50,100", "--no-embed", "--no-llm",
+                                  "--log", str(log), "--wav-dir", str(tmp_path)])
+    assert rc == 0
+    blo_cc1 = [v for (k, cc, v, ch) in sent if k == "cc" and cc == 1 and ch == 4]
+    irr_cc1 = [v for (k, cc, v, ch) in sent if k == "cc" and cc == 1 and ch == 5]
+    assert blo_cc1 == [0, 64, 127, 0], blo_cc1   # 0/50/100 % + Reset
+    assert irr_cc1 == [0, 64, 127, 0], irr_cc1
+    rows = [json.loads(l) for l in log.read_text().splitlines()]
+    assert [r["meta"]["wheel_pct"] for r in rows] == [0, 50, 100]
+    assert all(r["result"]["score"] is not None for r in rows)

@@ -234,18 +234,138 @@ class _HttpError(Exception):
 
 
 def _extract_json(text: str) -> dict | None:
-    """Erstes {...}-Objekt im Text finden und parsen (LLM schreibt gern Prosa drumherum)."""
-    m = re.search(r"\{.*\}", text, re.DOTALL)
-    if not m:
-        return None
-    try:
-        obj = json.loads(m.group(0))
-    except json.JSONDecodeError:
-        return None
-    return obj if isinstance(obj, dict) else None
+    """Erstes balanciertes {...}-Objekt im Text finden und parsen.
+
+    LLM schreibt gern Prosa/Code-Fences drumherum, und Prosa nach dem JSON mit
+    eigener Klammer brach den frueheren Greedy-Regex-Match -> balancierter Scan.
+    """
+    text = re.sub(r"```(?:json)?", "", text)
+    start = text.find("{")
+    while start != -1:
+        depth = 0
+        for i in range(start, len(text)):
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        obj = json.loads(text[start:i + 1])
+                    except json.JSONDecodeError:
+                        obj = None
+                    if isinstance(obj, dict):
+                        return obj
+                    break
+        start = text.find("{", start + 1)
+    return None
 
 
 PROMPT_ID = "judge-v2-pegel"  # v2: Pegel im Prompt + Deckel bei >24 dB Unterschied
+
+# --- D1-Profil (d1-omni via System One /v1/systemone) als Erklaer-Schicht ---
+# Spike 2026-11-15 (scripts/spike_d1_profile_eval.py): als Score schwach (Spearman
+# +0.13 vs Benutzer), als noul-Profil matchen die Flags die Benutzer-Bemerkungen.
+DEFAULT_D1_MODEL = "d1-omni:2b"
+
+D1_PROFILE_CRITERIA = [
+    "0-9: completely different sound, nothing in common",
+    "10-19: barely any similarity",
+    "20-29: only remotely similar",
+    "30-39: same general character but clearly different",
+    "40-49: similar with clear differences",
+    "50-59: similar with moderate differences",
+    "60-69: quite similar, small differences",
+    "70-79: very similar, minor differences",
+    "80-89: nearly indistinguishable, tiny differences",
+    "90-100: indistinguishable from the reference",
+]
+D1_PROFILE_QUESTIONS = {
+    "similarity": {
+        "type": "score",
+        "instructions": ("How similar does sound B sound to reference sound A? "
+                         "Judge timbre, spectrum and envelope. Higher = more similar."),
+        "criteria": D1_PROFILE_CRITERIA,
+    },
+    "same_pitch": {"type": "noul", "instructions": "Do A and B have the same pitch?"},
+    "octave_lower": {"type": "noul", "instructions": "Is B exactly one octave lower than A?"},
+    "brighter": {"type": "noul",
+                 "instructions": "Does B have more high-frequency energy (sound brighter) than A?"},
+    "darker": {"type": "noul",
+               "instructions": "Does B have less high-frequency energy (sound darker, more filtered) than A?"},
+    "noisier": {"type": "noul", "instructions": "Does B sound noisier or more grainy than A?"},
+    "punchier": {"type": "noul",
+                 "instructions": "Does B have a sharper, stronger attack (more punch) than A?"},
+    "same_overall": {"type": "noul",
+                     "instructions": "Overall, do A and B sound like the same sound?"},
+}
+D1_DIFF_QUESTIONS = ["octave_lower", "brighter", "darker", "noisier", "punchier"]
+D1_PROFILE_STATE = ("Spectrograms of two short synthesizer notes, both normalized to equal "
+                    "peak level. Image 1 = A, the reference sound (Waldorf Blofeld). "
+                    "Image 2 = B, the copied sound (Waldorf Iridium).")
+
+
+class D1ProfileBackend:
+    """d1-omni (System One /v1/systemone) als Differenz-Profiler.
+
+    Spektrogramm-PNGs von A und B als `images`, 8 Fragen (1 score + 7 noul) in einem
+    Forward Pass -> {score 0-100, probs, flags (p>=0.5 ueber D1_DIFF_QUESTIONS),
+    diff_count, same_overall 0-100}.
+    """
+
+    def __init__(self, model: str = DEFAULT_D1_MODEL, host: str = DEFAULT_OLLAMA_HOST):
+        self.model = model
+        self.host = host.rstrip("/")
+
+    def available(self) -> bool:
+        try:
+            r = requests.get(f"{self.host}/api/tags", timeout=5)
+            if r.status_code != 200:
+                return False
+            names = [m.get("name", "") for m in r.json().get("models", [])]
+            return any(n == self.model or n.startswith(self.model + ":") for n in names)
+        except Exception:
+            return False
+
+    def profile(self, x_a, x_b, sr: int, timeout: float = 600) -> dict:
+        with tempfile.TemporaryDirectory() as td:
+            pa, pb = Path(td) / "a.png", Path(td) / "b.png"
+            render_spec_png(np.asarray(x_a, dtype=np.float64), sr, pa)
+            render_spec_png(np.asarray(x_b, dtype=np.float64), sr, pb)
+            payload = {
+                "model": self.model,
+                "state": D1_PROFILE_STATE,
+                "images": [base64.b64encode(pa.read_bytes()).decode(),
+                           base64.b64encode(pb.read_bytes()).decode()],
+                "questions": D1_PROFILE_QUESTIONS,
+            }
+            r = requests.post(f"{self.host}/v1/systemone", json=payload, timeout=timeout)
+        if r.status_code != 200:
+            raise RuntimeError(f"systemone[{self.model}] HTTP {r.status_code}: {r.text[:200]}")
+        ans = r.json()["answers"]
+        sim = ans["similarity"]
+        n = len(D1_PROFILE_CRITERIA) - 1
+        probs = {q: round(float(ans[q]["noul"]), 4)
+                 for q, spec in D1_PROFILE_QUESTIONS.items() if spec["type"] == "noul"}
+        flags = [q for q in D1_DIFF_QUESTIONS if probs[q] >= 0.5]
+        return {"model": self.model,
+                "score": round(100.0 * float(sim["score"]) / n, 2),
+                "confidence": round(float(sim.get("confidence", 0.0)), 4),
+                "probs": probs,
+                "flags": flags,
+                "diff_count": len(flags),
+                "same_overall": round(100.0 * probs["same_overall"], 2)}
+
+
+def build_profile_backend(want: bool, model: str = DEFAULT_D1_MODEL):
+    """D1ProfileBackend oder None (bei want=False oder fehlendem Modell, mit WARNUNG)."""
+    if not want:
+        return None
+    b = D1ProfileBackend(model)
+    if b.available():
+        return b
+    print(f"WARNUNG: d1-Profil nicht verfuegbar (Modell {model} fehlt) – deaktiviert",
+          file=sys.stderr)
+    return None
 
 
 def peak_dbfs(x) -> float:
@@ -293,12 +413,26 @@ def print_result(r: dict, a_name: str, b_name: str) -> None:
     if r.get("llm"):
         print(f"  llm[{r['llm'].get('mode')}] score={r['llm'].get('score')}: "
               f"{r['llm'].get('summary')}")
+    if r.get("profile"):
+        p = r["profile"]
+        print(f"  profile[{p.get('model')}] score={p.get('score')} same_overall={p.get('same_overall')} "
+              f"flags={p.get('flags')} diff_count={p.get('diff_count')}")
     if r.get("backend_error"):
         print(f"  backend_error: {r['backend_error']}")
     deltas = r.get("band_delta_db") or []
     if deltas:
         top = sorted(range(len(deltas)), key=lambda i: -abs(deltas[i]))[:5]
         print("Top-Band-Deltas (dB): " + ", ".join(f"band{i}: {deltas[i]:+.1f}" for i in top))
+    bd = r.get("band_dtw") or []
+    if bd:
+        edges = r.get("band_edges_hz") or []
+        top = sorted(range(len(bd)), key=lambda i: -bd[i])[:5]
+        parts = []
+        for i in top:
+            hz = (f"{edges[i]:.0f}-{edges[i + 1]:.0f}Hz" if i + 1 < len(edges)
+                  else f">={edges[i]:.0f}Hz")
+            parts.append(f"{hz}:{bd[i]:.2f}")
+        print("Top-Band-DTW zeitl. (0-1, wo in Frequenz): " + ", ".join(parts))
 
 
 def _fehler_result(error: str) -> dict:
@@ -306,19 +440,36 @@ def _fehler_result(error: str) -> dict:
     return {"score": None, "verdict": "fehler", "error": error,
             "spec_cos": None, "env_dtw": None, "band_delta_db": None,
             "embed_cos": None, "embed_score": None, "combined": None,
-            "llm": None, "backend_error": None, "peak_dbfs": None}
+            "llm": None, "backend_error": None, "peak_dbfs": None, "profile": None,
+            "spec_dtw": None, "band_dtw": None, "frame_cos": None, "band_edges_hz": None}
 
 
 def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
                      log_path=DEFAULT_LOG, *, clap: ClapBackend | None = None,
                      ollama: OllamaBackend | None = None, use_llm: bool = False,
-                     strict: bool = False, judge_prompt: str = DEFAULT_JUDGE_PROMPT) -> dict:
+                     strict: bool = False, judge_prompt: str = DEFAULT_JUDGE_PROMPT,
+                     norm_pegel: bool = False,
+                     profile_backend: "D1ProfileBackend | None" = None) -> dict:
     """Phase A + Embedding (+LLM) in einem Ergebnisdict; log_path=None -> kein Log.
 
     Degrade-Regel: Backend fehlt/kaputt -> Felder null + backend_error, weiterrechnen;
     strict=True -> RuntimeError. combined = 0.5*score + 0.5*embed_score (ohne Embedding:
     combined = score). Genau ein JSONL-Eintrag pro Aufruf (wenn log_path gesetzt).
+
+    norm_pegel=True: embed/LLM bekommen auf Peak 0.5 (-6 dBFS) angeglichene Kopien
+    (Phase A bleibt auf Roh-Signal, ist pegel-invariant; peak_dbfs im Log bleibt roh).
     """
+    peak_a = peak_dbfs(x_blo)
+    peak_b = peak_dbfs(x_irr)
+    if norm_pegel:
+        def _norm(x, peak):
+            x = np.asarray(x, dtype=np.float64)
+            return x * (0.5 / (10 ** (peak / 20.0))) if peak > -120.0 else x
+        xe_blo, xe_irr = _norm(x_blo, peak_a), _norm(x_irr, peak_b)
+        pn_a = pn_b = 20.0 * float(np.log10(0.5))
+    else:
+        xe_blo, xe_irr = x_blo, x_irr
+        pn_a, pn_b = peak_a, peak_b
     meta = dict(meta or {})
     try:
         fa = sim.features(x_blo, sr)
@@ -337,12 +488,13 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
     base = sim.compare(fa, fb)  # Phase A direkt (kein sim.score_pair -> kein Doppel-Log)
     result = dict(base)
     result.update({"error": None, "embed_cos": None, "embed_score": None,
-                   "combined": None, "llm": None, "backend_error": None})
+                   "combined": None, "llm": None, "backend_error": None,
+                   "profile": None})
     errors = []
 
     if clap is not None:
         try:
-            ec = embed_compare(clap.embed(x_blo, sr), clap.embed(x_irr, sr))
+            ec = embed_compare(clap.embed(xe_blo, sr), clap.embed(xe_irr, sr))
             result["embed_cos"] = ec["embed_cos"]
             result["embed_score"] = ec["embed_score"]
         except Exception as e:
@@ -359,15 +511,13 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
     else:
         result["combined"] = base["score"]
 
-    peak_a = peak_dbfs(x_blo)
-    peak_b = peak_dbfs(x_irr)
     if use_llm:
         if ollama is not None and ollama.available():
             try:
-                result["llm"] = ollama.judge(x_blo, x_irr, sr, prompt=judge_prompt,
-                                             peak_a=peak_a, peak_b=peak_b)
+                result["llm"] = ollama.judge(xe_blo, xe_irr, sr, prompt=judge_prompt,
+                                             peak_a=pn_a, peak_b=pn_b)
                 # Harter Deckel: B >24 dB leiser als A -> LLM-Score kapppen (unhörbar != aehnlich)
-                if peak_b < peak_a - 24.0:
+                if pn_b < pn_a - 24.0:
                     result["llm"]["score"] = min(result["llm"]["score"], 30)
                     result["llm"]["level_penalty"] = True
             except Exception as e:
@@ -380,6 +530,19 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
                 raise BackendError(errors[-1])
     result["peak_dbfs"] = {"a": round(peak_a, 2), "b": round(peak_b, 2)}
 
+    if profile_backend is not None:
+        if profile_backend.available():
+            try:
+                result["profile"] = profile_backend.profile(xe_blo, xe_irr, sr)
+            except Exception as e:
+                errors.append(f"d1_profile: {e}")
+                if strict:
+                    raise BackendError(errors[-1]) from e
+        else:
+            errors.append("d1_profile: nicht verfuegbar (Modell fehlt)")
+            if strict:
+                raise BackendError(errors[-1])
+
     result["backend_error"] = "; ".join(errors) if errors else None
     if log_path:
         m = dict(meta)
@@ -388,6 +551,8 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
             "ollama": ollama.model if ollama is not None else "none",
             "llm": use_llm,
             "prompt_id": PROMPT_ID,
+            "norm_pegel": norm_pegel,
+            "d1_profile": profile_backend.model if profile_backend is not None else "none",
         }
         sim.log_run(result, m, log_path)
     return result

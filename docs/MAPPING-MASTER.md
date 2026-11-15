@@ -3,6 +3,9 @@
 Erstellt: 2026-11-09. Basis: `bloridium/blofeld_dump.py` (SDATA-Tabelle, Spec 3.1) + `bloridium/qpat_map.py`.
 Referenz-Sound: A043 "SH Power" (107 gemappt / 75 unmapped bei 290 gesetzten Params).
 
+**PC/Favorites-Mapping am Iridium (welcher Sound auf welchem MIDI PC): siehe `docs/IRIDIUM-FAVORITES-MAP.md`**
+(mido-PC = Display-"MIDI" − 2; MIDI 100–106 = Kalib-Testsounds, 107–115 = die 9 konvertierten Sounds).
+
 Legende: ✅ direkt (1:1) · 🟡 Näherung · ⚠️ gemappt mit bekannter Abweichung · ❌ unmapped
 
 ## Oszillatoren (Osc 1-3) (SDATA 0–56)
@@ -16,8 +19,8 @@ Legende: ✅ direkt (1:1) · 🟡 Näherung · ⚠️ gemappt mit bekannter Abwe
 | 5 | Osc 1 Keytrack | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 6 | Osc 1 FM Source | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 7 | Osc 1 FM Amount | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
-| 8 | Osc 1 Shape | OscNType + OscNWaveformShape | 🟡 Näherung | VA-Shapes (Pulse/Saw/Tri/Sine) -> Waveform+Shape direkt; Wavetables nur Type, WT Table/Position/Spectrum nicht gemappt |
-| 9 | Osc 1 Pulsewidth | OscNWaveformPW | ✅ direkt | nur im Waveform-Modus wirksam |
+| 8 | Osc 1 Shape | OscNType + OscNWaveformShape | 🟡 Näherung | VA-Shapes direkt; Wavetables -> Type + WavetableTable (Bridge, z.B. MalletSyn=2) + WavetablePosition (aus Pulsewidth) + Brilliance; Spectrum ungemappt |
+| 9 | Osc 1 Pulsewidth | OscNWaveformPW | ✅ direkt | Waveform-Modus -> WaveformPW; Wavetable-Modus -> WavetablePosition (Blofeld 'PW/Wave') |
 | 10 | Osc 1 PWM Source | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 11 | Osc 1 PWM Amount | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 14 | Osc 1 Limit WT | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
@@ -29,8 +32,8 @@ Legende: ✅ direkt (1:1) · 🟡 Näherung · ⚠️ gemappt mit bekannter Abwe
 | 21 | Osc 2 Keytrack | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 22 | Osc 2 FM Source | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 23 | Osc 2 FM Amount | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
-| 24 | Osc 2 Shape | OscNType + OscNWaveformShape | 🟡 Näherung | VA-Shapes (Pulse/Saw/Tri/Sine) -> Waveform+Shape direkt; Wavetables nur Type, WT Table/Position/Spectrum nicht gemappt |
-| 25 | Osc 2 Pulsewidth | OscNWaveformPW | ✅ direkt | nur im Waveform-Modus wirksam |
+| 24 | Osc 2 Shape | OscNType + OscNWaveformShape | 🟡 Näherung | VA-Shapes direkt; Wavetables -> Type + WavetableTable (Bridge, z.B. MalletSyn=2) + WavetablePosition (aus Pulsewidth) + Brilliance; Spectrum ungemappt |
+| 25 | Osc 2 Pulsewidth | OscNWaveformPW | ✅ direkt | Waveform-Modus -> WaveformPW; Wavetable-Modus -> WavetablePosition (Blofeld 'PW/Wave') |
 | 26 | Osc 2 PWM Source | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 27 | Osc 2 PWM Amount | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 30 | Osc 2 Limit WT | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
@@ -42,8 +45,8 @@ Legende: ✅ direkt (1:1) · 🟡 Näherung · ⚠️ gemappt mit bekannter Abwe
 | 37 | Osc 3 Keytrack | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 38 | Osc 3 FM Source | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 39 | Osc 3 FM Amount | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
-| 40 | Osc 3 Shape | OscNType + OscNWaveformShape | 🟡 Näherung | VA-Shapes (Pulse/Saw/Tri/Sine) -> Waveform+Shape direkt; Wavetables nur Type, WT Table/Position/Spectrum nicht gemappt |
-| 41 | Osc 3 Pulsewidth | OscNWaveformPW | ✅ direkt | nur im Waveform-Modus wirksam |
+| 40 | Osc 3 Shape | OscNType + OscNWaveformShape | 🟡 Näherung | VA-Shapes direkt; Wavetables -> Type + WavetableTable (Bridge, z.B. MalletSyn=2) + WavetablePosition (aus Pulsewidth) + Brilliance; Spectrum ungemappt |
+| 41 | Osc 3 Pulsewidth | OscNWaveformPW | ✅ direkt | Waveform-Modus -> WaveformPW; Wavetable-Modus -> WavetablePosition (Blofeld 'PW/Wave') |
 | 42 | Osc 3 PWM Source | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 43 | Osc 3 PWM Amount | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
 | 46 | Osc 3 Limit WT | - | ❌ unmapped | FM/PWM liegen beim Iridium in Kernels/Mod-Matrix, kein 1:1 |
@@ -58,7 +61,7 @@ Legende: ✅ direkt (1:1) · 🟡 Näherung · ⚠️ gemappt mit bekannter Abwe
 
 | SDATA | Blofeld-Parameter | Iridium-qpat-Ziel | Status | Abweichung / Bemerkung |
 |---|---|---|---|---|
-| 57 | Glide Rate | GlideRate | ✅ direkt | norm |
+| 57 | Glide Rate | GlideRate | 🟡 Näherung | zeit-kalibriert (exponential, Anker in `qpat_map.py`: raw 20 = norm 0.15 = 0.045 s; Iridium norm 0.378 = 0.29 s Display; raw 127 ≈ 5 s). Lineares norm() setzte zu hoch (A073 raw 48: 0.378/0.29 s statt korrekt ~0.30/~0.15 s) |
 | 58 | Allocation/Unisono | UnisonoCount + UnisonoDetune | 🟡 Näherung | Bitfeld dekodiert (Count = bits 5-7) |
 | 59 | Unisono Detune | UnisonoDetune | ✅ direkt | norm |
 | 61 | Mixer Osc 1 Level | OscNVol | ✅ direkt | norm raw/127 |
@@ -82,7 +85,7 @@ Legende: ✅ direkt (1:1) · 🟡 Näherung · ⚠️ gemappt mit bekannter Abwe
 | 80 | Filter 1 Resonance | Filter1Reso | ✅ direkt | norm |
 | 81 | Filter 1 Drive | - | ❌ unmapped | Drive -> FX Drive moeglich, Pan -> DigiFormer PAN (CC78) |
 | 82 | Filter 1 Drive Curve | - | ❌ unmapped | Global/System/etc. |
-| 86 | Filter 1 Keytrack | FilterNKeytrack | ⚠️ Abweichung | Blofeld bipolar Mitte 64; Skalierung (kt-64)/64 != amt_bipolar 0.5-zentriert |
+| 86 | Filter 1 Keytrack | Filter1Keytrack | ✅ direkt | norm(raw): Blofeld 0..127 = -200%..+196% (Offset-Binaer, 64=0%), Iridium 0..1 = -200%..+200% (0.5=0%); alt (kt-64)/64 ergab -200% bei 64 |
 | 87 | Filter 1 Env Amount | FilterNEnvAmount | ✅ direkt | norm |
 | 88 | Filter 1 Env Velocity | FilterNVeloAmount | ✅ direkt | norm |
 | 89 | Filter 1 Mod Source | Matrix-Slot -> Filter1/2 Cutoff | 🟡 Näherung | direkte Filter-Mod als Extra-Matrix-Slot |
@@ -97,7 +100,7 @@ Legende: ✅ direkt (1:1) · 🟡 Näherung · ⚠️ gemappt mit bekannter Abwe
 | 100 | Filter 2 Resonance | DigiFormerColor + Filter2Reso | 🟡 Näherung | Reso -> Former Color |
 | 101 | Filter 2 Drive | - | ❌ unmapped |  |
 | 102 | Filter 2 Drive Curve | - | ❌ unmapped | Global/System/etc. |
-| 106 | Filter 2 Keytrack | FilterNKeytrack | ⚠️ Abweichung | Blofeld bipolar Mitte 64; Skalierung (kt-64)/64 != amt_bipolar 0.5-zentriert |
+| 106 | Filter 2 Keytrack | Filter2Keytrack | ✅ direkt | norm(raw) wie F1 Keytrack (siehe 86) |
 | 107 | Filter 2 Env Amount | FilterNEnvAmount | ✅ direkt | norm |
 | 108 | Filter 2 Env Velocity | FilterNVeloAmount | ✅ direkt | norm |
 | 109 | Filter 2 Mod Source | Matrix-Slot -> Filter1/2 Cutoff | 🟡 Näherung | direkte Filter-Mod als Extra-Matrix-Slot |
@@ -160,8 +163,8 @@ Legende: ✅ direkt (1:1) · 🟡 Näherung · ⚠️ gemappt mit bekannter Abwe
 | SDATA | Blofeld-Parameter | Iridium-qpat-Ziel | Status | Abweichung / Bemerkung |
 |---|---|---|---|---|
 | 160 | LFO 1 Shape | - | ❌ unmapped |  |
-| 161 | LFO 1 Speed | LFO NSpeed | ✅ direkt | Clock-Index norm |
-| 163 | LFO 1 Sync | - | ❌ unmapped |  |
+| 161 | LFO 1 Speed | LfoN Speed/Sync/SyncRatio | 🟡 Näherung | Key heisst Lfo1Speed (nicht LFO1Speed!); Sync=1 -> Clock-Index (4.6, bars) -> SyncRatio (beats), sonst free Speed=norm (ungeprueft) |
+| 163 | LFO 1 Sync | Lfo1Sync | ✅ direkt | on -> SyncRatio aus Clock-Index; sonst free |
 | 164 | LFO 1 Clocked | - | ❌ unmapped | Global/System/etc. |
 | 165 | LFO 1 Start Phase | - | ❌ unmapped | Global/System/etc. |
 | 166 | LFO 1 Delay | - | ❌ unmapped |  |
@@ -246,54 +249,54 @@ Legende: ✅ direkt (1:1) · 🟡 Näherung · ⚠️ gemappt mit bekannter Abwe
 
 | SDATA | Blofeld-Parameter | Iridium-qpat-Ziel | Status | Abweichung / Bemerkung |
 |---|---|---|---|---|
-| 261 | Modulation 1 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 262 | Modulation 1 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 263 | Modulation 1 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 264 | Modulation 2 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 265 | Modulation 2 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 266 | Modulation 2 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 267 | Modulation 3 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 268 | Modulation 3 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 269 | Modulation 3 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 270 | Modulation 4 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 271 | Modulation 4 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 272 | Modulation 4 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 273 | Modulation 5 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 274 | Modulation 5 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 275 | Modulation 5 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 276 | Modulation 6 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 277 | Modulation 6 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 278 | Modulation 6 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 279 | Modulation 7 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 280 | Modulation 7 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 281 | Modulation 7 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 282 | Modulation 8 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 283 | Modulation 8 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 284 | Modulation 8 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 285 | Modulation 9 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 286 | Modulation 9 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 287 | Modulation 9 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 288 | Modulation 10 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 289 | Modulation 10 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 290 | Modulation 10 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 291 | Modulation 11 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 292 | Modulation 11 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 293 | Modulation 11 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 294 | Modulation 12 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 295 | Modulation 12 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 296 | Modulation 12 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 297 | Modulation 13 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 298 | Modulation 13 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 299 | Modulation 13 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 300 | Modulation 14 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 301 | Modulation 14 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 302 | Modulation 14 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 303 | Modulation 15 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 304 | Modulation 15 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 305 | Modulation 15 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 306 | Modulation 16 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 307 | Modulation 16 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
-| 308 | Modulation 16 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert (DEV: volle Aufaddition verhindert) |
+| 261 | Modulation 1 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 262 | Modulation 1 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 263 | Modulation 1 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 264 | Modulation 2 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 265 | Modulation 2 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 266 | Modulation 2 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 267 | Modulation 3 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 268 | Modulation 3 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 269 | Modulation 3 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 270 | Modulation 4 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 271 | Modulation 4 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 272 | Modulation 4 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 273 | Modulation 5 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 274 | Modulation 5 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 275 | Modulation 5 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 276 | Modulation 6 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 277 | Modulation 6 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 278 | Modulation 6 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 279 | Modulation 7 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 280 | Modulation 7 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 281 | Modulation 7 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 282 | Modulation 8 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 283 | Modulation 8 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 284 | Modulation 8 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 285 | Modulation 9 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 286 | Modulation 9 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 287 | Modulation 9 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 288 | Modulation 10 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 289 | Modulation 10 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 290 | Modulation 10 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 291 | Modulation 11 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 292 | Modulation 11 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 293 | Modulation 11 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 294 | Modulation 12 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 295 | Modulation 12 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 296 | Modulation 12 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 297 | Modulation 13 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 298 | Modulation 13 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 299 | Modulation 13 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 300 | Modulation 14 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 301 | Modulation 14 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 302 | Modulation 14 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 303 | Modulation 15 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 304 | Modulation 15 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 305 | Modulation 15 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 306 | Modulation 16 Source | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 307 | Modulation 16 Destination | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
+| 308 | Modulation 16 Amount | Matrix-Slots (Src/Dst/Amount/OnOff) | 🟡 Näherung | Press-Kombis -> After Touch; Amount bipolar um 0.5 zentriert; 'On PW/Wave' -> WTn Position (Wavetable-Osc) bzw. WFn Warp (Waveform) |
 
 ## Arpeggiator / Pattern (SDATA 309–382)
 

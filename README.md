@@ -1,143 +1,77 @@
 # Bloridium
 
-Utilities & Skills, um Synthesizer-Programme vom **Waldorf Blofeld** auf den
-**Waldorf Iridium** zu übertragen – inkl. Klangvermessung über das
-**Focusrite Scarlett 18i8**.
+## Objective - what this is about
 
-## Hardware-Setup (empirisch verifiziert)
+Transfer sound programs **programs (patches) from the Waldorf Blofeld to the Waldorf Iridium Synthesizer**.
 
-Beide Synths **direkt per USB** am Mac; Launchpad Pro 3 nur als Fallback
-(MIDI-Interface per DIN: Iridium Out → LP In, LP Out2 → Blofeld In).
+An exact transfer is impossible, although those two synths are related and have a similar basic architecture, they are very different beasts. The conversion is therefore an **approximation**. 
 
-| Synth | MIDI-Port (CoreMIDI, primär) | MIDI-Kanal (1-basiert) | Audio am Scarlett |
-|---|---|---|---|
-| **Blofeld** | `Blofeld` (USB, bidirektional, FW 1.24, **Single Mode aktiv**) | **5** (Global Channel) | Eingänge **3/4** (Kanäle c2/c3) |
-| **Iridium** | `Iridium Keyboard (MIDI 2.0) MIDI 2.0` (USB) | **6–9** (Parts 1–4) | Eingänge **5/6** (Kanäle c4/c5) |
-| Blofeld (Fallback) | `Launchpad Pro MK3 LPProMK3 DIN` | 5 | 3/4 |
+To close the gap, Bloridium provides tools to **measure and track the differences** between the original and the converted sound (A/B recordings over a Focusrite Scarlett 18i8, similarity score 0–100 from log-spectrogram + envelope comparison) and to **optimise parameters** until the Iridium patch matches the Blofeld as closely as possible.
 
-Hinweise:
-- Der Iridium empfängt über den USB-Endpunkt **`MIDI 2.0`** – dort werden
-  MIDI-1.0-Bytes von CoreMIDI automatisch als UMP (mt=2) zugestellt.
-  Der Endpunkt `Synth` empfängt derzeit nichts (Display zeigt keine MIDI-In-Reaktion).
-- Der Iridium **sendet** sein Keyboard auf Kanal 6 (sichtbar auf den USB-Inputs).
-  Identity-Reply auf `MIDI 2.0` bleibt derzeit aus.
-- Das Launchpad antwortet auf Device-Inquiry am DIN-Port selbst mit
-  Hersteller-ID `00 20 29` (Focusrite/Novation) – das ist **nicht** der Blofeld.
-- Scarlett 18i8 wird von AVFoundation als 20-Kanal-Device bei 48 kHz geliefert.
+Hardware setup (empirically verified): both synths connected directly via USB to the Mac; audio through the Scarlett 18i8 — Blofeld on inputs 3/4 (MIDI channel 5), Iridium on inputs 5/6 (MIDI channels 6–9, Parts 1–4).
+
+### Sound control on the Iridium
+
+As infuriating as it may be: **there is no way to take full remote control of a sound on the Iridium.** The Iridium has no SysEx layer, so patches can only arrive as `.qpat` files (USB stick / SD card). It sends NRPN but does not interpret NRPN control command. 
+
+**The only way to control Iridium parameters from a computer is via MIDI CC.** This limits computer/MIDI control to the 116 MIDI CC commands that are free. To use them, you must upload a MIDI map to the Iridium, defining the controls and the parameters they speak to.  
 
 ## Installation
 
 ```bash
-pip install -r requirements.txt   # mido, python-rtmidi, numpy
-brew install ffmpeg               # Aufnahme via AVFoundation
+pip install -e ".[dev]"   # installs the `bloridium` command (mido, python-rtmidi, numpy)
+brew install ffmpeg        # audio recording via AVFoundation
 cd tools && clang -framework CoreMIDI -framework Foundation -o ump_send ump_send.m
 ```
 
-## Schritt 1: Verbindung herstellen + Sound messen
+Optionally, without the package: `pip install -r requirements.txt` + the ffmpeg/ump_send steps above, then use the scripts in `scripts/`.
 
-```bash
-python3 scripts/step1_verify_connection.py
-```
+## Usage
 
-Testet pro Synth: MIDI-Port öffnen, Device-Inquiry, Note spielen (C4) und
-Pegel am Scarlett messen (RMS/Peak in dBFS). Erwartetes Ergebnis:
-
-```
-blofeld  : VERBUNDEN, Sound messbar
-iridium  : VERBUNDEN, Sound messbar
-```
-
-## Nutzung
+Python library:
 
 ```python
 from bloridium import midi, audio
 
 with midi.connect("blofeld") as blofeld, midi.connect("iridium") as iridium:
-    blofeld.note_on(note=60, velocity=100)      # Blofeld: Kanal 5
-    iridium.note_on(note=60, velocity=100)      # Iridium: Kanal 6 (Part 1)
-    data = audio.record(duration=2.0, channels=audio.CHANNELS["iridium"])  # In 5/6
+    blofeld.note_on(note=60, velocity=100)   # Blofeld: channel 5
+    iridium.note_on(note=60, velocity=100)   # Iridium: channel 6 (Part 1)
+    data = audio.record(duration=2.0, channels=audio.CHANNELS["iridium"])  # inputs 5/6
     print(audio.measure(data)["peak_dbfs"])
     blofeld.note_off(60)
     iridium.note_off(60)
 ```
 
-- `bloridium/midi.py` – `Synth`/`connect()`/`connect_all()`: MIDI-Verbindungen
-  (mido/python-rtmidi, MIDI 1.0; Kanäle pro Synth konfiguriert).
-- `bloridium/audio.py` – Aufnahme via `ffmpeg -f avfoundation` vom Scarlett,
-  Kanalwahl per `pan`, Pegelmessung (RMS/Peak dBFS), `play_and_measure()`.
-- `bloridium/midi2.py` – UMP/MIDI-2.0-Helfer (Paket-Builder + `UMPOut` über
-  `tools/ump_send` für echtes UMP, falls nötig).
-
-## Bloridium CLI (Phase 1)
-
-Das anwendungsreife Terminal-Tool kapselt den ganzen Workflow (Design:
-`docs/superpowers/specs/2026-11-08-bloridium-cli-design.md`, Referenz:
-`docs/CLI.md`):
+CLI (the full workflow):
 
 ```bash
-pip install -e ".[dev]"          # installiert das Kommando `bloridium`
-
-bloridium status                 # MIDI-Ports + Identity (mit --audio: Pegelmessung)
-bloridium bank read A            # Bank A live per SysEx auslesen -> dumps/banks/A/ + DB
-bloridium bank import dumps      # OFFLINE: vorhandene Dumps in die Bank importieren
-bloridium bank list              # Sounds auflisten (--grep, --json)
-bloridium bank show A043         # Parameter eines Sounds
-bloridium convert A043           # A043 -> transfer/<name>_A043.qpat (+ DB-Eintrag)
-# am Iridium: USB-Stick/SD -> Load>Actions>Import -> laden
-bloridium ab --sound A043 --label shpower --note 36   # A/B-Messung + DB-Run
-bloridium ab --list --sound A043                      # Runs pro Sound
-bloridium ab --diff 1 2                               # zwei Runs vergleichen
+bloridium status                 # MIDI ports + identity (--audio: level measurement)
+bloridium bank read A            # read Bank A live via SysEx -> dumps/banks/A/ + DB
+bloridium bank import dumps      # OFFLINE: import existing dumps into the bank
+bloridium bank list              # list sounds (--grep, --json)
+bloridium bank show A043         # parameters of a sound
+bloridium convert A043           # A043 -> transfer/<name>_A043.qpat (+ DB entry)
+# on the Iridium: USB stick/SD -> Load > Actions > Import -> load
+bloridium ab --sound A043 --label shpower --note 36   # A/B measurement + DB run
+bloridium ab --list --sound A043                      # runs per sound
+bloridium ab --diff 1 2                               # compare two runs
 bloridium qpat info transfer/SH\ Power_A043.qpat --register
 bloridium edit transfer/SH\ Power_A043.qpat --list --grep osc1
-bloridium edit transfer/SH\ Power_A043.qpat --set Osc1Type=1.0   # in-place, mit .bak
+bloridium edit transfer/SH\ Power_A043.qpat --set Osc1Type=1.0   # in-place, keeps .bak
 ```
 
-Sicherheit: Das Tool ändert **nie** Geräte-Einstellungen; vor Messungen wird
-All Notes Off (CC123) auf allen Kanälen gesendet. **Achtung: CC7=0 ist am
-Iridium stumm** (Output Level). Iridium-Patches gelangen nur als `.qpat`-Datei
-aufs Gerät (kein SysEx am Iridium). Exit-Codes: 0 ok, 1 Fehler, 2 Hardware
-nicht erreichbar (mit Port-Liste). DB: `--db PATH` oder `$BLORIDIUM_DB`,
-Default `<repo>/bloridium.db`.
+Parameters & safety:
 
-## Diagnose-Skripte (scripts/)
+- The tool **never changes device settings**; All Notes Off (CC123) is sent on all channels before measurements.
+- **Warning: CC7 = 0 is silent on the Iridium** (Output Level).
+- Global DB option: `--db PATH` or `$BLORIDIUM_DB` (default `<repo>/bloridium.db`). Exit codes: 0 ok, 1 error, 2 hardware unreachable (with port list).
+- Similarity score (`bloridium/sim.py`): log-spectrogram cosine (70 %) + envelope DTW (30 %) → score 0–100, plus per-band dB deltas. Offline via `scripts/sim_compare.py --npy A.npy B.npy`, live via `--live` or `scripts/sim_live.py --param "Filter1 Cutoff" --value 90 --ref ref.npy`; every run is logged to `recordings/sim_log.jsonl`.
 
-- `step1_verify_connection.py` – Verbindungstest + Sound-Messung (Schritt 1)
-- `check_blofeld_mode.py` – Blofeld: empfangende Kanäle + Identity + GLBD (Single Mode aktiv; Modus am Gerät änderbar via Shift+Sound/Multi – Kanal-Scan allein erkennt ihn nicht, da Multi-Parts auf beliebigen Kanälen liegen dürfen)
-- `monitor_live.py [sekunden] [logfile]` – loggt alle MIDI-Inputs + Audio-Pegel aller 20 Eingänge live
-- `scan_ports.py` – auf welchem MIDI-Out-Port hört welcher Synth (alle 20 Eingänge)
-- `scan_channels.py` – auf welchem MIDI-Kanal empfängt welches Gerät
-- `step2_read_blofeld_dump.py` – Blofeld SNDD (Sound-Dump) auslesen → `dumps/`
-- `step2_parse_blofeld_dump.py` – gespeicherten SNDD dekodieren (Parameterliste)
-- `step2_probe_iridium_sysex.py` – Iridium-SysEx-Probe (Inquiry + Model-ID-Sweep, read-only)
+## History & Todo
 
-## SysEx-Mapping / Patch-Transfer (Schritt 2+3)
-
-- **Blofeld**: `bloridium/blofeld_dump.py` – SNDD/SNDP laut offizieller Spec
-  (`docs/manuals/Blofeld_sysex_v1_04.pdf`): SDATA 0..382, Checksum, Build/Parse.
-  Scripts: `step2_read_blofeld_dump.py [A043|edit]`, `step2_parse_blofeld_dump.py`.
-- **Iridium**: hat **keine SysEx-Schicht** (Research ses_e44a06781ffeZV5NgA6lrz4Uzc,
-  siehe `docs/FINDINGS.md`) – Transfer nur als **.qpat**-Datei (SD/USB):
-  `bloridium/qpat.py` (Parser+Writer, 68-B-Records), `bloridium/qpat_map.py`
-  (Blofeld→qpat-Key-Mapping + Enums), Template `docs/refs/qpat/template_waveform.qpat`.
-  `scripts/step3_transfer_qpat.py A043` schreibt `transfer/<name>.qpat`.
-- CC-Weg (approximativ): `bloridium/mapping.py`, `step3_transfer_sound.py`.
-  Achtung: **CC7 = Output Level (0 = stumm!)** am Iridium.
-- A/B-Messung: `scripts/step4_measure_ab.py [--note 36]` (Blofeld In3/4 vs Iridium In5/6).
-- **Ähnlichkeits-Score** (`bloridium/sim.py`, numpy-only): log-Spektrogramm + RMS-Hülle,
-  Score 0–100 = 70 % Spektrogramm-Cosine + 30 % Hüllkurven-DTW, dazu pro-Band-dB-Deltas.
-  `scripts/sim_compare.py --npy A.npy B.npy` (offline) oder `--live` (spielt Note auf beiden
-  Synths); `scripts/sim_live.py --param "Filter1 Cutoff" --value 90 --ref ref.npy` dreht per
-  CC (CC/Pid aus `docs/midi-maps/iridium_pid_map.csv`) und misst. Jeder Run landet in
-  `recordings/sim_log.jsonl` (Basis fürs spätere Mapping-Modell). Spec/Plan:
-  `docs/superpowers/specs/2026-11-09-similarity-tool-design.md`.
-- Dumps/Refs: `dumps/` (Blofeld SNDD), `recordings/` (A/B), `docs/refs/` (qpat-Zips),
-  `docs/midi-maps/` (CC-CSVs), `docs/MAPPING.md` (CC-Mapping-Entwurf).
-
-## Offene Punkte
-
-- Iridium: antwortet derzeit auf KEIN SysEx (auch kein Identity-Reply) auf beiden
-  USB-Endpunkten; Verdacht: `SysEx RX` am Gerät aus (Global > MIDI) – Hardware-Änderung,
-  nur nach Rückfrage. CC-Empfang funktioniert (CC7 auf ch6–9 getestet).
-- Iridium-Parameter ohne CC (z.B. Filter1 Cutoff, Filter-Typ, Mod-Matrix): nur per
-  MIDI Learn am Gerät oder SysEx erreichbar.
-- Alle Funde im Detail: `docs/FINDINGS.md`; Inventar + Plan für die nächste Session: `docs/STATUS.md`.
+- 2026-11-08: CLI design + Phase 1 implementation (`docs/superpowers/specs/2026-11-08-bloridium-cli-design.md`).
+- 2026-11-09: similarity tool (sim score, A/B measurement) designed and built (`docs/superpowers/specs/2026-11-09-similarity-tool-design.md`).
+- Todo: Iridium answers no SysEx at all (suspected `SysEx RX` off on the device — hardware change, ask first).
+- Todo: Iridium parameters without CC (e.g. Filter1 Cutoff, mod matrix) reachable only via MIDI Learn on the device.
+- Todo: mapping model trained from `recordings/sim_log.jsonl`.
+- Full findings: `docs/FINDINGS.md`; inventory + next-session plan: `docs/STATUS.md`.

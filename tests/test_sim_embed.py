@@ -266,7 +266,8 @@ REC = sim_embed.REPO / "recordings"
 PAAR = ("check_20261108_152813_blofeld.npy", "check_20261108_152813_iridium.npy")
 
 SCHEMA_KEYS = {"score", "spec_cos", "env_dtw", "band_delta_db", "verdict", "error",
-               "embed_cos", "embed_score", "combined", "llm", "backend_error", "peak_dbfs"}
+               "embed_cos", "embed_score", "combined", "llm", "backend_error", "peak_dbfs",
+               "profile", "spec_dtw", "band_dtw", "frame_cos", "band_edges_hz"}
 
 
 class _FakeClap:
@@ -386,3 +387,90 @@ def test_llm_level_penalty_deckelt_score(tmp_path):
                                     log_path=None, clap=_FakeClap(), ollama=_FakeOllama(),
                                     use_llm=True)
     assert r2["llm"]["score"] == 90 and "level_penalty" not in r2["llm"]
+
+
+def test_extract_json_prosa_und_fences():
+    # Code-Fence drumherum + Prosa danach mit unbalancierter Klammer -> echtes Objekt gewinnt
+    txt = ('Prosa davor.\n```json\n'
+           '{"score": 95, "summary": "ok {nested}", "differences": ["a", "b"]}\n```\n'
+           'Danach noch Text mit {unbalancierter Klammer.')
+    obj = sim_embed._extract_json(txt)
+    assert obj == {"score": 95, "summary": "ok {nested}", "differences": ["a", "b"]}
+
+
+def test_extract_json_kein_json():
+    assert sim_embed._extract_json("gar kein objekt hier") is None
+    assert sim_embed._extract_json('[1, 2, 3]') is None  # Array ist kein dict
+
+
+# --- D1ProfileBackend (d1-omni noul-Profil als Erklaer-Schicht) ---
+
+class _FakeD1:
+    model = "fake-d1:2b"
+
+    def available(self):
+        return True
+
+    def profile(self, x_a, x_b, sr):
+        return {"model": self.model, "score": 63.5, "confidence": 0.7,
+                "probs": {"same_pitch": 0.9, "octave_lower": 0.1, "brighter": 0.6,
+                          "darker": 0.8, "noisier": 0.2, "punchier": 0.3,
+                          "same_overall": 0.8},
+                "flags": ["brighter", "darker"], "diff_count": 2,
+                "same_overall": 80.0}
+
+
+def test_score_pair_embed_profile_feld_und_log(tmp_path):
+    log = tmp_path / "log.jsonl"
+    r = sim_embed.score_pair_embed(_load(PAAR[0]), _load(PAAR[1]), sr=SR, log_path=log,
+                                   clap=_FakeClap(), profile_backend=_FakeD1())
+    assert r["profile"]["score"] == 63.5
+    assert r["profile"]["flags"] == ["brighter", "darker"]
+    assert r["profile"]["diff_count"] == 2
+    entry = json.loads(log.read_text().strip())
+    assert entry["result"]["profile"]["model"] == "fake-d1:2b"
+    assert entry["meta"]["backends"]["d1_profile"] == "fake-d1:2b"
+
+
+def test_score_pair_embed_profile_default_none():
+    r = sim_embed.score_pair_embed(_load(PAAR[0]), _load(PAAR[1]), sr=SR,
+                                   log_path=None, clap=_FakeClap())
+    assert r["profile"] is None
+
+
+def test_d1_profile_backend_parst_systemone(monkeypatch):
+    def fake_post(url, json=None, timeout=None):
+        assert url.endswith("/v1/systemone")
+        assert json["model"] == "d1-omni:2b"
+        assert len(json["images"]) == 2
+        qs = json["questions"]
+        assert qs["similarity"]["type"] == "score" and len(qs["similarity"]["criteria"]) == 10
+        assert qs["darker"]["type"] == "noul"
+        return SimpleNamespace(status_code=200, json=lambda: {"answers": {
+            "similarity": {"type": "score", "score": 5.7, "confidence": 0.7,
+                           "probabilities": {str(i): 0.1 for i in range(10)}},
+            "same_pitch": {"type": "noul", "noul": 0.9},
+            "octave_lower": {"type": "noul", "noul": 0.6},
+            "brighter": {"type": "noul", "noul": 0.2},
+            "darker": {"type": "noul", "noul": 0.8},
+            "noisier": {"type": "noul", "noul": 0.1},
+            "punchier": {"type": "noul", "noul": 0.3},
+            "same_overall": {"type": "noul", "noul": 0.77},
+        }})
+    monkeypatch.setattr(sim_embed.requests, "post", fake_post)
+    b = sim_embed.D1ProfileBackend()
+    p = b.profile(sine(440.0, 0.5), sine(660.0, 0.5), SR)
+    assert p["score"] == pytest.approx(100 * 5.7 / 9, abs=0.05)
+    assert p["flags"] == ["octave_lower", "darker"]  # p >= 0.5, nur DIFF-Fragen
+    assert p["diff_count"] == 2
+    assert p["probs"]["same_overall"] == pytest.approx(0.77)
+    assert p["same_overall"] == pytest.approx(77.0)
+
+
+def test_d1_profile_backend_http_fehler_wirft(monkeypatch):
+    def fake_post(url, json=None, timeout=None):
+        return SimpleNamespace(status_code=500, text="boom")
+    monkeypatch.setattr(sim_embed.requests, "post", fake_post)
+    b = sim_embed.D1ProfileBackend()
+    with pytest.raises(RuntimeError, match="systemone"):
+        b.profile(sine(440.0, 0.5), sine(660.0, 0.5), SR)

@@ -51,7 +51,10 @@ def main(argv=None) -> int:
         for s in [irr] + ([blo] if blo else []):
             for ch in range(16):
                 s.control_change(123, 0, channel=ch)
-                s.control_change(7, 127, channel=ch)
+        if blo:
+            for ch in range(16):
+                blo.control_change(7, 127, channel=ch)  # nur Blofeld: echtes Volume
+        # Iridium: CC7 NICHT anfassen -- mit rdb-.mimap ist CC7 = Filter1 Amount!
         for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
             irr.control_change(cc, args.value, channel=ch)
         time.sleep(0.2)

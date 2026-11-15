@@ -122,3 +122,40 @@ def test_compare_pegel_unabhaengig():
     fb = sim.features(sine(440.0, amp=0.25))
     r = sim.compare(fa, fb)
     assert r["score"] > 95.0
+
+
+# --- Phase A v2: zeitaufgeloeste FFT-Metriken (2026-11-15, User: "FFT ueber Zeit") ---
+
+def test_compare_zeitaufgeloest_identisch():
+    sr = 48000
+    t = np.arange(sr) / sr
+    x = 0.5 * np.sin(2 * np.pi * 440 * t)
+    r = sim.compare(sim.features(x, sr), sim.features(x.copy(), sr))
+    assert r["spec_dtw"] == pytest.approx(0.0, abs=1e-9)
+    assert max(r["band_dtw"]) < 1e-6
+    assert min(r["frame_cos"]) > 0.999
+    assert len(r["band_dtw"]) == 48
+    assert len(r["frame_cos"]) == r["log_spec_frames"] if "log_spec_frames" in r else True
+    assert len(r["band_edges_hz"]) == 49
+
+
+def test_compare_zeitversatz_sichtbar_in_frame_cos_und_spec_dtw():
+    # gleiches Burst-Signal um 0.3 s versetzt -> frame_cos bricht ein, spec_dtw > 0
+    sr = 48000
+    t = np.arange(sr) / sr
+    x = 0.5 * np.sin(2 * np.pi * 220 * t) * (t < 0.5)
+    y = np.zeros_like(x)
+    y[int(0.3 * sr):] = x[: x.size - int(0.3 * sr)]
+    r = sim.compare(sim.features(x, sr), sim.features(y, sr))
+    assert min(r["frame_cos"]) < 0.95
+    assert r["spec_dtw"] > 0.01
+
+
+def test_compare_band_dtw_lokaliert_hohe_bands():
+    # A zusaetzliche hohe Obertoene, B purer Sinus -> band_dtw oben deutlich hoeher als unten
+    sr = 48000
+    t = np.arange(sr) / sr
+    a = 0.5 * np.sin(2 * np.pi * 220 * t) + 0.3 * np.sin(2 * np.pi * 2000 * t)
+    b = 0.5 * np.sin(2 * np.pi * 220 * t)
+    r = sim.compare(sim.features(a, sr), sim.features(b, sr))
+    assert max(r["band_dtw"][-8:]) > max(r["band_dtw"][:8]) + 0.05

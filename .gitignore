@@ -9,6 +9,9 @@ models/
 # Große Fremd-Referenzdaten (Waldorf Factory-Zips, ~1,8 GB) – bei Bedarf entfernen
 .DS_Store
 docs/refs/*.zip
+# Referenz-Sounds nie ins Repo (nur das Tool-Template bleibt getrackt)
+docs/refs/qpat/*.qpat
+!docs/refs/qpat/template_waveform.qpat
 
 # Build-Artefakte
 *.egg-info/
