@@ -17,6 +17,6 @@ docs/refs/*.zip
 # Fremd-Sample-Packs / gekaufte Wellenformen (nie ins Repo)
 dumps/*/samples/
 
-# Laufzeit-Output (tracked Dateien bleiben erhalten)
-dumps/banks/
+# Laufzeit-Output / eigene Sounds (nie ins Repo)
+dumps/
 transfer/
