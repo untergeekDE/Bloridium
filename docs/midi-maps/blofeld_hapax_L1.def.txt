@@ -1,0 +1,165 @@
+# Squarp Hapax Instrument Definition "Blofeld L1" (Layer 1, MIDI ch 5 = Global Channel)
+# Waldorf Blofeld (FW 1.24, Single Mode). Erstellt 2026-11-10.
+# CC-Nummern + Namen: docs/midi-maps/blofeld_midi_guide.csv (offizielle Waldorf-CC-Liste).
+# Reihenfolge/Nutzung: docs/BLOFELD-KEYMAP-A001-A128.md (128 Werks-Sounds A001-A128,
+# Nutzungs-% als Kommentar). Iridium-only-Parameter (Compressor, Digi Former, Komplex,
+# PT-Osc, WT-Stepped, eigene FX-CC-Bloecke ...) sind nicht auf dem Blofeld -> weggelassen.
+# Mod-Matrix/Modifier/FX-Parameter/Arp-Pattern/Unisono haben keine CCs -> nur per SysEx (SNDP).
+VERSION 1
+
+TRACKNAME Blofeld L1
+
+TYPE POLY
+
+OUTPORT B
+
+OUTCHAN 5
+
+INPORT NULL
+
+INCHAN NULL
+
+[DRUMLANES]
+[/DRUMLANES]
+
+[PC]
+# Bank A/B... per CC0 (MSB) / CC32 (LSB) + PC = Location-1:
+#   A001 = PC0 ... A128 = PC127 (Bank A, MSB=0); B001 = PC0 mit MSB=1 usw.
+#   (am Blofeld global ch5 gemessen: Bank A, PC = Location-1, siehe HANDOVER-2026-11-09)
+[/PC]
+
+[CC]
+0 Bank select MSB  # Bank select MSB (CC0)
+32 Bank select LSB  # CC32 = Bank select LSB
+69 Filter 1 cutoff  # 93.8% essential
+39 OSC 2 shape  # 91.4% essential
+46 OSC 3 shape  # 84.4% essential
+96 Filter envelope decay  # 82.8% essential
+70 Filter 1 resonance  # 78.9% essential
+80 Filter 2 cutoff  # 78.1% essential
+79 Filter 2 type  # 78.1% essential
+106 Amp envelope release  # 76.6% essential
+100 Filter envelope release  # 75.8% essential
+73 Filter 1 envelope amount  # 71.9% essential
+31 OSC 1 shape  # 68.0% essential
+102 Amp envelope decay  # 67.2% essential
+72 Filter 1 keytrack  # 60.2% essential
+81 Filter 2 resonance  # 58.6% essential
+97 Filter envelope sustain  # 58.6% essential
+103 Amp envelope sustain  # 57.8% essential
+71 Filter 1 drive  # 56.2% essential
+37 OSC 2 detune  # 54.7% essential
+68 Filter 1 type  # 53.1% essential
+35 OSC 2 octave  # 53.1% essential
+27 OSC 1 octave  # 52.3% essential
+56 OSC 2 level  # 51.6% essential
+101 Amp envelope attack  # 50.8% essential
+83 Filter 2 keytrack  # 50.8% essential
+42 OSC 3 octave  # 50.8% essential
+58 OSC 3 level  # 49.2% essential
+95 Filter envelope attack  # 48.4% essential
+84 Filter 2 envelope amount  # 47.7% essential
+44 OSC 3 detune  # 46.1% essential
+29 OSC 1 detune  # 45.3% essential
+98 Filter envelope decay 2  # 43.0% essential
+75 Filter 1 cutoff modulation  # 39.1% essential
+57 OSC 2 balance  # 39.1% essential
+74 Filter 1 envelope velocity  # 38.3% essential
+105 Amp envelope sustain 2  # 36.7% essential
+77 Filter 1 pan  # 36.7% essential
+59 OSC 3 balance  # 36.7% essential
+52 OSC 1 level  # 35.2% essential
+67 Filter Routing  # 34.4% essential
+99 Filter envelope sustain 2  # 32.8% essential
+82 Filter 2 drive  # 32.0% essential
+88 Filter 2 pan  # 32.0% essential
+61 Noise balance  # 32.0% essential
+55 Ringmod balance  # 32.0% essential
+104 Amp envelope decay 2  # 30.5% essential
+86 Filter 2 cutoff modulation  # 28.9% essential
+85 Filter 2 envelope velocity  # 28.1% essential
+50 Pitchmod  # 28.1% essential
+36 OSC 2 semitone  # 26.6% essential
+53 OSC 1 balance  # 23.4% essential
+78 Filter 1 pan modulation  # 22.7% essential
+89 Filter 2 pan modulation  # 21.1% essential
+54 Ringmod level  # 16.4% essential
+43 OSC 3 semitone  # 14.8% essential
+62 Noise color  # 14.1% essential
+60 Noise level  # 10.2% essential
+76 Filter 1 FM  # 9.4% essential
+28 OSC 1 semitone  # 8.6% essential
+87 Filter 2 FM  # 6.2% essential
+7 Channel volume  # 43.8%
+5 Glide rate  # 33.6%
+65 Glide active  # 20.3%
+51 Glide mode  # 3.1%
+16 LFO 1 speed  # 75.0%
+91 Amp velocity  # 70.3%
+20 LFO 2 speed  # 63.3%
+24 LFO 3 speed  # 54.7%
+109 Envelope 3 sustain  # 45.3%
+90 Amp volume  # 43.8%
+108 Envelope 3 decay  # 42.2%
+111 Envelope 3 sustain 2  # 32.0%
+117 Envelope 4 sustain 2  # 32.0%
+114 Envelope 4 decay  # 30.5%
+115 Envelope 4 sustain  # 30.5%
+15 LFO 1 shape  # 30.5%
+19 LFO 2 shape  # 30.5%
+107 Envelope 3 attack  # 28.9%
+113 Envelope 4 attack  # 25.8%
+23 LFO 3 shape  # 25.8%
+110 Envelope 3 decay 2  # 23.4%
+116 Envelope 4 decay 2  # 23.4%
+112 Envelope 3 release  # 21.1%
+118 Envelope 4 release  # 17.2%
+17 LFO 1 sync  # 14.8%
+25 LFO 3 sync  # 7.8%
+21 LFO 2 sync  # 7.0%
+18 LFO 1 delay  # 6.2%
+22 LFO 2 delay  # 3.1%
+26 LFO 3 delay  # 2.3%
+92 Amp modulation  # 1.6%
+94 FX 2 mix  # 78.9%
+93 FX 1 mix  # 72.7%
+33 OSC 1 pulsewidth  # 62.5%
+40 OSC 2 pulsewidth  # 56.2%
+47 OSC 3 pulsewidth  # 44.5%
+41 OSC 2 PWM  # 40.6%
+13 Arpeggiator length  # 39.1%
+34 OSC 1 PWM  # 35.2%
+48 OSC 3 PWM  # 25.0%
+38 OSC 2 FM  # 22.7%
+12 Arpeggiator range  # 21.1%
+30 OSC 1 FM  # 21.1%
+45 OSC 3 FM  # 15.6%
+49 Sync  # 14.8%
+14 Arpeggiator active  # 5.5%
+1 Mod wheel
+2 Breath control
+4 Foot control
+10 Pan
+64 Sustain pedal
+66 Sostenuto
+120 All sound off
+121 Reset all controllers
+122 Local control on/off
+123 All notes off
+[/CC]
+
+[NRPN]
+# Blofeld laut MIDI-Guide keine NRPNs (Spalten leer); Steuerung per CC + SysEx (SNDP).
+[/NRPN]
+
+[ASSIGN]
+[/ASSIGN]
+
+[AUTOMATION]
+[/AUTOMATION]
+
+[COMMENT]
+# Keymap-Kern (essential, Top 10): CC69 Filter 1 cutoff, CC39 OSC 2 shape, CC46 OSC 3 shape,
+# CC96 Filter envelope decay, CC70 Filter 1 resonance, CC79 Filter 2 type, CC80 Filter 2 cutoff,
+# CC106 Amp envelope release, CC100 Filter envelope release, CC73 Filter 1 envelope amount.
+[/COMMENT]

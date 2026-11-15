@@ -1,0 +1,162 @@
+# Squarp Hapax Instrument Definition "Iridium OS4 L1" (Layer 1, MIDI ch 6 = Part 1)
+# CC-Belegung passend zu docs/midi-maps/iridium_os4.mimap (Load: Global > MIDI > Mappings > Load).
+# Pids uebernommen aus iridium_pid_map.csv (rdb 2023); auf OS4 NICHT verifiziert —
+# OS4 sendet bei Panel-Aenderung NRPN-Pids 1024/1027/1045/1046/1055/3113 (HANDOVER-2026-11-09),
+# die teils vom rdb-2023 abweichen -> CC->Param am Geraet testen (z.B. CC0 -> Filter1 Cutoff?).
+# ACHTUNG CC7: mit dieser Map = Filter1 Amount (pid 969), NICHT Main Level — kein Stummschalten.
+# CC0/CC32 sind Parameter (CC0=Filter1 Cutoff, CC32=Osc1 Fine Pitch), keine Bank select.
+# Parts 1-4 = MIDI ch 6-9: Layer 2-4 als OUTCHAN 7/8/9 anlegen.
+VERSION 1
+
+TRACKNAME Iridium OS4 L1
+
+TYPE POLY
+
+OUTPORT B
+
+OUTCHAN 6
+
+INPORT NULL
+
+INCHAN NULL
+
+[DRUMLANES]
+[/DRUMLANES]
+
+[PC]
+# PC schaltet innerhalb der aktiven Bank (Favorites Bank 6, CC-Bankselect NICHT noetig:
+# mido-PC = Display-"MIDI" minus 2, z.B. SH Power "MIDI 113" = mido PC 111, siehe HANDOVER-2026-11-09).
+# Achtung: mit dieser .mimap ist CC0 = Filter1 Cutoff — Bank select per CC0 geht nicht mehr.
+[/PC]
+
+[CC]
+0 Filter1 Cutoff
+2 Filter1 Reso
+3 Filter1 Attack
+4 Filter1 Decay
+5 Filter1 Sustain
+6 Filter1 Release
+7 Filter1 Amount
+8 Filter1 Velo Amount
+9 Filter2 Cutoff
+10 Filter2 Reso
+11 Filter2 Attack
+12 Filter2 Decay
+13 Filter2 Sustain
+14 Filter2 Release
+15 Filter2 Amount
+16 Filter2 Velo Amount
+17 Amp Velo Amount
+18 Amp Attack
+19 Amp Decay
+20 Amp Sustain
+21 Amp Release
+22 Delay Dry Wet
+23 Delay Feedback
+24 Delay Time L
+25 Delay Time R
+26 Delay Sync L
+27 Delay Sync R
+28 Reverb Gain
+29 Reverb Color
+30 Reverb Time
+31 Reverb Mod Depth
+32 Osc1 Fine Pitch
+33 Osc1 Vol
+34 Osc1 Pan
+35 Osc1 WT Position
+36 Osc1 WT Spectrum
+37 Osc1 WT Table
+38 Osc1 WT Stepped
+39 Osc1 WF Shape
+40 Osc1 WF Desity
+41 Osc1 WF Spread
+42 Osc1 WF PW
+43 Osc1 WF Sync
+44 Osc1 PT Position
+45 Osc1 PT Travel
+46 Osc2 Fine Pitch
+47 Osc2 Vol
+48 Osc2 Pan
+49 Osc2 WT Position
+50 Osc2 WT Spectrum
+51 Osc2 WT Table
+52 Osc2 WT Stepped
+53 Osc2 WF Shape
+54 Osc2 WF Desity
+55 Osc2 WF Spread
+56 Osc2 WF PW
+57 Osc2 WF Sync
+58 Osc2 PT Position
+59 Osc2 PT Travel
+60 Osc3 Fine Pitch
+61 Osc3 Vol
+62 Osc3 Pan
+63 Osc3 WT Position
+64 Osc3 WT Spectrum
+65 Osc3 WT Table
+66 Osc3 WT Stepped
+67 Osc3 WF Shape
+68 Osc3 WF Desity
+69 Osc3 WF Spread
+70 Osc3 WF PW
+71 Osc3 WF Sync
+72 Osc3 PT Position
+73 Osc3 PT Travel
+74 Ringmod Osc1 To Osc2
+75 Ringmod Osc1 To Osc3
+76 Digi Former Amount
+77 Digi Former Color
+78 Digi Former Pan
+79 Digi Former Level
+80 Lfo1 Speed
+81 Lfo1 Amount
+82 Lfo2 Speed
+83 Lfo2 Amount
+84 Lfo3 Speed
+85 Lfo3 Amount
+86 Komplex Speed
+87 Komplex Amount
+88 Komplex Entropy
+89 Glide Rate
+90 Glide On Off
+91 Unisono Count
+92 Unisono Detune
+93 Chorus Dry Wet
+94 Chorus Speed
+95 Chorus Feedback
+96 Phaser Dry Wet
+97 Phaser Depth
+98 Phaser Feedback
+99 Flanger Dry Wet
+100 Flanger Speed
+101 Flanger Feedback
+102 Drive Amount
+103 Drive Dry Wet
+104 Drive Gain
+105 Free Env1 Attack
+106 Free Env1 Decay
+107 Free Env1 Sustain
+108 Free Env1 Release
+109 Free Env1 Amount
+110 Free Env1 Velo Amount
+111 Free Env2 Attack
+112 Free Env2 Decay
+113 Free Env2 Sustain
+114 Free Env2 Release
+115 Free Env2 Amount
+116 Free Env2 Velo Amount
+[/CC]
+
+[NRPN]
+# Iridium ignoriert eingehende NRPN (OS-Handbuch) — Steuerung nur per CC (.mimap) / PC / qpat.
+[/NRPN]
+
+[ASSIGN]
+[/ASSIGN]
+
+[AUTOMATION]
+[/AUTOMATION]
+
+[COMMENT]
+[/COMMENT]

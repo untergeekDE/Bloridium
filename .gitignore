@@ -14,9 +14,12 @@ docs/refs/*.zip
 *.egg-info/
 .superpowers/
 
-# Fremd-Sample-Packs / gekaufte Wellenformen (nie ins Repo)
-dumps/*/samples/
-
-# Laufzeit-Output / eigene Sounds (nie ins Repo)
+# Grundprinzip: nur Tools + Config + Midi-Maps im Repo.
+# Eigene Sounds / Fremd-Sample-Packs / Tool-Ergebnisse (nie ins Repo):
 dumps/
 transfer/
+recordings/
+
+# Editor-/Backup-Cruft
+.~lock.*#
+*.bak
