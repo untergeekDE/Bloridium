@@ -147,6 +147,37 @@ nicht als Score. **Integriert 2026-11-15:** `D1ProfileBackend` in `sim_embed.py`
 `profile`-Feld im Ergebnis/Log, `--profile` in `sim_compare.py` / `sim_manual_compare.py`
 / `bloridium sim compare` (Default `d1-omni:2b`). combined bleibt Phase-B-Score.
 
+## Re-Messung 2026-11-15 nach P0-1/P0-2 (Set 6 neu importiert, Note 72, Wheel 0/50/100 %)
+
+P0-1 (MatrixDst v14: DF Amount 95, Filter2 Cutoff 104, Volume 115 + Template-Leck-Fix)
+und P0-2 (AfterTouchDoPoly=0) gebaut, 9 qpats neu auf den Stick, re-importiert.
+Messung: `sim_manual_compare.py --wheel 0,50,100 --profile` (llm/profile nur bei wheel 0).
+Log: `recordings/sim_log.jsonl` (mode=manual_panel + wheel_pct), WAVs
+`recordings/ab_<LOC>_20261115_*_n72_w<pct>_{blo,irr}.wav`.
+
+| Preset | wheel | Phase A | embed | combined | Peak B dBFS (alt→neu) | Top-Band-DTW (Hz) | d1-flags |
+|---|---|---|---|---|---|---|---|
+| A001 | 0/50/100 | 93.4/90.3/90.0 | 77.7/74.4/77.3 | 85.6/82.4/83.6 | -47.9→**-37.6** | 2883-5223 | brighter, darker |
+| A008 | 0/50/100 | 96.1/95.8/96.1 | 78.2/70.9/72.2 | 87.1/83.3/84.1 | -64.8→**-51.3** | 990-1592 | brighter, darker |
+| A010 | 0/50/100 | 96.2/96.0/95.2 | 75.7/76.1/**37.9** | 85.9/86.0/**66.5** | -42.8→-38.0 | 238-302 | brighter, darker |
+| A019 | 0/50/100 | 94.9/94.4/93.9 | 83.6/75.4/71.6 | 89.2/84.9/82.8 | -45.5→-40.4 | 990-2883 | brighter, darker |
+| A022 | 0/50/100 | 96.7/96.9/98.3 | 79.1/78.0/79.2 | 87.9/87.4/88.8 | -29.2→**-21.0** | 990-2274 | brighter, darker |
+| A039 | 0/50/100 | 97.1/98.1/98.3 | 75.5/59.0/**51.0** | 86.3/78.6/**74.7** | -55.3→-47.9 | 693-879 (0%), 1793-2019 (100%) | darker |
+| A043 | 0/50/100 | 94.6/95.6/92.1 | 76.6/75.9/71.8 | 85.6/85.7/81.9 | -35.6→-26.7 | 211-302 | brighter, darker |
+| A071 (deprio) | 0/50/100 | 93.2/96.9/94.6 | 60.1/68.7/64.0 | 76.6/82.8/79.3 | -40.6→-36.2 | 6624-12000 (Höhen/Sync) | darker, noisier |
+| A073 | 0/50/100 | 97.3/94.7/93.1 | 75.5/75.1/65.0 | 86.4/84.9/79.0 | -53.9→-48.9 | 546-615 (0%), 131-166 (50/100%) | brighter, darker, noisier |
+
+**Befunde:**
+- **P0-1 wirkt**: Peak B bei allen seriellen Presets 7-13 dB besser (A022 am besten,
+  -21 dBFS). Serien-Patches nicht mehr "zu dunkel/leise" im Pegel.
+- **Wheel-Vergleich lokalisiert Mod-Defizite**: staerkste Wheel-Divergenz bei A010
+  (embed 75.7→37.9 bei 100 %), A039 (→51.0), A073 (→65.0) — Modwheel-Ziele im Matrix-
+  Mapping weichen ab; A022 dagegen stabil (~79 bei allen Stufen).
+- **band_dtw lokalisiert**: A001/A008 Mitten/Höhen 990-5223 Hz; A010/A043 Grundton
+  211-302 Hz ("Blofeld voller"); A071 Höhen 6.6-12 kHz (fehlende Sync-Sidebands);
+  A073 bei wheel>0 Tiefbass 131-166 Hz.
+- llm konstant 45 (bekannt nicht diskriminierend), d1-profile flags stabil.
+
 Befunde:
 - Phase A 92.9-97.0 (alle "nahe"), combined 82.3-91.4 — Rangfolge: A019 > A071 > A073 >
   A022 > A010 > A039 ~ A043 > A001 > A008.

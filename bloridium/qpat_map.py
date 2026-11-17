@@ -282,10 +282,15 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp(f"Osc{n}CoarsePitch", 24.0 + 12.0 * oct_up + semi, f"{semi:+.0f} semi")
         setp(f"Osc{n}FinePitch", norm(p[f"Osc {n} Detune"]), "")
         setp(f"Osc{n}Vol", norm(p[f"Mixer Osc {n} Level"]), "")
-        setp(f"Osc{n}Pan", norm(p[f"Mixer Osc {n} Balance"]), "")
+        # Pan: Blofeld hat KEIN Osc-Pan — 'Mixer Osc N Balance' ist der F1/F2-Anteil
+        # (MAPPING-MASTER ⚠️), kein Stereo-Pan. Falsch gemappt ergab das Pan 0.0 = hart
+        # links am Iridium (User-Befund 2026-11-15, Stereo-Bild, z. B. A043 Balance=0).
+        # -> Pan immer Mitte; Balance landet unten im unmapped-Log.
+        setp(f"Osc{n}Pan", 0.5, "Mitte (Blofeld Balance ist F1/F2-Anteil, kein Pan)")
         for k in ("Bend Range", "Keytrack", "FM Source", "FM Amount", "PWM Source",
                   "PWM Amount", "Limit WT"):
             unmapped.append(f"Osc {n} {k}")
+        unmapped.append(f"Mixer Osc {n} Balance (F1/F2-Anteil, nicht Pan; spaeter evtl. OscNDestination)")
         if otype != "Wavetable":
             unmapped.append(f"Osc {n} Brilliance")
     unmapped += ["Osc 2 Sync to O3", "Osc Pitch Source", "Osc Pitch Amount"]

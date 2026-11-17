@@ -315,3 +315,16 @@ def test_kein_v8_enum_leck_in_v14_qpat_alle_9():
         for k, (val, _disp) in merged["params"].items():
             if k.startswith("MatrixDst"):
                 assert val not in V8_ONLY_DST, f"{loc}: {k}={val} ist v8-Enum in v14"
+
+
+def test_osc_pan_immer_mitte_balance_ist_kein_pan():
+    # Befund 2026-11-15 (User, Stereo-Bild): Blofeld 'Mixer Osc N Balance' ist der
+    # F1/F2-Anteil (MAPPING-MASTER ⚠️), KEIN Stereo-Pan. A043 Balance=0 -> OscNPan 0.0
+    # = hart links am Iridium. Fix: Pan immer Mitte 0.5; Balance landet im unmapped-Log
+    # (spaeter evtl. OscNDestination in parallel).
+    for loc, dump in DUMPS_9.items():
+        parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / dump))
+        ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+        for n in (1, 2, 3):
+            assert ov[f"Osc{n}Pan"][0] == pytest.approx(0.5), f"{loc} Osc{n}Pan"
+        assert any("Mixer Osc 1 Balance" in u for u in unmapped), loc
