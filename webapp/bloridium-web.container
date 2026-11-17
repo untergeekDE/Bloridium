@@ -1,0 +1,29 @@
+# Quadlet fuer systemd (rootless) auf dem Debian-Server – die podman-native Art,
+# einen Dienst zu deployen. Installieren:
+#   podman build -f webapp/Containerfile -t localhost/bloridium-web:latest .   # im Repo-Root
+#   mkdir -p ~/.config/containers/systemd
+#   cp webapp/bloridium-web.container ~/.config/containers/systemd/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now bloridium-web.container
+# Status: systemctl --user status bloridium-web.container   Logs: journalctl --user -u bloridium-web.container
+[Unit]
+Description=Bloridium Web-App (Blofeld-Dump -> Iridium-.qpat Upload/Konvert/ZIP)
+After=network-online.target
+
+[Container]
+Image=localhost/bloridium-web:latest
+PublishPort=8000:8000
+Volume=%h/bloridium-web-data:/data
+Environment=DATA_DIR=/data
+Environment=DATA_TTL_HOURS=24
+# Podman ignoriert HEALTHCHECK aus dem OCI-Image -> Healthcheck hier als HealthCmd
+HealthCmd=curl -fsS http://127.0.0.1:8000/health || exit 1
+HealthInterval=30s
+HealthTimeout=3s
+HealthStartPeriod=5s
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

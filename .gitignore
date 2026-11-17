@@ -17,6 +17,9 @@ docs/refs/qpat/*.qpat
 *.egg-info/
 .superpowers/
 
+# Web-App: lokale Upload-Artefakte
+webapp/data/
+
 # Grundprinzip: nur Tools + Config + Midi-Maps im Repo.
 # Eigene Sounds / Fremd-Sample-Packs / Tool-Ergebnisse (nie ins Repo):
 dumps/
@@ -26,3 +29,6 @@ recordings/
 # Editor-/Backup-Cruft
 .~lock.*#
 *.bak
+
+# Projekt-lokale Skills (z. B. Fernsteuer-Skill aus ../bloridium-codesearch) lokal halten
+.opencode/skills/

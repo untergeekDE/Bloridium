@@ -1,0 +1,34 @@
+# Bloridium Web-App – Blofeld-Dump -> Iridium-.qpat (Upload, ZIP, Match-Schaetzung)
+# Build-Kontext ist das Repo-Root:
+#   docker build -f webapp/Dockerfile -t bloridium-web .
+FROM python:3.12-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DATA_DIR=/data \
+    BLORIDIUM_CORE_DIR=/app/core \
+    BLORIDIUM_TEMPLATE=/app/template_waveform.qpat
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY webapp/requirements.txt ./
+RUN pip install -r requirements.txt
+
+# App + nur die pure-python-Core-Module (kein numpy/mido/rtmidi noetig)
+COPY webapp/app.py webapp/convert.py webapp/matching.py ./
+COPY webapp/static ./static
+COPY bloridium/blofeld_dump.py bloridium/qpat.py bloridium/qpat_map.py bloridium/waldorf.py ./core/
+COPY docs/refs/qpat/template_waveform.qpat ./template_waveform.qpat
+
+RUN mkdir -p /data
+VOLUME ["/data"]
+
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
+  CMD curl -fsS http://127.0.0.1:8000/health || exit 1
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "120", "app:app"]

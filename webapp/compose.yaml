@@ -1,0 +1,17 @@
+# Podman-Compose (Debian-Server), aus dem Repo-Root:
+#   podman compose -f webapp/compose.yaml up -d --build
+# (funktioniert auch mit podman-compose; docker compose geht damit weiterhin)
+services:
+  bloridium-web:
+    build:
+      context: ..
+      dockerfile: webapp/Containerfile
+    image: localhost/bloridium-web:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data          # Upload-Artefakte (ZIPs/Reports) persistent
+    environment:
+      DATA_DIR: /data
+      DATA_TTL_HOURS: "24"    # Artefakte nach 24 h loeschen
+    restart: unless-stopped
