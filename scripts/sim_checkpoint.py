@@ -73,6 +73,8 @@ def main(argv=None) -> int:
     wheel_pcts = [float(w) for w in args.wheel.split(",")]
     ref_note = 72 if 72 in notes else notes[-1]
     only = args.only.upper() if args.only else None
+    if only and only not in DEFAULT_MAP:
+        ap.error(f"{only} nicht in DEFAULT_MAP (Set 6): {sorted(DEFAULT_MAP)}")
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     wav_dir = Path(args.wav_dir)
     wav_dir.mkdir(parents=True, exist_ok=True)

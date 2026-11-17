@@ -180,6 +180,21 @@ def test_checkpoint_stumm_weiter_exit1(repo, tmp_path, monkeypatch):
     assert sum(1 for r in rows if r["result"]["score"] is None) == 1
 
 
+def test_checkpoint_only_unknown_loc_errors(repo, tmp_path, monkeypatch):
+    """--only mit unbekannter Location -> ap.error (SystemExit 2), keine Messung,
+    kein Log-Eintrag (wie sim_manual_compare.py: loc nicht in DEFAULT_MAP)."""
+    sim_checkpoint = _load(repo)
+    sent, notes_log = [], {"blofeld": [], "iridium": []}
+    _install_fakes(monkeypatch, repo, sent, notes_log)
+    log = tmp_path / "log.jsonl"
+    with pytest.raises(SystemExit) as e:
+        sim_checkpoint.main(["--only", "A999", "--no-wait", "--no-embed", "--no-llm",
+                             "--log", str(log), "--wav-dir", str(tmp_path)])
+    assert e.value.code == 2
+    assert not log.exists() or not log.read_text().strip()
+    assert not list(tmp_path.glob("ab_*.wav"))
+
+
 def test_checkpoint_no_wait_and_overrides(repo, tmp_path, monkeypatch):
     """--no-wait ruft input nicht auf; --notes/--wheel ueberschreiben Defaults."""
     sim_checkpoint = _load(repo)
