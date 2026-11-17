@@ -39,6 +39,7 @@ Synth-Programme **Blofeld → Iridium** übertragen: Dumps lesen, Parameterstruk
 - `step3_transfer_qpat.py [A043]` – **Blofeld-SNDD → `transfer/<name>.qpat`** (Template `docs/refs/qpat/template_waveform.qpat` + Mapping).
 - `step3_transfer_sound.py [A043] [--note 36]` – CC-Weg (approximativ; CC7-Falle beachten).
 - `step4_measure_ab.py [--note 36] [--dur 3] [--label X]` – **A/B-Messung**: Note auf beiden Synths, alle 20 Kanäle aufnehmen, Blofeld In3/4 vs Iridium In5/6: peak/rms/centroid + 8 Log-Bänder (dB-Delta) + JSON-Report → `recordings/`.
+- `sim_checkpoint.py [--only A001] [--notes 36,48,60,72] [--wheel 0,50,100] [--dur 2.0] [--full-all] [--no-wait]` – **Checkpoint-Messrunde** (2026-11-17): alle 9 Presets aus `DEFAULT_MAP` im Manual-Panel-Modus (Panel-Prompt pro Preset: Set 6 PC lt. `sim_sweep_pcs.DEFAULT_MAP`), je Preset 4 Noten (C2–C5) × 3 Wheel-Stufen = 12 Messungen; ein JSONL-Eintrag pro Kombination in `sim_log.jsonl` (`meta` mode="checkpoint" + note/wheel_pct), WAVs pegel-angeglichen `ab_<LOC>_<ts>_n<note>_w<pct>_{blo,irr}.wav`, embed bei allen Kombinationen, llm/profile nur an Referenz (Wheel 0 + Note 72), Wheel-Reset nach jedem Preset, Summary-Pivot am Ende; Exit 1 bei stummer Messung. Spec/Plan: `docs/superpowers/specs/2026-11-17-sim-checkpoint-design.md`, `docs/superpowers/plans/2026-11-17-sim-checkpoint.md`; Forschungsstand Multi-Dim/Embeddings: `docs/RESEARCH-2026-11-17-sim-multidim.md`.
 
 ### Tools
 - `tools/ump_send(.m)` – rohe UMP-Pakete an CoreMIDI-Endpunkt (Endpunktnamen: `MIDI 2.0`, `Synth`).
