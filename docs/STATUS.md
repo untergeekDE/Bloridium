@@ -11,6 +11,11 @@ Transfer synth programs **Blofeld -> Iridium**: read dumps, compare parameter st
 - **Iridium Keyboard** (OS 4, SOM2): USB -> endpoints `Iridium Keyboard (MIDI 2.0) MIDI 2.0` (primary; MIDI 1.0 bytes are delivered as UMP) and `... Synth` (receives nothing). Parts 1-4 on **channels 6-9**. Audio -> Scarlett **In 5/6** (c4/c5), peak ~ -27 dBFS. Current preset after reboot: **0039 "Stepping Out" (Split!)** – ch6 note36 ≈ -26 dBFS, note60 ≈ silent (split at C4), ch7 note60 ≈ -36.
 - **Scarlett 18i8**: 20 inputs @ 48 kHz via ffmpeg/AVFoundation (`bloridium/audio.py`).
 - Launchpad Pro 3 only as fallback (DIN chain, currently switched off).
+- **Hardware config**: all port names/channels/audio device live in the user-editable
+  `bloridium.yaml` (project root) — see **[docs/CONFIG.md](CONFIG.md)**. Find your own
+  interfaces with `bloridium discover [--write] [--probe]`; `bloridium status` shows which
+  config file is active. (The standalone scripts in `scripts/` still use the built-in
+  defaults; CLI + library honor the YAML.)
 - **Important**: before channel scans send All Notes Off (CC123) on all channels + wait for release. Never change hardware settings on the device without asking.
 
 ## 3. Device behavior – key findings (all documented in docs/FINDINGS.md + docs/sources/)

@@ -24,17 +24,20 @@ directory**: MIDI port names + channels per synth, fallback port candidates, and
 device name, samplerate, raw channel count and per-synth input channels. Precedence:
 `--config PATH` flag → `$BLORIDIUM_CONFIG` env var → `./bloridium.yaml` → built-in defaults
 (so everything works without the file, too).
+**Full reference with an annotated example: [`docs/CONFIG.md`](docs/CONFIG.md).**
 
 To adapt to your own setup, run the discovery routine once:
 
 ```bash
-bloridium discover              # list MIDI ports + audio devices + effective config (--json, --probe for identity replies)
+bloridium discover              # list MIDI ports + audio devices + effective config (--probe: identity replies)
+bloridium --json discover       # machine-readable output (--json also works after the subcommand)
 bloridium discover --write      # merge discovered values into bloridium.yaml (your edits are kept; only empty keys are filled)
 ```
 
 `discover` scans MIDI ports via CoreMIDI/mido (optionally sending a Universal Device Inquiry
 per output port) and audio capture devices via `ffmpeg -list_devices` (AVFoundation on macOS,
-ALSA on Linux). Then edit `bloridium.yaml` by hand as needed.
+ALSA on Linux). Then edit `bloridium.yaml` by hand — especially the `audio.channels` cabling —
+and check with `bloridium status [--audio]`, which also shows which config file is active.
 
 ### Sound control on the Iridium
 
@@ -97,6 +100,7 @@ Parameters & safety:
 
 - 2026-11-08: CLI design + Phase 1 implementation (`docs/superpowers/specs/2026-11-08-bloridium-cli-design.md`).
 - 2026-11-09: similarity tool (sim score, A/B measurement) designed and built (`docs/superpowers/specs/2026-11-09-similarity-tool-design.md`).
+- 2026-11-18: hardware discovery (`bloridium discover`) + user-editable `bloridium.yaml` (`docs/CONFIG.md`, plan `docs/superpowers/plans/2026-11-18-discover-config.md`); codebase translated to English-only.
 - Todo: Iridium answers no SysEx at all (suspected `SysEx RX` off on the device — hardware change, ask first).
 - Todo: Iridium parameters without CC (e.g. Filter1 Cutoff, mod matrix) reachable only via MIDI Learn on the device.
 - Todo: mapping model trained from `recordings/sim_log.jsonl`.

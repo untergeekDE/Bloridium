@@ -44,6 +44,9 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd")
 
     dsp = sub.add_parser("discover", help="scan MIDI ports + audio devices; --write merges them into the YAML config")
+    # SUPPRESS: only override the global --json when given after the subcommand
+    dsp.add_argument("--json", action="store_true", default=argparse.SUPPRESS,
+                     help="JSON output (same as the global --json)")
     dsp.add_argument("--write", action="store_true",
                      help="write discovered values into the config file (existing user edits are kept)")
     dsp.add_argument("--probe", action="store_true",

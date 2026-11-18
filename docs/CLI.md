@@ -10,14 +10,18 @@ unreachable (message with available MIDI ports on stderr).
 
 ## discover
 ```
-bloridium discover [--write] [--probe] [--json]
+bloridium [--json] [--config PATH] discover [--write] [--probe] [--json]
 ```
 Scans the MIDI ports (mido/CoreMIDI) and the audio capture devices (`ffmpeg -list_devices`;
 AVFoundation on macOS, ALSA on Linux) and shows the effective config.
 `--probe` additionally sends a Universal Device Inquiry to every MIDI output port and shows
-the identity replies. `--write` merges the discovered values into the YAML config
+the identity replies (manufacturer `0x3E` = Waldorf, model `0x13` = Blofeld).
+`--write` merges the discovered values into the YAML config
 (`--config PATH` / `$BLORIDIUM_CONFIG` / `./bloridium.yaml`) — existing user edits are kept,
-only empty keys are filled. Precedence at runtime: user YAML > discovered > built-in defaults.
+only empty keys are filled (ports + audio device; channels/samplerate stay manual).
+Precedence at runtime: user YAML > discovered > built-in defaults.
+See [`docs/CONFIG.md`](CONFIG.md) for the full annotated `bloridium.yaml` reference,
+a step-by-step discovery example and troubleshooting.
 
 ## status
 ```

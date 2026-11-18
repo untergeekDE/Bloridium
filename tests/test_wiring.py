@@ -117,6 +117,18 @@ def test_cli_discover_write_saves_yaml(tmp_path, monkeypatch, capsys):
     assert loaded["audio"]["channels"]["iridium"] == [4, 5]
 
 
+def test_cli_discover_json_flag_after_subcommand(tmp_path, monkeypatch, capsys):
+    """`bloridium discover --json` must work like `bloridium --json discover`."""
+    from bloridium import cli
+    _patch_discovery(monkeypatch)
+    # --config points at a not-yet-existing file so the repo's own bloridium.yaml
+    # does not count as a user edit here
+    rc = cli.main(["--config", str(tmp_path / "bloridium.yaml"), "discover", "--json"])
+    assert rc == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["config"]["midi"]["blofeld"]["out_port"] == "Blofeld"
+
+
 def test_cli_discover_write_preserves_user_edits(tmp_path, monkeypatch, capsys):
     from bloridium import cli, config
     _patch_discovery(monkeypatch)
