@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import audio, blofeld_dump as bd, config, db, discover, editor, midi, qpat, sim, sim_embed, workflow
+from . import audio, blofeld_dump as bd, config, db, discover, editor, midi, prognose, qpat, sim, sim_embed, workflow
 
 REPO = workflow.REPO
 
@@ -115,6 +115,23 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--strict", action="store_true", help="missing backend -> exit 3")
     sc.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
     sc.set_defaults(func=cmd_sim_compare)
+
+    pg = sub.add_parser("prognose", help="Prognose: RF aus Blofeld-SNDD-Parametern -> "
+                                         "erwartete Konvertierguete (0-100)")
+    psub = pg.add_subparsers(dest="prognose_cmd", required=True)
+    pt = psub.add_parser("train", help="Modell trainieren aus sim-Log (JSONL) + SNDD-Dumps")
+    pt.add_argument("--log", default=str(sim.DEFAULT_LOG), help="sim_log.jsonl mit meta.blofeld + result")
+    pt.add_argument("--dumps", default=str(prognose.DEFAULT_DUMPS), help="DIR mit blofeld_sndd_<LOC>_*.bin")
+    pt.add_argument("--target", default="combined", help="Label: combined|score|embed_score (Fallback score)")
+    pt.add_argument("--model", default=str(prognose.DEFAULT_MODEL), help="Output-Modell (pickle) in models/")
+    pt.add_argument("--seed", type=int, default=42)
+    pt.add_argument("--n-estimators", type=int, default=200)
+    pt.set_defaults(func=cmd_prognose_train)
+    pp = psub.add_parser("predict", help="Vorhersage fuer eine Blofeld-Location (z. B. A043)")
+    pp.add_argument("loc")
+    pp.add_argument("--dumps", default=str(prognose.DEFAULT_DUMPS))
+    pp.add_argument("--model", default=str(prognose.DEFAULT_MODEL))
+    pp.set_defaults(func=cmd_prognose_predict)
 
     qp = sub.add_parser("qpat", help=".qpat files: inspect/register")
     qsub = qp.add_subparsers(dest="qpat_cmd", required=True)
@@ -564,6 +581,42 @@ def cmd_sim_compare(args) -> int:
 def np_load_mono(p) -> np.ndarray:
     x = np.asarray(np.load(p), dtype=np.float64)
     return x.mean(axis=0) if x.ndim > 1 else x.ravel()
+
+
+# ---- prognose (RF: SNDD-Parameter -> Konvertierguete) ----------------------
+
+def cmd_prognose_train(args) -> int:
+    X, y, locs, skipped = prognose.load_training_rows(args.log, args.dumps, args.target)
+    if not locs:
+        print(f"FEHLER: keine Trainingsdaten (log={args.log}, dumps={args.dumps}); "
+              f"skipped: {skipped[:5]}", file=sys.stderr)
+        return 2
+    bundle = prognose.train_model(X, y, seed=args.seed, n_estimators=args.n_estimators,
+                                  target=args.target)
+    prognose.save_model(bundle, args.model)
+    m = bundle["metrics"]
+    r2cv = f"{m['r2_cv']:.3f}" if m["r2_cv"] is not None else "n/a"
+    print(f"trainiert: n={m['n']} target={args.target} holdout={m['holdout']} "
+          f"MAE={m['mae']:.2f} RMSE={m['rmse']:.2f} R2={m['r2']:.3f} R2_cv={r2cv}")
+    print(f"Modell gespeichert: {args.model}")
+    print("Top-10 Feature-Importances (Blofeld-Parameter):")
+    for name, imp in bundle["importances"][:10]:
+        print(f"  {imp:.4f}  {name}")
+    print("locs: " + ", ".join(locs))
+    if skipped:
+        print(f"skipped ({len(skipped)}): " + "; ".join(skipped[:10]), file=sys.stderr)
+    return 0
+
+
+def cmd_prognose_predict(args) -> int:
+    try:
+        r = prognose.predict_loc(args.loc.upper(), args.dumps, args.model)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"FEHLER: {e}", file=sys.stderr)
+        return 2
+    print(f"predicted {r['loc']}: {r['predicted']:.1f} ± {r['std']:.1f} "
+          f"(target={r['target']}, model={r['model']}, dump={r['dump']})")
+    return 0
 
 
 # ---- qpat info -------------------------------------------------------------

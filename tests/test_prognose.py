@@ -144,3 +144,56 @@ def test_predict_loc_uses_saved_model(tmp_path):
     assert 0.0 <= r["predicted"] <= 100.0 or isinstance(r["predicted"], float)
     assert r["std"] >= 0.0
     assert r["model"] == "m.joblib"
+
+
+# --- Task 2: CLI prognose train|predict ---
+
+def _make_dataset(tmp_path, n_locs=12):
+    """Synthetische Dumps + Log: Score haengt monoton von SDATA[20] ab."""
+    d = tmp_path / "dumps"
+    d.mkdir(exist_ok=True)
+    rows = []
+    for k in range(n_locs):
+        loc = f"A{k + 1:03d}"
+        sd = bytearray(_sdata(100 + k))
+        sd[20] = int(k * 127 / max(1, n_locs - 1))
+        (d / f"blofeld_sndd_{loc}_20261118_000000.bin").write_bytes(
+            _synth_dump_bytes(loc, bytes(sd)))
+        score = 40.0 + 50.0 * (sd[20] / 127.0) + (k % 3)
+        rows.append(_log_row(loc, combined=score, score=score))
+    log = tmp_path / "log.jsonl"
+    _write_log(log, rows)
+    return d, log
+
+
+def test_cli_train_and_predict(tmp_path, capsys):
+    from bloridium import cli
+    d, log = _make_dataset(tmp_path)
+    model = tmp_path / "m.pkl"
+    rc = cli.main(["prognose", "train", "--log", str(log), "--dumps", str(d),
+                   "--model", str(model), "--n-estimators", "30"])
+    assert rc == 0
+    assert model.exists()
+    out = capsys.readouterr().out
+    assert "R2" in out and "Top" in out
+    rc = cli.main(["prognose", "predict", "A001", "--dumps", str(d), "--model", str(model)])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "predicted" in out and "A001" in out
+    # A012 (hoher SDATA[20]) sollte hoeher prognostiziert werden als A001
+    cli.main(["prognose", "predict", "A012", "--dumps", str(d), "--model", str(model)])
+    out2 = capsys.readouterr().out
+    import re as _re
+    p1 = float(_re.search(r"predicted A001: ([\d.]+)", out).group(1))
+    p2 = float(_re.search(r"predicted A012: ([\d.]+)", out2).group(1))
+    assert p2 > p1
+
+
+def test_cli_train_no_data_exit2(tmp_path, capsys):
+    from bloridium import cli
+    log = tmp_path / "empty.jsonl"
+    log.write_text("")
+    rc = cli.main(["prognose", "train", "--log", str(log), "--dumps", str(tmp_path),
+                   "--model", str(tmp_path / "m.pkl")])
+    assert rc == 2
+    assert capsys.readouterr().err  # Fehlermeldung auf stderr
