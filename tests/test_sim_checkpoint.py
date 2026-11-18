@@ -133,7 +133,7 @@ def test_checkpoint_all_presets_llm_only_ref(repo, tmp_path, monkeypatch):
     log = tmp_path / "log.jsonl"
     # NO --no-llm: use_llm must become True for the reference combinations
     # (build_backends is patched, the fake score_pair_embed calls no ollama)
-    rc = sim_checkpoint.main(["--no-embed", "--no-wait",
+    rc = sim_checkpoint.main(["--no-embed", "--no-wait", "--no-spec-png",
                               "--log", str(log), "--wav-dir", str(tmp_path)])
     assert rc == 0
     rows = [json.loads(l) for l in log.read_text().splitlines()]
@@ -188,7 +188,7 @@ def test_checkpoint_only_unknown_loc_errors(repo, tmp_path, monkeypatch):
     _install_fakes(monkeypatch, repo, sent, notes_log)
     log = tmp_path / "log.jsonl"
     with pytest.raises(SystemExit) as e:
-        sim_checkpoint.main(["--only", "A999", "--no-wait", "--no-embed", "--no-llm",
+        sim_checkpoint.main(["--only", "A999", "--no-wait", "--no-embed", "--no-llm", "--no-spec-png",
                              "--log", str(log), "--wav-dir", str(tmp_path)])
     assert e.value.code == 2
     assert not log.exists() or not log.read_text().strip()

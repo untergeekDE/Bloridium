@@ -82,11 +82,12 @@ def render_spec_pair_png(x_a: np.ndarray, x_b: np.ndarray, sr: int, path: Path,
 
     sa = sim.features(x_a, sr=sr)["log_spec"]
     sb = sim.features(x_b, sr=sr)["log_spec"]
-    n = max(sa.shape[1], sb.shape[1])
-    if sa.shape[1] < n:
-        sa = np.pad(sa, ((0, 0), (0, n - sa.shape[1])), constant_values=float(sa.min()))
-    if sb.shape[1] < n:
-        sb = np.pad(sb, ((0, 0), (0, n - sb.shape[1])), constant_values=float(sb.min()))
+    na, nb = sa.shape[1], sb.shape[1]
+    n = max(na, nb)
+    if na < n:
+        sa = np.pad(sa, ((0, 0), (0, n - na)), constant_values=float(sa.min()))
+    if nb < n:
+        sb = np.pad(sb, ((0, 0), (0, n - nb)), constant_values=float(sb.min()))
     lo = min(float(sa.min()), float(sb.min()))
     hi = max(float(sa.max()), float(sb.max()))
     if hi - lo < 1e-9:
@@ -102,6 +103,11 @@ def render_spec_pair_png(x_a: np.ndarray, x_b: np.ndarray, sr: int, path: Path,
         else:
             lut[i] = (int(128 + 128 * t), int(128 + 128 * t), int(128 - 127 * t))
     d = np.clip(sb - sa, -db_span, db_span)
+    # Pad-Spalten (Seite ohne Daten) nicht als Delta rendern, sondern 0 dB (grau)
+    if na < n:
+        d[:, na:] = 0.0
+    if nb < n:
+        d[:, nb:] = 0.0
     gd = lut[np.clip((d / db_span * 127.5 + 128).astype(int), 0, 255)]
     sep = np.full((sa.shape[0], 2, 3), 255, dtype=np.uint8)
     img = np.concatenate(
@@ -122,7 +128,11 @@ def _spec_png_name(meta: dict, spec_png_dir) -> Path:
         if k in meta and meta[k] is not None:
             v = meta[k]
             if k == "wheel_pct":
-                v = f"w{int(v) if float(v) == int(v) else v}"
+                try:
+                    fv = float(v)
+                    v = f"w{int(fv) if fv == int(fv) else fv}"
+                except (TypeError, ValueError):
+                    v = f"w{v}"  # nicht-numerisch -> Roh-String, kein Fehler
             elif k == "note":
                 v = f"n{v}"
             parts.append(str(v))

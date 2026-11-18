@@ -593,3 +593,35 @@ def test_spec_png_name_collision(tmp_path):
                                     clap=None, spec_png_dir=sdir, meta=meta)
     assert r1["spec_png"] != r2["spec_png"]
     assert Path(r1["spec_png"]).exists() and Path(r2["spec_png"]).exists()
+
+
+# --- 2026-11-18 minor fixes from review ---
+
+
+def test_render_spec_pair_png_pad_columns_delta_gray(tmp_path):
+    """Padded columns (shorter signal) in the delta panel = 0 dB (mid-gray 128),
+    not red/blue (only one side has data there)."""
+    a = sine(220.0, 1.0, amp=0.3)
+    b = sine(220.0, 1.3, amp=0.3)          # longer -> A gets padded
+    _, arr = _pair_img(tmp_path, a, b)
+    nf_a = sim_embed.sim.features(a, SR)["log_spec"].shape[1]
+    nf_b = sim_embed.sim.features(b, SR)["log_spec"].shape[1]
+    _, _, delta = _panels(arr, nf_b)
+    pad_cols = delta[:, nf_a:]
+    assert pad_cols.shape[1] == nf_b - nf_a > 0
+    assert (pad_cols == 128).all(), "pad columns must be 0 dB (gray)"
+    # symmetric: B shorter -> its pad columns are gray too
+    _, arr2 = _pair_img(tmp_path, b, a)
+    _, _, delta2 = _panels(arr2, nf_b)
+    assert (delta2[:, nf_a:] == 128).all()
+
+
+def test_spec_png_name_wheel_pct_non_numeric(tmp_path):
+    """wheel_pct='abc' -> fallback str(v), no ValueError; PNG is still written."""
+    p = sim_embed._spec_png_name({"wheel_pct": "abc"}, tmp_path / "spec")
+    assert p.name == "spec_wabc.png"
+    r = sim_embed.score_pair_embed(sine(220.0), sine(221.0), sr=SR, log_path=None,
+                                   clap=_FakeClap(), spec_png_dir=tmp_path / "spec2",
+                                   meta={"wheel_pct": "abc"})
+    assert r["spec_png"] is not None and "wabc" in r["spec_png"]
+    assert r["backend_error"] is None
