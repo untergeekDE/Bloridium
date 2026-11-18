@@ -4,6 +4,7 @@ import json
 import subprocess
 import sys
 import wave
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
@@ -267,7 +268,7 @@ PAAR = ("check_20261108_152813_blofeld.npy", "check_20261108_152813_iridium.npy"
 
 SCHEMA_KEYS = {"score", "spec_cos", "env_dtw", "band_delta_db", "verdict", "error",
                "embed_cos", "embed_score", "combined", "llm", "backend_error", "peak_dbfs",
-               "profile", "spec_dtw", "band_dtw", "frame_cos", "band_edges_hz"}
+               "profile", "spec_dtw", "band_dtw", "frame_cos", "band_edges_hz", "spec_png"}
 
 
 class _FakeClap:
@@ -474,3 +475,121 @@ def test_d1_profile_backend_http_fehler_wirft(monkeypatch):
     b = sim_embed.D1ProfileBackend()
     with pytest.raises(RuntimeError, match="systemone"):
         b.profile(sine(440.0, 0.5), sine(660.0, 0.5), SR)
+
+
+# --- 2026-11-18: optischer Spektrogramm-Vergleich (render_spec_pair_png) ---
+
+SEP = 2  # px Separator zwischen den Panels
+
+
+def _pair_img(tmp_path, a, b, **kw):
+    p = tmp_path / "pair.png"
+    sim_embed.render_spec_pair_png(a, b, SR, p, **kw)
+    with Image.open(p) as im:
+        return im, np.asarray(im.convert("RGB")).copy()
+
+
+def test_render_spec_pair_png_shape(tmp_path):
+    a, b = sine(220.0, 1.0, amp=0.3), sine(221.0, 1.0, amp=0.3)
+    im, arr = _pair_img(tmp_path, a, b)
+    assert im.format == "PNG" and im.mode == "RGB"
+    n_bands, n_frames = sim_embed.sim.features(a, SR)["log_spec"].shape
+    assert im.size == (3 * n_frames + 2 * SEP, n_bands)  # Breite = 3 Panels + 2 Separatoren
+
+
+def _panels(arr, n_frames):
+    """arr: (n_bands, 3*n_frames + 2*SEP, 3) -> (A, B, Delta) als Spalten-Slices."""
+    w = n_frames
+    return arr[:, :w], arr[:, w + SEP:2 * w + SEP], arr[:, 2 * w + 2 * SEP:]
+
+
+def test_render_spec_pair_png_delta_varies_and_common_scale(tmp_path):
+    a = sine(220.0, 1.0, amp=0.3)
+    b_diff = sine(221.0, 1.0, amp=0.3)   # andere Frequenz -> Delta variiert
+    _, arr = _pair_img(tmp_path, a, b_diff)
+    nf = sim_embed.sim.features(a, SR)["log_spec"].shape[1]
+    _, _, delta = _panels(arr, nf)
+    assert delta.std() > 1.0  # nicht konstant
+    # gemeinsames lo/hi: leiseres B (gleiche Frequenz, halber Amp) -> B-Panel dunkler
+    b_quiet = sine(220.0, 1.0, amp=0.15)
+    _, arr2 = _pair_img(tmp_path, a, b_quiet)
+    panel_a, panel_b, _ = _panels(arr2, nf)
+    assert panel_a.mean() > panel_b.mean()
+
+
+def test_render_spec_pair_png_gleiches_signal_delta_konstant(tmp_path):
+    a = sine(330.0, 1.0, amp=0.3)
+    _, arr = _pair_img(tmp_path, a, a.copy())
+    nf = sim_embed.sim.features(a, SR)["log_spec"].shape[1]
+    _, _, delta = _panels(arr, nf)
+    assert delta.std() == 0.0  # identisch -> konstantes 0-Mapping
+
+
+def test_render_spec_pair_png_pads_unterschiedliche_laengen(tmp_path):
+    a, b = sine(220.0, 1.0, amp=0.3), sine(220.0, 1.3, amp=0.3)
+    im, _ = _pair_img(tmp_path, a, b)  # darf nicht werfen
+    n_bands, n_frames = sim_embed.sim.features(b, SR)["log_spec"].shape
+    assert im.size == (3 * n_frames + 2 * SEP, n_bands)
+
+
+def test_score_pair_embed_spec_png_writes_and_logs(tmp_path):
+    log = tmp_path / "log.jsonl"
+    sdir = tmp_path / "spec"
+    r = sim_embed.score_pair_embed(sine(220.0), sine(221.0), sr=SR,
+                                   meta={"blofeld": "A001", "note": 72, "wheel_pct": 0.0},
+                                   log_path=log, clap=_FakeClap(), spec_png_dir=sdir)
+    assert r["spec_png"] is not None and r["spec_png"].endswith("spec_A001_n72_w0.png")
+    assert Path(r["spec_png"]).exists()
+    entry = json.loads(log.read_text().strip())
+    assert entry["result"]["spec_png"] == r["spec_png"]
+    # ohne spec_png_dir: Feld None, keine Datei
+    r2 = sim_embed.score_pair_embed(sine(220.0), sine(221.0), sr=SR, log_path=None,
+                                    clap=_FakeClap())
+    assert r2["spec_png"] is None
+    assert not sdir.exists() or len(list(sdir.glob("*.png"))) == 1
+
+
+def test_score_pair_embed_spec_png_rendert_normierte_signale(tmp_path):
+    """Review-Focus: Delta auf pegel-normalisierten Signalen (nicht Roh-Gain)."""
+    sdir = tmp_path / "spec"
+    loud, quiet = sine(220.0, amp=0.3), sine(220.0, amp=0.03)  # 20 dB Unterschied
+    r_norm = sim_embed.score_pair_embed(loud, quiet, sr=SR, log_path=None,
+                                        clap=None, norm_pegel=True, spec_png_dir=sdir)
+    nf = sim_embed.sim.features(loud, SR)["log_spec"].shape[1]
+    arr = np.asarray(Image.open(r_norm["spec_png"]).convert("RGB"))
+    d_norm = _panels(arr, nf)[2]
+    r_raw = sim_embed.score_pair_embed(loud, quiet, sr=SR, log_path=None,
+                                       clap=None, norm_pegel=False, spec_png_dir=sdir)
+    arr2 = np.asarray(Image.open(r_raw["spec_png"]).convert("RGB"))
+    d_raw = _panels(arr2, nf)[2]
+    # nach Norm: identische Signale -> Delta = 0 -> mittelgrau (128,128,128)
+    assert abs(d_norm[..., 0].mean() - 128) < 2 and abs(d_norm[..., 2].mean() - 128) < 2
+    # roh: B 6 dB leiser -> Delta negativ -> blau (B-Kanal hoch, R niedrig)
+    assert d_raw[..., 2].mean() - d_raw[..., 0].mean() > 20
+
+
+def test_score_pair_embed_spec_png_degrade(monkeypatch, tmp_path):
+    """Render-Fehler killt die Messung nicht: score ok, spec_png None, backend_error."""
+    def boom(*a, **k):
+        raise RuntimeError("kaputt")
+    monkeypatch.setattr(sim_embed, "render_spec_pair_png", boom)
+    r = sim_embed.score_pair_embed(sine(220.0), sine(221.0), sr=SR, log_path=None,
+                                   clap=_FakeClap(), spec_png_dir=tmp_path / "spec")
+    assert r["score"] is not None
+    assert r["spec_png"] is None
+    assert r["backend_error"] and "spec_png" in r["backend_error"]
+    with pytest.raises(RuntimeError, match="spec_png"):
+        sim_embed.score_pair_embed(sine(220.0), sine(221.0), sr=SR, log_path=None,
+                                   clap=_FakeClap(), spec_png_dir=tmp_path / "spec",
+                                   strict=True)
+
+
+def test_spec_png_name_collision(tmp_path):
+    sdir = tmp_path / "spec"
+    meta = {"blofeld": "A001", "note": 72, "wheel_pct": 0.0}
+    r1 = sim_embed.score_pair_embed(sine(220.0), sine(221.0), sr=SR, log_path=None,
+                                    clap=None, spec_png_dir=sdir, meta=meta)
+    r2 = sim_embed.score_pair_embed(sine(220.0), sine(222.0), sr=SR, log_path=None,
+                                    clap=None, spec_png_dir=sdir, meta=meta)
+    assert r1["spec_png"] != r2["spec_png"]
+    assert Path(r1["spec_png"]).exists() and Path(r2["spec_png"]).exists()

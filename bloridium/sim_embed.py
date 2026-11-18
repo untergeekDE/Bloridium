@@ -67,6 +67,73 @@ def render_spec_png(x: np.ndarray, sr: int, path: Path) -> None:
     Image.fromarray(img.T, mode="L").save(str(path))  # transponiert: Breite = Zeit
 
 
+def render_spec_pair_png(x_a: np.ndarray, x_b: np.ndarray, sr: int, path: Path,
+                         db_span: float = 20.0) -> Path:
+    """Side-by-Side-Spektrogramm-Vergleich A | B | Delta als RGB-PNG.
+
+    A/B als Graustufen mit GEMEINSAMEM lo/hi ueber beide Spektrogramme (sonst taeuscht
+    die Einzel-Normierung); rechtes Panel: Delta = spec_b - spec_a in dB, divergierende
+    Skala blau (B leiser) -> mittelgrau (0) -> rot (B lauter), geclippt auf +/-db_span.
+    Unterschiedliche Laengen: kuerzeres spec wird rechts mit eigenem min gepadet.
+    x = Zeit, y = Frequenzband (log, wie sim.features). Wirft ValueError bei < 0.2 s.
+    """
+    from PIL import Image
+
+    sa = sim.features(x_a, sr=sr)["log_spec"]
+    sb = sim.features(x_b, sr=sr)["log_spec"]
+    n = max(sa.shape[1], sb.shape[1])
+    if sa.shape[1] < n:
+        sa = np.pad(sa, ((0, 0), (0, n - sa.shape[1])), constant_values=float(sa.min()))
+    if sb.shape[1] < n:
+        sb = np.pad(sb, ((0, 0), (0, n - sb.shape[1])), constant_values=float(sb.min()))
+    lo = min(float(sa.min()), float(sb.min()))
+    hi = max(float(sa.max()), float(sb.max()))
+    if hi - lo < 1e-9:
+        hi = lo + 1e-9
+    ga = ((sa - lo) / (hi - lo) * 255.0).astype(np.uint8)
+    gb = ((sb - lo) / (hi - lo) * 255.0).astype(np.uint8)
+    # divergierende LUT: idx 0 = blau (-db_span), 128 = grau (0), 255 = rot (+db_span)
+    lut = np.zeros((256, 3), dtype=np.uint8)
+    for i in range(256):
+        t = (i - 128) / 128.0
+        if t >= 0:
+            lut[i] = (int(128 + 127 * t), int(128 - 128 * t), int(128 - 128 * t))
+        else:
+            lut[i] = (int(128 + 128 * t), int(128 + 128 * t), int(128 - 127 * t))
+    d = np.clip(sb - sa, -db_span, db_span)
+    gd = lut[np.clip((d / db_span * 127.5 + 128).astype(int), 0, 255)]
+    sep = np.full((sa.shape[0], 2, 3), 255, dtype=np.uint8)
+    img = np.concatenate(
+        [np.stack([ga] * 3, axis=-1), sep, np.stack([gb] * 3, axis=-1), sep, gd], axis=1)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(img, mode="RGB").save(str(path))  # (bands, width, 3) -> Breite = Zeit
+    return path
+
+
+def _spec_png_name(meta: dict, spec_png_dir) -> Path:
+    """Dateiname aus meta: spec_<blofeld>_n<note>_w<wheel>.png (Fallback spec_pair.png),
+    bei Kollision Suffix _2, _3, ..."""
+    d = Path(spec_png_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    parts = []
+    for k in ("blofeld", "note", "wheel_pct"):
+        if k in meta and meta[k] is not None:
+            v = meta[k]
+            if k == "wheel_pct":
+                v = f"w{int(v) if float(v) == int(v) else v}"
+            elif k == "note":
+                v = f"n{v}"
+            parts.append(str(v))
+    base = re.sub(r"[^A-Za-z0-9_.-]", "_", "spec_" + "_".join(parts) if parts else "spec_pair")
+    p = d / f"{base}.png"
+    i = 2
+    while p.exists():
+        p = d / f"{base}_{i}.png"
+        i += 1
+    return p
+
+
 def embed_compare(ea: np.ndarray, eb: np.ndarray) -> dict:
     """Cosine zweier Embeddings -> {embed_cos, embed_score 0-100} (linear geclippt)."""
     ea = np.asarray(ea, dtype=np.float64).ravel()
@@ -417,6 +484,8 @@ def print_result(r: dict, a_name: str, b_name: str) -> None:
         p = r["profile"]
         print(f"  profile[{p.get('model')}] score={p.get('score')} same_overall={p.get('same_overall')} "
               f"flags={p.get('flags')} diff_count={p.get('diff_count')}")
+    if r.get("spec_png"):
+        print(f"  spec_png: {r['spec_png']}")
     if r.get("backend_error"):
         print(f"  backend_error: {r['backend_error']}")
     deltas = r.get("band_delta_db") or []
@@ -441,7 +510,8 @@ def _fehler_result(error: str) -> dict:
             "spec_cos": None, "env_dtw": None, "band_delta_db": None,
             "embed_cos": None, "embed_score": None, "combined": None,
             "llm": None, "backend_error": None, "peak_dbfs": None, "profile": None,
-            "spec_dtw": None, "band_dtw": None, "frame_cos": None, "band_edges_hz": None}
+            "spec_dtw": None, "band_dtw": None, "frame_cos": None, "band_edges_hz": None,
+            "spec_png": None}
 
 
 def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
@@ -449,7 +519,8 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
                      ollama: OllamaBackend | None = None, use_llm: bool = False,
                      strict: bool = False, judge_prompt: str = DEFAULT_JUDGE_PROMPT,
                      norm_pegel: bool = False,
-                     profile_backend: "D1ProfileBackend | None" = None) -> dict:
+                     profile_backend: "D1ProfileBackend | None" = None,
+                      spec_png_dir=None) -> dict:
     """Phase A + Embedding (+LLM) in einem Ergebnisdict; log_path=None -> kein Log.
 
     Degrade-Regel: Backend fehlt/kaputt -> Felder null + backend_error, weiterrechnen;
@@ -489,7 +560,7 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
     result = dict(base)
     result.update({"error": None, "embed_cos": None, "embed_score": None,
                    "combined": None, "llm": None, "backend_error": None,
-                   "profile": None})
+                   "profile": None, "spec_png": None})
     errors = []
 
     if clap is not None:
@@ -542,6 +613,19 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
             errors.append("d1_profile: nicht verfuegbar (Modell fehlt)")
             if strict:
                 raise BackendError(errors[-1])
+
+    if spec_png_dir is not None:
+        # optischer Spektrogramm-Vergleich auf den pegel-normalisierten Signalen
+        # (xe_*: sonst zeigt das Delta-Panel nur den Gain-Unterschied)
+        try:
+            path = _spec_png_name(meta, spec_png_dir)
+            render_spec_pair_png(xe_blo, xe_irr, sr, path)
+            result["spec_png"] = str(path)
+        except Exception as e:
+            result["spec_png"] = None
+            errors.append(f"spec_png: {e}")
+            if strict:
+                raise BackendError(errors[-1]) from e
 
     result["backend_error"] = "; ".join(errors) if errors else None
     if log_path:
