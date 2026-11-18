@@ -112,6 +112,10 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--profile", action="store_true",
                     help="phase B: d1-omni noul profile (explanation layer) via /v1/systemone")
     sc.add_argument("--d1-model", default=sim_embed.DEFAULT_D1_MODEL)
+    sc.add_argument("--specdiff", choices=["off", "dsp", "vision"], default="off",
+                    help="Spektral-Diff interpretieren: dsp = nur DSP, vision = + Modell")
+    sc.add_argument("--specdiff-backend", choices=["systemone", "chat"], default="systemone")
+    sc.add_argument("--specdiff-model", default=specdiff.DEFAULT_SPECDIFF_MODEL)
     sc.add_argument("--strict", action="store_true", help="missing backend -> exit 3")
     sc.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
     sc.set_defaults(func=cmd_sim_compare)
@@ -582,11 +586,16 @@ def cmd_sim_compare(args) -> int:
     clap, ollama = sim_embed.build_backends(args.models_dir, args.embed, args.llm)
     d1 = sim_embed.build_profile_backend(getattr(args, "profile", False),
                                          getattr(args, "d1_model", sim_embed.DEFAULT_D1_MODEL))
+    sd_backend = (specdiff.build_backend(args.specdiff == "vision", args.specdiff_model,
+                                         args.specdiff_backend)
+                  if args.specdiff != "off" else None)
     try:
         r = sim_embed.score_pair_embed(a, b, sr=audio.SAMPLERATE, meta=meta,
                                        log_path=args.log, clap=clap, ollama=ollama,
                                        use_llm=args.llm, strict=args.strict,
-                                       profile_backend=d1)
+                                       profile_backend=d1,
+                                       specdiff_mode=args.specdiff,
+                                       specdiff_backend=sd_backend)
     except sim_embed.BackendError as e:
         print(f"ERROR (strict, backend): {e}", file=sys.stderr)
         return 3

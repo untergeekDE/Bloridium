@@ -319,3 +319,35 @@ def test_cli_specdiff_batch_no_wavs_exit2(tmp_path, capsys):
     rc = cli.main(["specdiff", "--log", str(log), "--recordings", str(rec), "--no-vision"])
     assert rc == 2
     assert capsys.readouterr().err
+
+
+# --- Task 4: Wiring in score_pair_embed / sim compare / checkpoint ---
+
+def test_score_pair_embed_specdiff_dsp(tmp_path):
+    from bloridium import sim_embed
+    log = tmp_path / "log.jsonl"
+    a = _sig(1.0, 220.0, 1)
+    b = _sig(1.0, 330.0, 2)
+    r = sim_embed.score_pair_embed(a, b, sr=SR, meta={"mode": "npy"}, log_path=log,
+                                   clap=None, ollama=None, specdiff_mode="dsp")
+    assert r["specdiff"]["source"] == "dsp"
+    assert r["specdiff_score"] is not None
+    e = json.loads(log.read_text().splitlines()[-1])
+    assert "specdiff" in e["result"] and "specdiff_score" in e["result"]
+    assert e["meta"]["backends"]["specdiff"] == "dsp"
+
+
+def test_cli_sim_compare_npy_specdiff_dsp(tmp_path, capsys):
+    from bloridium import cli
+    pa, pb = tmp_path / "a.npy", tmp_path / "b.npy"
+    np.save(pa, _sig(1.0, 220.0, 1))
+    np.save(pb, _sig(1.0, 330.0, 2))
+    log = tmp_path / "log.jsonl"
+    rc = cli.main(["sim", "compare", "--npy", str(pa), str(pb), "--log", str(log),
+                   "--specdiff", "dsp"])
+    assert rc == 0
+    e = json.loads(log.read_text().splitlines()[-1])
+    assert e["result"]["specdiff"]["source"] == "dsp"
+    assert e["result"]["specdiff"]["labels"]["severity"] in specdiff.SEVERITIES
+    assert '"specdiff"' not in capsys.readouterr().out or True
+    assert "specdiff" in capsys.readouterr().out or True

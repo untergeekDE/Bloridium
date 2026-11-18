@@ -35,7 +35,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from bloridium import audio, midi, sim, sim_embed
+from bloridium import audio, midi, sim, sim_embed, specdiff
 from sim_manual_compare import measure, set_wheel   # no duplication
 from sim_sweep_pcs import DEFAULT_MAP
 
@@ -72,6 +72,12 @@ def main(argv=None) -> int:
                          "linked in the log (default recordings/spec/)")
     ap.add_argument("--no-spec-png", action="store_true",
                     help="do not render a spectrogram PNG")
+    ap.add_argument("--specdiff", action="store_true",
+                    help="interpret the spectral diff per measurement (result.specdiff + "
+                         "specdiff_score in the log); vision model only on the reference "
+                         "combination, DSP elsewhere (like --profile)")
+    ap.add_argument("--specdiff-backend", choices=["systemone", "chat"], default="systemone")
+    ap.add_argument("--specdiff-model", default=specdiff.DEFAULT_SPECDIFF_MODEL)
     args = ap.parse_args(argv)
 
     notes = [int(n) for n in args.notes.split(",")]
@@ -88,6 +94,9 @@ def main(argv=None) -> int:
                                             want_embed=not args.no_embed,
                                             want_llm=not args.no_llm)
     d1 = sim_embed.build_profile_backend(args.profile, args.d1_model)
+    sd_backend = (specdiff.build_backend(True, args.specdiff_model,
+                                         args.specdiff_backend)
+                  if args.specdiff else None)
 
     blo = midi.connect("blofeld")
     irr = midi.connect("iridium")
@@ -132,13 +141,16 @@ def main(argv=None) -> int:
                     meta = {"mode": "checkpoint", "blofeld": loc, "blofeld_pc": blo_pc,
                             "irr_pc": irr_pc, "bank": 6, "note": note, "wheel_pct": pct}
                     full = args.full_all or (pct == wheel_pcts[0] and note == ref_note)
+                    sd_mode = ("vision" if full else "dsp") if args.specdiff else "off"
                     r = sim_embed.score_pair_embed(bx, ix, sr=audio.SAMPLERATE, meta=meta,
                                                    log_path=args.log, clap=clap, ollama=ollama,
                                                    use_llm=not args.no_llm and full,
                                                    norm_pegel=norm,
                                                    profile_backend=d1 if full else None,
                                                    spec_png_dir=None if args.no_spec_png
-                                                   else args.spec_png_dir)
+                                                   else args.spec_png_dir,
+                                                   specdiff_mode=sd_mode,
+                                                   specdiff_backend=sd_backend)
                     print(f"-- {loc} note{note} wheel={pct:.0f}% --")
                     sim_embed.print_result(r, f"blofeld:{loc}", f"iridium:set6pc{irr_pc}")
                     if r.get("peak_dbfs"):

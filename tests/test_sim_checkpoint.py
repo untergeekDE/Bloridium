@@ -238,3 +238,25 @@ def test_checkpoint_spec_png_dir(repo, tmp_path, monkeypatch):
     assert len(rows) == 12
     assert all(r["result"]["spec_png"] and r["result"]["spec_png"].endswith(".png")
                for r in rows)
+
+
+def test_checkpoint_specdiff_dsp(repo, tmp_path, monkeypatch):
+    """--specdiff: specdiff + specdiff_score in jeder Log-Zeile; Vision-Backend gepatcht
+    (None) -> source "dsp" ueberall, kein echtes ollama."""
+    sim_checkpoint = _load(repo)
+    sent, notes_log = [], {"blofeld": [], "iridium": []}
+    _install_fakes(monkeypatch, repo, sent, notes_log)
+    monkeypatch.setattr("builtins.input", lambda *a: "")
+    monkeypatch.setattr("bloridium.specdiff.build_backend", lambda *a, **k: None)
+    log = tmp_path / "log.jsonl"
+    rc = sim_checkpoint.main(["--only", "A001", "--no-embed", "--no-llm", "--no-wait",
+                              "--no-spec-png", "--specdiff",
+                              "--notes", "72", "--wheel", "0",
+                              "--log", str(log), "--wav-dir", str(tmp_path)])
+    assert rc == 0
+    rows = [json.loads(l) for l in log.read_text().splitlines()]
+    assert len(rows) == 1
+    assert rows[0]["result"]["specdiff"]["source"] == "dsp"
+    assert rows[0]["result"]["specdiff_score"] is not None
+    lab = rows[0]["result"]["specdiff"]["labels"]
+    assert lab["severity"] in ("light", "medium", "heavy")

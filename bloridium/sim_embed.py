@@ -497,6 +497,11 @@ def print_result(r: dict, a_name: str, b_name: str) -> None:
               f"flags={p.get('flags')} diff_count={p.get('diff_count')}")
     if r.get("spec_png"):
         print(f"  spec_png: {r['spec_png']}")
+    if r.get("specdiff"):
+        s = r["specdiff"]
+        print(f"  specdiff[{s.get('source')}] score={s.get('score')} "
+              f"{s['labels']['severity']}/{s['labels']['spread']}/{s['labels']['temporal']} "
+              f"bands={s['labels']['bands']}")
     if r.get("backend_error"):
         print(f"  backend_error: {r['backend_error']}")
     deltas = r.get("band_delta_db") or []
@@ -522,6 +527,7 @@ def _fehler_result(error: str) -> dict:
             "embed_cos": None, "embed_score": None, "combined": None,
             "llm": None, "backend_error": None, "peak_dbfs": None, "profile": None,
             "spec_dtw": None, "band_dtw": None, "frame_cos": None, "band_edges_hz": None,
+            "specdiff": None, "specdiff_score": None,
             "spec_png": None}
 
 
@@ -531,7 +537,8 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
                      strict: bool = False, judge_prompt: str = DEFAULT_JUDGE_PROMPT,
                      norm_pegel: bool = False,
                      profile_backend: "D1ProfileBackend | None" = None,
-                      spec_png_dir=None) -> dict:
+                      spec_png_dir=None,
+                     specdiff_mode: str = "off", specdiff_backend=None) -> dict:
     """Phase A + embedding (+LLM) in one result dict; log_path=None -> no log.
 
     Degrade rule: backend missing/broken -> fields null + backend_error, keep going;
@@ -571,7 +578,7 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
     result = dict(base)
     result.update({"error": None, "embed_cos": None, "embed_score": None,
                    "combined": None, "llm": None, "backend_error": None,
-                   "profile": None, "spec_png": None})
+                   "profile": None, "spec_png": None, "specdiff": None, "specdiff_score": None})
     errors = []
 
     if clap is not None:
@@ -638,6 +645,21 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
             if strict:
                 raise BackendError(errors[-1]) from e
 
+    if specdiff_mode != "off":
+        try:
+            from . import specdiff as _specdiff
+            backend = specdiff_backend if specdiff_mode == "vision" else None
+            png = Path(result["spec_png"]) if result.get("spec_png") else None
+            sdr = _specdiff.interpret_pair(xe_blo, xe_irr, sr, backend=backend, png_path=png)
+            result["specdiff"] = {"labels": sdr["labels"], "score": round(sdr["score"], 2),
+                                  "source": sdr["source"], "confidence": sdr["confidence"],
+                                  "dsp": sdr["dsp"], "probs": sdr["probs"]}
+            result["specdiff_score"] = round(sdr["score"], 2)
+        except Exception as e:
+            errors.append(f"specdiff: {e}")
+            if strict:
+                raise BackendError(errors[-1]) from e
+
     result["backend_error"] = "; ".join(errors) if errors else None
     if log_path:
         m = dict(meta)
@@ -648,6 +670,7 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
             "prompt_id": PROMPT_ID,
             "norm_pegel": norm_pegel,
             "d1_profile": profile_backend.model if profile_backend is not None else "none",
+            "specdiff": specdiff_mode,
         }
         sim.log_run(result, m, log_path)
     return result
