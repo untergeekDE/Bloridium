@@ -48,6 +48,13 @@ Transfer synth programs **Blofeld -> Iridium**: read dumps, compare parameter st
 - `step3_transfer_sound.py [A043] [--note 36]` – CC path (approximate; watch the CC7 trap).
 - `step4_measure_ab.py [--note 36] [--dur 3] [--label X]` – **A/B measurement**: note on both synths, record all 20 channels, Blofeld In3/4 vs Iridium In5/6: peak/rms/centroid + 8 log bands (dB delta) + JSON report -> `recordings/`.
 - `sim_checkpoint.py [--only A001] [--notes 36,48,60,72] [--wheel 0,50,100] [--dur 2.0] [--full-all] [--no-wait]` – **checkpoint measurement round** (2026-11-17): all 9 presets from `DEFAULT_MAP` in manual-panel mode (panel prompt per preset: set 6 PC per `sim_sweep_pcs.DEFAULT_MAP`), per preset 4 notes (C2-C5) x 3 wheel levels = 12 measurements; one JSONL entry per combination in `sim_log.jsonl` (`meta` mode="checkpoint" + note/wheel_pct), WAVs level-aligned `ab_<LOC>_<ts>_n<note>_w<pct>_{blo,irr}.wav`, embed for all combinations, llm/profile only on the reference (wheel 0 + note 72), wheel reset after each preset, summary pivot at the end; exit 1 on a silent measurement. Spec/plan: `docs/superpowers/specs/2026-11-17-sim-checkpoint-design.md`, `docs/superpowers/plans/2026-11-17-sim-checkpoint.md`; research status multi-dim/embeddings: `docs/RESEARCH-2026-11-17-sim-multidim.md`.
+- **Prognose model** (2026-11-18, numpy-only random forest, CPU): `bloridium/prognose.py` +
+  CLI `bloridium prognose train --log recordings/sim_log.jsonl --dumps dumps/ [--target combined]
+  [--model models/prognose_rf.pkl]` and `bloridium prognose predict A043`. Features = 367 SNDD
+  parameters (excluding name bytes 363-378), label = mean of `result[target]` per location.
+  **Data contract for the data-delivering session:** measurements as JSONL like `sim_log.jsonl`
+  (`meta.blofeld` + `result.score/combined/embed_score`), dumps as `dumps/blofeld_sndd_<LOC>_<ts>.bin`.
+  Spec/plan: `docs/superpowers/specs/2026-11-18-prognose-rf-design.md`, `docs/superpowers/plans/2026-11-18-prognose-rf.md`.
 
 ### Tools
 - `tools/ump_send(.m)` – raw UMP packets to a CoreMIDI endpoint (endpoint names: `MIDI 2.0`, `Synth`).
