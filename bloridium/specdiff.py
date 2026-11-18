@@ -17,6 +17,11 @@ Pad-Spalten (unterschiedliche Laenge) sind 0 dB / nicht aktiv (grau wie im PNG).
 
 from __future__ import annotations
 
+import base64
+import json
+import sys
+from pathlib import Path
+
 import numpy as np
 
 from . import sim
@@ -163,3 +168,195 @@ def classify_dsp(feat: dict) -> dict:
 def specdiff_score(severity_db: float) -> float:
     """Score 0-100 aus der mittleren aktiven Abweichung: 100 - 10 dB, geclippt."""
     return float(np.clip(100.0 - 10.0 * float(severity_db), 0.0, 100.0))
+
+
+# --------------------------------------------------------------------------
+# Vision-Decision-Model (optional; ollama lokal)
+# --------------------------------------------------------------------------
+
+SPECDIFF_STATE = ("Spectrogram comparison of one synthesizer note, three panels "
+                  "left to right: A = original (Blofeld), B = converted (Iridium), "
+                  "delta = B - A in dB (blue = B quieter, gray = 0, red = B louder). "
+                  "x = time, y = frequency on a log scale, LOW frequencies at the TOP "
+                  "of the image.")
+
+SPECDIFF_QUESTIONS = {
+    "severity": {"type": "choice",
+                 "criteria": {"light": "small deviation, barely visible",
+                              "medium": "clear but moderate deviation",
+                              "heavy": "large deviation, dominates the panel"},
+                 "instructions": "Overall deviation magnitude of the delta (right) panel."},
+    "spread": {"type": "choice",
+               "criteria": {"even": "error spread over the whole panel",
+                            "punctual": "error localized to a few spots"},
+               "instructions": "Spatial distribution of the error in the delta panel."},
+    "temporal": {"type": "choice",
+                 "criteria": {"even": "constant over time",
+                              "periodical": "repeating pattern over time",
+                              "single": "one isolated event",
+                              "multiple": "several isolated events",
+                              "increasing": "grows over time",
+                              "decreasing": "shrinks over time"},
+                 "instructions": "Temporal pattern of the error across x = time."},
+    "low": {"type": "noul",
+            "instructions": "Is the low-frequency region (TOP of the image) affected in the delta panel?"},
+    "mid": {"type": "noul",
+            "instructions": "Is the mid-frequency region (250-2000 Hz) affected in the delta panel?"},
+    "high": {"type": "noul",
+             "instructions": "Is the high-frequency region (BOTTOM of the image, > 2000 Hz) affected in the delta panel?"},
+}
+
+
+def _ollama_has_model(host: str, model: str) -> bool:
+    import requests
+    try:
+        r = requests.get(f"{host}/api/tags", timeout=5)
+        if r.status_code != 200:
+            return False
+        names = [m.get("name", "") for m in r.json().get("models", [])]
+        return any(n == model or n.startswith(model + ":") for n in names)
+    except Exception:
+        return False
+
+
+class SystemOneBackend:
+    """d1-omni via /v1/systemone: PNG als image + choice/noul-Fragen (Schema oben)."""
+
+    def __init__(self, model: str = DEFAULT_SPECDIFF_MODEL, host: str = DEFAULT_OLLAMA_HOST):
+        self.model = model
+        self.host = host.rstrip("/")
+
+    def available(self) -> bool:
+        return _ollama_has_model(self.host, self.model)
+
+    def classify_png(self, png_path, dsp_feats: dict | None = None) -> dict:
+        import requests
+        payload = {
+            "model": self.model,
+            "state": SPECDIFF_STATE,
+            "images": [base64.b64encode(Path(png_path).read_bytes()).decode()],
+            "questions": SPECDIFF_QUESTIONS,
+        }
+        r = requests.post(f"{self.host}/v1/systemone", json=payload, timeout=600)
+        if r.status_code != 200:
+            raise RuntimeError(f"systemone[{self.model}] HTTP {r.status_code}: {r.text[:200]}")
+        ans = r.json()["answers"]
+        labels = {"severity": ans["severity"]["choice"],
+                  "spread": ans["spread"]["choice"],
+                  "temporal": ans["temporal"]["choice"],
+                  "bands": [b for b in BAND_NAMES if float(ans[b]["noul"]) >= 0.5]}
+        probs = {q: {k: float(v) for k, v in ans[q]["probabilities"].items()}
+                 for q in ("severity", "spread", "temporal")}
+        probs.update({b: float(ans[b]["noul"]) for b in BAND_NAMES})
+        conf = float(np.mean([float(ans[q].get("confidence", 0.0))
+                              for q in ("severity", "spread", "temporal")]))
+        return {"labels": labels, "probs": probs, "confidence": conf, "model": self.model}
+
+
+class OllamaChatBackend:
+    """Vision-Model via /api/chat (z. B. gemma4:12b-it-qat) – braucht think:false,
+    antwortet mit JSON (Schema wie SPECDIFF_QUESTIONS)."""
+
+    def __init__(self, model: str = "gemma4:12b-it-qat", host: str = DEFAULT_OLLAMA_HOST):
+        self.model = model
+        self.host = host.rstrip("/")
+
+    def available(self) -> bool:
+        return _ollama_has_model(self.host, self.model)
+
+    def classify_png(self, png_path, dsp_feats: dict | None = None) -> dict:
+        import urllib.request
+        hint = ""
+        if dsp_feats:
+            hint = (f"\nDSP measurements for orientation: mean |delta| = "
+                    f"{dsp_feats.get('severity_db', 0.0):.2f} dB, spread_frac = "
+                    f"{dsp_feats.get('spread_frac', 0.0):.2f}, band_mean_db = "
+                    f"{dsp_feats.get('band_mean_db')}")
+        prompt = (
+            "The image shows a spectrogram comparison, three panels left to right: "
+            "A = original (Blofeld), B = converted (Iridium), delta = B - A in dB "
+            "(blue = B quieter, gray = 0, red = B louder). x = time, y = frequency "
+            "log scale, LOW frequencies at TOP. Classify the delta panel and answer "
+            "with ONLY a JSON object, no prose, no markdown fences:\n"
+            '{"severity": "light|medium|heavy", "spread": "even|punctual", '
+            '"temporal": "even|periodical|single|multiple|increasing|decreasing", '
+            '"bands": ["low","mid","high"], "summary": "one sentence"}'
+            "\nlow < 250 Hz, mid 250-2000 Hz, high > 2000 Hz." + hint)
+        payload = {"model": self.model, "stream": False, "think": False,
+                   "messages": [{"role": "user", "content": prompt,
+                                 "images": [base64.b64encode(Path(png_path).read_bytes()).decode()]}],
+                   "options": {"temperature": 0.0, "num_predict": 400}}
+        req = urllib.request.Request(
+            f"{self.host}/api/chat", data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=600) as r:
+            txt = json.loads(r.read())["message"]["content"]
+        parsed = self._parse_chat(txt)
+        return {"labels": parsed["labels"], "probs": None, "confidence": None,
+                "model": self.model, "summary": parsed.get("summary", "")}
+
+    def _parse_chat(self, txt: str) -> dict:
+        """JSON aus roher Modellantwort extrahieren (Fences/Prosa tolerant) + Labels validieren."""
+        js = json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
+        labels = {"severity": js["severity"], "spread": js["spread"],
+                  "temporal": js["temporal"],
+                  "bands": [b for b in js.get("bands", []) if b in BAND_NAMES]}
+        if (labels["severity"] not in SEVERITIES or labels["spread"] not in SPREADS
+                or labels["temporal"] not in TEMPORALS):
+            raise ValueError(f"invalid labels from model: {labels}")
+        return {"labels": labels, "summary": js.get("summary", "")}
+
+
+def build_backend(want: bool = True, model: str = DEFAULT_SPECDIFF_MODEL,
+                  kind: str = "systemone"):
+    """SystemOneBackend/OllamaChatBackend or None (want=False oder Modell fehlt -> WARNING)."""
+    if not want:
+        return None
+    b = SystemOneBackend(model) if kind == "systemone" else OllamaChatBackend(model)
+    if b.available():
+        return b
+    print(f"WARNING: specdiff backend not available (model {model}) - DSP fallback",
+          file=sys.stderr)
+    return None
+
+
+def interpret_pair(x_a, x_b, sr: int = 48000, backend=None, png_path=None) -> dict:
+    """Diff zweier Signale interpretieren: DSP immer, Vision wenn backend verfuegbar.
+
+    -> {"labels", "probs", "confidence", "dsp", "vision", "score", "source", "spec_png"}.
+    Labels vom Vision-Model wenn es klappt (source="vision"), sonst DSP ("dsp");
+    Score immer numerisch aus DSP. Vision-Fehler -> WARNING, nie Absturz.
+    """
+    from . import sim_embed
+
+    dm = diff_matrix(x_a, x_b, sr)
+    feat = dsp_features(dm["delta"], dm["band_edges"], dm["active"])
+    labels = classify_dsp(feat)
+    probs = conf = vision = None
+    source = "dsp"
+    spec_png = None
+    if backend is not None:
+        try:
+            if png_path is None:
+                import tempfile
+                png_path = Path(tempfile.mkdtemp()) / "specdiff_pair.png"
+            sim_embed.render_spec_pair_png(np.asarray(x_a, dtype=np.float64),
+                                           np.asarray(x_b, dtype=np.float64),
+                                           sr, png_path)
+            vision = backend.classify_png(png_path, feat)
+            labels = vision["labels"]
+            probs = vision["probs"]
+            conf = vision["confidence"]
+            source = "vision"
+            spec_png = str(png_path)
+        except Exception as e:
+            print(f"WARNING: specdiff vision failed ({e}) - using DSP labels",
+                  file=sys.stderr)
+    dsp_slim = {"severity_db": feat["severity_db"], "spread_frac": feat["spread_frac"],
+                "band_mean_db": feat["band_mean_db"],
+                "temporal": {k: v for k, v in feat["temporal"].items() if k != "e"}}
+    return {"labels": labels, "probs": probs, "confidence": conf,
+            "dsp": dsp_slim, "vision": vision,
+            "score": specdiff_score(feat["severity_db"]),
+            "source": source, "spec_png": spec_png}
+
