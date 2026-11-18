@@ -250,3 +250,72 @@ def test_ollama_chat_backend_invalid_labels_raise():
     b = specdiff.OllamaChatBackend()
     with pytest.raises(ValueError):
         b._parse_chat('{"severity": "extreme", "spread": "even", "temporal": "even", "bands": []}')
+
+
+# --- Task 3: CLI bloridium specdiff ---
+
+def _write_wav_pair(rec, loc, ts, note, w=None, seed_a=1, seed_b=2):
+    from bloridium import sim_embed
+    wtag = f"_w{int(w)}" if w is not None else ""
+    sim_embed.write_wav(_sig(1.0, 220.0, seed=seed_a), SR,
+                        rec / f"ab_{loc}_{ts}_n{note}{wtag}_blo.wav")
+    sim_embed.write_wav(_sig(1.0, 330.0, seed=seed_b), SR,
+                        rec / f"ab_{loc}_{ts}_n{note}{wtag}_irr.wav")
+
+
+def test_cli_specdiff_single_wav(tmp_path, capsys):
+    from bloridium import cli
+    rec = tmp_path / "rec"
+    rec.mkdir()
+    _write_wav_pair(rec, "A001", "20261118_000000", 72)
+    png = tmp_path / "pair.png"
+    rc = cli.main(["specdiff", "--wav",
+                   str(rec / "ab_A001_20261118_000000_n72_blo.wav"),
+                   str(rec / "ab_A001_20261118_000000_n72_irr.wav"),
+                   "--no-vision", "--png", str(png)])
+    assert rc == 0
+    assert png.exists()
+    out = capsys.readouterr().out
+    assert '"severity"' in out and '"score"' in out and '"source": "dsp"' in out
+
+
+def test_cli_specdiff_batch_write(tmp_path, capsys):
+    from bloridium import cli
+    rec = tmp_path / "rec"
+    rec.mkdir()
+    _write_wav_pair(rec, "A001", "20261118_000000", 72, w=0)
+    _write_wav_pair(rec, "A002", "20261118_000100", 72, w=0)
+    log = tmp_path / "sim_log.jsonl"
+    rows = [
+        {"ts": "20261118_000000", "meta": {"mode": "checkpoint", "blofeld": "A001",
+                                           "note": 72, "wheel_pct": 0.0},
+         "result": {"score": 90.0}},
+        {"ts": "20261118_000100", "meta": {"mode": "checkpoint", "blofeld": "A002",
+                                           "note": 72, "wheel_pct": 0.0},
+         "result": {"score": 80.0}},
+        {"ts": "20261118_000200", "meta": {"mode": "live", "blofeld": "A043", "note": 72},
+         "result": {"score": None, "verdict": "fehler"}},   # keine WAVs -> ueberspringen
+    ]
+    log.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    rc = cli.main(["specdiff", "--log", str(log), "--recordings", str(rec),
+                   "--no-vision", "--write"])
+    assert rc == 0
+    lines = [json.loads(l) for l in log.read_text().splitlines()]
+    assert "specdiff" in lines[0]["result"] and "specdiff_score" in lines[0]["result"]
+    assert lines[0]["result"]["score"] == 90.0          # Rest der Zeile unveraendert
+    assert "specdiff" in lines[1]["result"]
+    assert "specdiff" not in lines[2]["result"]
+    out = capsys.readouterr().out
+    assert "A001" in out and "A002" in out
+
+
+def test_cli_specdiff_batch_no_wavs_exit2(tmp_path, capsys):
+    from bloridium import cli
+    rec = tmp_path / "rec"
+    rec.mkdir()
+    log = tmp_path / "l.jsonl"
+    log.write_text(json.dumps({"ts": "x", "meta": {"blofeld": "A001", "note": 72},
+                               "result": {}}) + "\n")
+    rc = cli.main(["specdiff", "--log", str(log), "--recordings", str(rec), "--no-vision"])
+    assert rc == 2
+    assert capsys.readouterr().err

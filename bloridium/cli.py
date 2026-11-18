@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import audio, blofeld_dump as bd, config, db, discover, editor, midi, prognose, qpat, sim, sim_embed, workflow
+from . import audio, blofeld_dump as bd, config, db, discover, editor, midi, prognose, qpat, sim, sim_embed, specdiff, workflow
 
 REPO = workflow.REPO
 
@@ -132,6 +132,22 @@ def build_parser() -> argparse.ArgumentParser:
     pp.add_argument("--dumps", default=str(prognose.DEFAULT_DUMPS))
     pp.add_argument("--model", default=str(prognose.DEFAULT_MODEL))
     pp.set_defaults(func=cmd_prognose_predict)
+
+    sd = sub.add_parser("specdiff", help="Spektral-Diff interpretieren (DSP + optional "
+                                         "Vision-Model d1-omni/gemma4)")
+    sd.add_argument("--wav", nargs=2, metavar=("A", "B"), help="einzelnes WAV-Paar")
+    sd.add_argument("--log", default=str(sim.DEFAULT_LOG), help="sim_log.jsonl (Batch-Modus)")
+    sd.add_argument("--recordings", default=str(REPO / "recordings"),
+                    help="DIR mit ab_<LOC>_<ts>_n<note>[_w<pct>]_blo|irr.wav")
+    sd.add_argument("--png", default=None, help="Single-Modus: PNG speichern")
+    sd.add_argument("--only", default=None, help="Batch: nur eine Location (z. B. A043)")
+    sd.add_argument("--write", action="store_true",
+                    help="Batch: specdiff + specdiff_score ins JSONL zurueckschreiben")
+    sd.add_argument("--no-vision", action="store_true", help="nur DSP, kein Vision-Model")
+    sd.add_argument("--backend", choices=["systemone", "chat"], default="systemone",
+                    help="systemone = d1-omni via /v1/systemone, chat = /api/chat (gemma4)")
+    sd.add_argument("--model", default=specdiff.DEFAULT_SPECDIFF_MODEL)
+    sd.set_defaults(func=cmd_specdiff)
 
     qp = sub.add_parser("qpat", help=".qpat files: inspect/register")
     qsub = qp.add_subparsers(dest="qpat_cmd", required=True)
@@ -616,6 +632,84 @@ def cmd_prognose_predict(args) -> int:
         return 2
     print(f"predicted {r['loc']}: {r['predicted']:.1f} ± {r['std']:.1f} "
           f"(target={r['target']}, model={r['model']}, dump={r['dump']})")
+    return 0
+
+
+# ---- specdiff (Spektral-Diff interpretieren) --------------------------------
+
+def cmd_specdiff(args) -> int:
+    backend = specdiff.build_backend(not args.no_vision, args.model, args.backend)
+    if args.wav:
+        try:
+            a, sr = specdiff.read_wav(args.wav[0])
+            b, sr_b = specdiff.read_wav(args.wav[1])
+        except (ValueError, OSError) as e:
+            print(f"FEHLER: {e}", file=sys.stderr)
+            return 2
+        if sr != sr_b:
+            print(f"FEHLER: sample rates differ ({sr} vs {sr_b})", file=sys.stderr)
+            return 2
+        png = Path(args.png) if args.png else None
+        r = specdiff.interpret_pair(a, b, sr, backend=backend, png_path=png)
+        print(json.dumps({"labels": r["labels"], "score": round(r["score"], 2),
+                          "source": r["source"], "confidence": r["confidence"],
+                          "spec_png": r["spec_png"], "dsp": r["dsp"]},
+                         indent=1, default=str))
+        return 0
+    # Batch ueber sim_log.jsonl + WAV-Paare
+    log = Path(args.log)
+    rec = Path(args.recordings)
+    if not log.exists():
+        print(f"FEHLER: log nicht gefunden: {log}", file=sys.stderr)
+        return 2
+    lines = log.read_text().splitlines()
+    out_lines = list(lines)
+    n_done = 0
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+        e = json.loads(line)
+        meta = e.get("meta") or {}
+        loc, ts = meta.get("blofeld"), e.get("ts")
+        if not loc or not ts:
+            continue
+        if args.only and loc != args.only:
+            continue
+        note = meta.get("note")
+        w = meta.get("wheel_pct")
+        wtag = f"_w{float(w):.0f}" if w is not None else ""
+        cands = [rec / f"ab_{loc}_{ts}_n{note}{wtag}", rec / f"ab_{loc}_{ts}_n{note}"]
+        wa = wb = None
+        for base in cands:
+            if Path(str(base) + "_blo.wav").exists() and Path(str(base) + "_irr.wav").exists():
+                wa, wb = Path(str(base) + "_blo.wav"), Path(str(base) + "_irr.wav")
+                break
+        if wa is None:
+            continue
+        try:
+            a, sr = specdiff.read_wav(wa)
+            b, _ = specdiff.read_wav(wb)
+            r = specdiff.interpret_pair(a, b, sr, backend=backend)
+        except ValueError as ex:
+            print(f"skip {loc} {ts}: {ex}", file=sys.stderr)
+            continue
+        e.setdefault("result", {})["specdiff"] = {
+            "labels": r["labels"], "score": round(r["score"], 2), "source": r["source"],
+            "confidence": r["confidence"], "dsp": r["dsp"], "probs": r["probs"]}
+        e["result"]["specdiff_score"] = round(r["score"], 2)
+        if args.write:
+            out_lines[i] = json.dumps(e)
+        n_done += 1
+        lab = r["labels"]
+        print(f"{loc} {ts} n{note}{wtag}: {lab['severity']}/{lab['spread']}/"
+              f"{lab['temporal']} bands={lab['bands']} score={r['score']:.0f} ({r['source']})")
+    if args.write and n_done:
+        log.write_text("\n".join(out_lines) + "\n")
+        print(f"geschrieben: {n_done} Eintraege -> {log}")
+    if n_done == 0:
+        print(f"FEHLER: keine WAV-Paare gefunden (log={log}, recordings={rec})",
+              file=sys.stderr)
+        return 2
     return 0
 
 

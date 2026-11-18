@@ -52,6 +52,25 @@ BAND_NAMES = ("low", "mid", "high")
 # DSP-Kern
 # --------------------------------------------------------------------------
 
+def read_wav(path) -> tuple[np.ndarray, int]:
+    """Mono-WAV (PCM16/32) via stdlib wave -> (float32-Signal in [-1,1], sr)."""
+    import wave
+    with wave.open(str(path), "rb") as w:
+        sr = w.getframerate()
+        ch = w.getnchannels()
+        sw = w.getsampwidth()
+        raw = w.readframes(w.getnframes())
+    if sw == 2:
+        x = np.frombuffer(raw, dtype=np.int16).astype(np.float64) / 32768.0
+    elif sw == 4:
+        x = np.frombuffer(raw, dtype=np.int32).astype(np.float64) / 2147483648.0
+    else:
+        raise ValueError(f"unsupported sampwidth {sw} in {path}")
+    if ch > 1:
+        x = x.reshape(-1, ch).mean(axis=1)
+    return x, sr
+
+
 def diff_matrix(x_a, x_b, sr: int = 48000) -> dict:
     """Delta-Spektrogram (dB) aus zwei Signalen via sim.features.
 
@@ -335,7 +354,7 @@ def interpret_pair(x_a, x_b, sr: int = 48000, backend=None, png_path=None) -> di
     probs = conf = vision = None
     source = "dsp"
     spec_png = None
-    if backend is not None:
+    if backend is not None or png_path is not None:
         try:
             if png_path is None:
                 import tempfile
@@ -343,12 +362,13 @@ def interpret_pair(x_a, x_b, sr: int = 48000, backend=None, png_path=None) -> di
             sim_embed.render_spec_pair_png(np.asarray(x_a, dtype=np.float64),
                                            np.asarray(x_b, dtype=np.float64),
                                            sr, png_path)
-            vision = backend.classify_png(png_path, feat)
-            labels = vision["labels"]
-            probs = vision["probs"]
-            conf = vision["confidence"]
-            source = "vision"
             spec_png = str(png_path)
+            if backend is not None:
+                vision = backend.classify_png(png_path, feat)
+                labels = vision["labels"]
+                probs = vision["probs"]
+                conf = vision["confidence"]
+                source = "vision"
         except Exception as e:
             print(f"WARNING: specdiff vision failed ({e}) - using DSP labels",
                   file=sys.stderr)
