@@ -11,7 +11,7 @@ Zwei Ebenen (hybrid, Spec 2026-11-18):
   OllamaChatBackend (gemma4 via /api/chat, think:false, JSON-Prompt).
   Liefert die Labels auf dem gerenderten PNG; bei Ausfall -> DSP-Labels.
 
-Score ist immer numerisch aus DSP: specdiff_score = clip(100 - 10*severity_db).
+Score ist immer numerisch aus DSP: specdiff_score = clip(100 - 4*severity_db), severity_db = median |delta| ueber aktive Bins (peak-40 dB).
 Pad-Spalten (unterschiedliche Laenge) sind 0 dB / nicht aktiv (grau wie im PNG).
 """
 
@@ -30,8 +30,9 @@ DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 DEFAULT_SPECDIFF_MODEL = "d1-omni:2b"
 
 # Schwellen (Spec 2026-11-18)
-SEV_LIGHT_DB = 2.0        # mean |delta| aktiv < 2 dB -> light
-SEV_HEAVY_DB = 6.0        # < 6 dB -> medium, sonst heavy
+SEV_LIGHT_DB = 5.0        # median |delta| aktiv < 5 dB -> light (kalibriert 2026-11-18,
+SEV_HEAVY_DB = 15.0       # < 15 dB -> medium, sonst heavy; Eval: User-Ratings 90er bei 6-11 dB)
+SEV_SCALE = 4.0           # specdiff_score = clip(100 - SEV_SCALE * median|delta|)
 SPREAD_THR_DB = 3.0       # Bin "Fehler" ab |delta| > 3 dB
 SPREAD_EVEN_FRAC = 0.25   # aktiver Anteil mit Fehler >= 0.25 -> even
 BAND_THR_DB = 3.0         # Band betroffen ab Mittel |delta| > 3 dB
@@ -40,7 +41,8 @@ MID_HZ = 2000.0
 SLOPE_THR_DB = 1.5        # |Gesamt-Slope| der e(t)-Geraden -> increasing/decreasing
 ACORR_THR = 0.5           # Autokorrelation lag 2..n/2 -> periodical
 PEAK_THR_DB = 3.0         # Peak in e(t) ab Mittel + 3 dB
-ACTIVE_FLOOR_DB = 6.0     # Bin aktiv ab max(sa,sb) >= global_min + 6 dB
+ACTIVE_PEAK_DB = 40.0     # Bin aktiv ab max(sa,sb) >= global_peak - 40 dB
+                          # (nahe Rauschbins liefern riesige, irrelevante dB-Deltas)
 
 SEVERITIES = ("light", "medium", "heavy")
 SPREADS = ("even", "punctual")
@@ -141,8 +143,9 @@ def diff_matrix(x_a, x_b, sr: int = 48000) -> dict:
     """Delta-Spektrogram (dB) aus zwei Signalen via sim.features.
 
     -> {"delta": (n_bands, n_frames), "band_edges", "active": bool-Maske,
-        "floor_db"}. Laengere Seite bestimmt n_frames; Pad-Spalten der
+        "peak_db"}. Laengere Seite bestimmt n_frames; Pad-Spalten der
     kuerzeren Seite: delta = 0, active = False (grau wie im PNG).
+    aktiv = max(sa,sb) >= peak - ACTIVE_PEAK_DB (peak = global max beider Specs).
     Raises ValueError bei zu kurzen Signalen (wie sim.features).
     """
     fa = sim.features(np.asarray(x_a, dtype=np.float64), sr=sr)
@@ -159,14 +162,14 @@ def diff_matrix(x_a, x_b, sr: int = 48000) -> dict:
         delta[:, na:] = 0.0
     if nb < n:
         delta[:, nb:] = 0.0
-    floor = min(float(sa.min()), float(sb.min())) + ACTIVE_FLOOR_DB
-    active = np.maximum(sa, sb) >= floor
+    peak = max(float(sa.max()), float(sb.max()))
+    active = np.maximum(sa, sb) >= peak - ACTIVE_PEAK_DB
     if na < n:
         active[:, na:] = False
     if nb < n:
         active[:, nb:] = False
     return {"delta": delta, "band_edges": fa["band_edges"],
-            "active": active, "floor_db": float(floor)}
+            "active": active, "peak_db": float(peak)}
 
 
 def dsp_features(delta: np.ndarray, band_edges: np.ndarray, active: np.ndarray) -> dict:
@@ -180,7 +183,7 @@ def dsp_features(delta: np.ndarray, band_edges: np.ndarray, active: np.ndarray) 
     d = np.abs(delta)
     n_bands, n_frames = delta.shape
     if active.any():
-        severity_db = float(d[active].mean())
+        severity_db = float(np.median(d[active]))   # median: robust gegen Extrem-Bins
         spread_frac = float((d[active] > SPREAD_THR_DB).mean())
     else:
         severity_db, spread_frac = 0.0, 0.0
@@ -251,8 +254,8 @@ def classify_dsp(feat: dict) -> dict:
 
 
 def specdiff_score(severity_db: float) -> float:
-    """Score 0-100 aus der mittleren aktiven Abweichung: 100 - 10 dB, geclippt."""
-    return float(np.clip(100.0 - 10.0 * float(severity_db), 0.0, 100.0))
+    """Score 0-100 aus der medianen aktiven Abweichung: clip(100 - 4 dB, 0, 100)."""
+    return float(np.clip(100.0 - SEV_SCALE * float(severity_db), 0.0, 100.0))
 
 
 # --------------------------------------------------------------------------
@@ -431,10 +434,14 @@ def interpret_pair(x_a, x_b, sr: int = 48000, backend=None, png_path=None) -> di
             spec_png = str(png_path)
             if backend is not None:
                 vision = backend.classify_png(png_path, feat)
-                labels = vision["labels"]
+                labels = dict(vision["labels"])
                 probs = vision["probs"]
                 conf = vision["confidence"]
                 source = "vision"
+                # bands = Union Vision+DSP: das PNG oben (low) wird vom Model leicht
+                # unterlesen; DSP-Bänder sind zuverlaessiger (Eval 2026-11-18: 7/7 Text-Hits)
+                dsp_labels = classify_dsp(feat)
+                labels["bands"] = sorted(set(labels["bands"]) | set(dsp_labels["bands"]))
         except Exception as e:
             print(f"WARNING: specdiff vision failed ({e}) - using DSP labels",
                   file=sys.stderr)

@@ -55,6 +55,19 @@ Transfer synth programs **Blofeld -> Iridium**: read dumps, compare parameter st
   **Data contract for the data-delivering session:** measurements as JSONL like `sim_log.jsonl`
   (`meta.blofeld` + `result.score/combined/embed_score`), dumps as `dumps/blofeld_sndd_<LOC>_<ts>.bin`.
   Spec/plan: `docs/superpowers/specs/2026-11-18-prognose-rf-design.md`, `docs/superpowers/plans/2026-11-18-prognose-rf.md`.
+- **Spectral-diff interpretation** (2026-11-18, hybrid DSP + local vision decision model): `bloridium/specdiff.py` +
+  CLI `bloridium specdiff --wav A.wav B.wav [--png out.png]` (single) and
+  `bloridium specdiff --log recordings/sim_log.jsonl --recordings recordings/ [--only A043] [--write] [--no-vision]`
+  (batch over the `ab_<LOC>_<ts>_…_{blo,irr}.wav` pairs; `--write` stores `result.specdiff` +
+  `result.specdiff_score` back into the JSONL). Labels: `severity` light/medium/heavy,
+  `spread` even/punctual, `temporal` even/periodical/single/multiple/increasing/decreasing,
+  `bands` low/mid/high. DSP layer (numpy-only, deterministic) computes features + fallback labels
+  and the score (`clip(100 − 10·mean|ΔdB|)`); vision layer = d1-omni:2b via `/v1/systemone`
+  (`choice`/`noul` questions on the A|B|Δ PNG, ~3 s/call) by default, gemma4:12b-it-qat via
+  `/api/chat` with `think:false` as `--backend chat` (~64 s/call). `--specdiff dsp|vision` on
+  `sim compare` and `--specdiff` on `sim_checkpoint.py` (vision only on the reference combo
+  wheel 0 + note 72, DSP elsewhere). Spec/plan (incl. spike results):
+  `docs/superpowers/specs/2026-11-18-specdiff-design.md`, `docs/superpowers/plans/2026-11-18-specdiff.md`.
 
 ### Tools
 - `tools/ump_send(.m)` – raw UMP packets to a CoreMIDI endpoint (endpoint names: `MIDI 2.0`, `Synth`).

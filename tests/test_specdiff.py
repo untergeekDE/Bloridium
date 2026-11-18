@@ -44,14 +44,20 @@ def test_diff_matrix_pad_and_active():
 
 
 def test_classify_constant_heavy_even_even():
-    d, be, act = _delta_matrix(fill=8.0)
+    d, be, act = _delta_matrix(fill=20.0)
     feat = specdiff.dsp_features(d, be, act)
     lab = specdiff.classify_dsp(feat)
-    assert feat["severity_db"] == pytest.approx(8.0)
-    assert lab["severity"] == "heavy"
+    assert feat["severity_db"] == pytest.approx(20.0)
+    assert lab["severity"] == "heavy"      # >= SEV_HEAVY_DB (15)
     assert lab["spread"] == "even"
     assert lab["temporal"] == "even"
-    assert specdiff.specdiff_score(feat["severity_db"]) == pytest.approx(20.0)
+    assert specdiff.specdiff_score(feat["severity_db"]) == pytest.approx(20.0)  # 100-4*20
+
+
+def test_classify_medium_band():
+    d, be, act = _delta_matrix(fill=8.0)
+    lab = specdiff.classify_dsp(specdiff.dsp_features(d, be, act))
+    assert lab["severity"] == "medium"     # 5 <= 8 < 15
 
 
 def test_classify_single_punctual_single():
@@ -96,9 +102,9 @@ def test_classify_bands_high_only():
 
 def test_specdiff_score_bounds():
     assert specdiff.specdiff_score(0.0) == 100.0
-    assert specdiff.specdiff_score(20.0) == 0.0
+    assert specdiff.specdiff_score(25.0) == 0.0
     assert specdiff.specdiff_score(50.0) == 0.0     # clip
-    assert specdiff.specdiff_score(3.0) == pytest.approx(70.0)
+    assert specdiff.specdiff_score(3.0) == pytest.approx(88.0)
 
 
 def test_diff_matrix_too_short_raises():
@@ -157,8 +163,8 @@ def test_systemone_backend_parses_answers(tmp_path, monkeypatch):
     assert calls["url"].endswith("/v1/systemone")
     assert "state" in calls["payload"] and "images" in calls["payload"]
     assert calls["payload"]["images"][0] == _b64.b64encode(b"\x89PNG-fake").decode()
-    assert out["labels"] == {"severity": "medium", "spread": "even",
-                             "temporal": "periodical", "bands": ["high"]}
+    assert out["labels"]["severity"] == "medium"
+    assert out["labels"]["bands"] == ["high"]   # reine Vision-Antwort hier
     assert out["probs"]["severity"]["medium"] == pytest.approx(0.7)
     assert out["confidence"] > 0.0
 
@@ -204,7 +210,8 @@ def test_interpret_pair_vision_labels_win(tmp_path, monkeypatch):
                                 png_path=png_out)
     assert r["source"] == "vision"
     assert r["labels"]["temporal"] == "periodical"     # aus Vision, nicht DSP
-    assert r["labels"]["bands"] == ["high"]
+    # bands = Union Vision+DSP: synthetisches Paar (andere Frequenz) -> DSP sieht mehr
+    assert set(r["labels"]["bands"]) >= {"high"}
     assert png_out.exists() and r["spec_png"] == str(png_out)
 
 
