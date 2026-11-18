@@ -1,9 +1,9 @@
-"""bloridium cc – Live-CC am Iridium/Blofeld per Namen aus der midi.guide-CSV."""
+"""bloridium cc - live CC on the Iridium/Blofeld by name from the midi.guide CSV."""
 
 import pytest
 
 
-# ---- ccmap: CSV laden + Namen aufloesen ----
+# ---- ccmap: load CSV + resolve names ----
 
 def test_load_cc_map_and_find_exact(repo):
     from bloridium import ccmap
@@ -25,19 +25,19 @@ def test_find_cc_no_cc_param_raises(repo):
     from bloridium import ccmap
 
     table = ccmap.load_cc_map(repo / "docs/midi-maps/iridium_midi_guide.csv")
-    with pytest.raises(KeyError, match="kein CC"):
-        ccmap.find_cc("Filter1 Cutoff", table)  # NRPN-only, Geraet ignoriert NRPN
+    with pytest.raises(KeyError, match="no CC"):
+        ccmap.find_cc("Filter1 Cutoff", table)  # NRPN-only, the device ignores NRPN
 
 
 def test_find_cc_ambiguous_lists_matches(repo):
     from bloridium import ccmap
 
     table = ccmap.load_cc_map(repo / "docs/midi-maps/iridium_midi_guide.csv")
-    with pytest.raises(ValueError, match="mehrdeutig"):
+    with pytest.raises(ValueError, match="ambiguous"):
         ccmap.find_cc("Filter1", table)
 
 
-# ---- cli: cc senden ----
+# ---- cli: send cc ----
 
 class FakeSynth:
     def __init__(self):
@@ -63,20 +63,21 @@ def _run_cc(monkeypatch, db_path, *argv):
 def test_cc_by_name_part2_sends_right_channel(db_path, monkeypatch):
     rc, fake = _run_cc(monkeypatch, db_path, "Filter1 Reso", "100", "--part", "2")
     assert rc == 0
-    assert fake.sent == [(2, 100, 6)]  # Part 2 = MIDI ch7 = 0-basiert 6
+    assert fake.sent == [(2, 100, 6)]  # Part 2 = MIDI ch7 = 0-based 6
 
 
 def test_cc_default_part1_channel6(db_path, monkeypatch):
     rc, fake = _run_cc(monkeypatch, db_path, "Filter2 Cutoff", "64")
     assert rc == 0
-    assert fake.sent == [(9, 64, 5)]  # Part 1 = MIDI ch6 = 0-basiert 5
+    assert fake.sent == [(9, 64, 5)]  # Part 1 = MIDI ch6 = 0-based 5
 
 
 def test_cc7_zero_refused_without_force(db_path, monkeypatch, capsys):
     rc, fake = _run_cc(monkeypatch, db_path, "--raw", "7", "0")
     assert rc == 1
-    assert fake.sent == []  # nichts gesendet
-    assert "stumm" in capsys.readouterr().err.lower() or "Output" in capsys.readouterr().err
+    assert fake.sent == []  # nothing sent
+    err = capsys.readouterr().err
+    assert "silent" in err.lower() or "output" in err.lower()
 
 
 def test_cc7_with_force_sends_and_warns(db_path, monkeypatch, capsys):
@@ -110,7 +111,7 @@ def test_load_pid_map(repo):
     assert m["filter1 reso"] == (2, 967)
 
 
-def test_cc_for_fallback_ohne_pid_spalte(tmp_path):
+def test_cc_for_fallback_without_pid_column(tmp_path):
     from bloridium import ccmap
     p = tmp_path / "m.csv"
     p.write_text("cc,parameter_name\n5,Filter1 Sustain\n")
@@ -119,16 +120,16 @@ def test_cc_for_fallback_ohne_pid_spalte(tmp_path):
 
 # --- Fix Important 3: cc_for Fallback robust ---
 
-def test_cc_for_pid_datei_fehlt_fallback_guide(tmp_path):
+def test_cc_for_pid_file_missing_falls_back_to_guide(tmp_path):
     from bloridium import ccmap
     guide = tmp_path / "guide.csv"
     guide.write_text("parameter_name,cc_msb\nFilter1 Reso,2\n")
-    cc, pid = ccmap.cc_for("Filter1 Reso", pid_map_path=tmp_path / "fehlt.csv",
+    cc, pid = ccmap.cc_for("Filter1 Reso", pid_map_path=tmp_path / "missing.csv",
                            guide_path=guide)
     assert cc == 2 and pid is None
 
 
-def test_cc_for_beide_fehlend_wirft_keyerror(tmp_path):
+def test_cc_for_both_missing_raises_keyerror(tmp_path):
     from bloridium import ccmap
     with pytest.raises(KeyError):
         ccmap.cc_for("Filter1 Reso", pid_map_path=tmp_path / "x.csv",

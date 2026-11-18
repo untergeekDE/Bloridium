@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""spike_mert_clap_eval.py – CLAP vs MERT als Embedding-Distanz auf unseren 9 Paaren.
+"""spike_mert_clap_eval.py – CLAP vs MERT as embedding distance on our 9 pairs.
 
-Spike 2026-11-17 (Frage: "CLAP oder MERT fuer unsere bisherigen Vergleiche?"):
-bettet die vorhandenen pegel-angeglichenen WAV-Paare (ab_<LOC>_20261115_*_n72_w0_*.wav)
-mit drei GGUF-Modellen via clap-cpp ein und vergleicht die Cosine-Scores mit den
-Benutzer-Ratings (recordings/phaseb_ratings_raw.json, Spearman).
+Spike 2026-11-17 (question: "CLAP or MERT for our previous comparisons?"):
+embeds the existing level-matched WAV pairs (ab_<LOC>_20261115_*_n72_w0_*.wav)
+with three GGUF models via clap-cpp and compares the cosine scores with the
+user ratings (recordings/phaseb_ratings_raw.json, Spearman).
 
-Modelle (alle gorse-io@HF, in models/):
-  - larger_clap_music_and_speech-q8_0.gguf (512-d, 48 kHz)  [Production-CLAP]
+Models (all gorse-io@HF, in models/):
+  - larger_clap_music_and_speech-q8_0.gguf (512-d, 48 kHz)  [production CLAP]
   - larger_clap_music-q8_0.gguf           (512-d, 48 kHz)  [CLAP music-only]
-  - MERT-v1-95M-q8_0.gguf                  (768-d, 24 kHz)  [MERT, Resample 48k->24k]
+  - MERT-v1-95M-q8_0.gguf                  (768-d, 24 kHz)  [MERT, resample 48k->24k]
 
-Output: recordings/mert_clap_eval_<ts>.json + Tabelle + Spearman pro Modell.
-Lizenz-Hinweis: MERT = CC-BY-NC-4.0 (Research ok, nicht kommerziell).
+Output: recordings/mert_clap_eval_<ts>.json + table + Spearman per model.
+License note: MERT = CC-BY-NC-4.0 (research ok, not commercial).
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 sys.path.insert(0, str(REPO))
 
 import clap_cpp  # noqa: E402
-from sim_eval_offline import spearman  # noqa: E402  (numpy-only, scipy ist hier broken)
+from sim_eval_offline import spearman  # noqa: E402  (numpy-only, scipy is broken here)
 
 REC = REPO / "recordings"
 MODELS = REPO / "models"
@@ -68,13 +68,13 @@ def main() -> int:
     for loc in locs:
         blo = sorted(REC.glob(f"ab_{loc}_20261115_*_n72_w0_blo.wav"))
         irr = sorted(REC.glob(f"ab_{loc}_20261115_*_n72_w0_irr.wav"))
-        assert blo and irr, f"{loc}: WAV-Paar fehlt"
+        assert blo and irr, f"{loc}: WAV pair missing"
         pairs[loc] = (blo[-1], irr[-1])
 
     backends = {}
     for name, (path, sr) in MODELS_CFG.items():
         backends[name] = (clap_cpp.CLAP(str(path)), sr)
-        print(f"geladen: {name} ({path.name})", flush=True)
+        print(f"loaded: {name} ({path.name})", flush=True)
 
     rows = []
     for loc in locs:
@@ -93,7 +93,7 @@ def main() -> int:
         print(f"{loc}: rating={row['rating']:3d} " +
               " ".join(f"{n}={row[f'{n}_score']:.1f}" for n in MODELS_CFG), flush=True)
 
-    print("\nSpearman vs Benutzer-Ratings (n=9):")
+    print("\nSpearman vs user ratings (n=9):")
     result = {}
     for name in MODELS_CFG:
         rho = spearman([r["rating"] for r in rows], [r[f"{name}_score"] for r in rows])
@@ -105,7 +105,7 @@ def main() -> int:
            "spearman": result, "rows": rows}
     path = REC / f"mert_clap_eval_{out['ts']}.json"
     path.write_text(json.dumps(out, indent=1))
-    print(f"\ngeschrieben: {path}")
+    print(f"\nwritten: {path}")
     return 0
 
 

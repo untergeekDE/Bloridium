@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Device-ID-Sweep am Iridium (read-only): F0 3E <model> <dev> 00 F7 ueber alle dev 0x00..0x7E.
+"""Device-ID sweep on the Iridium (read-only): F0 3E <model> <dev> 00 F7 across all dev 0x00..0x7E.
 
-Hypothese: das Iridium ignoriert Requests, deren DEV nicht seiner Device-ID entspricht.
-Aufruf:  python3 scripts/step2_probe_iridium_devsweep.py [port-index 0|1]
+These are vendor-specific device SysEx requests. Hypothesis: the Iridium ignores
+requests whose DEV does not match its device ID.
+Usage:  python3 scripts/step2_probe_iridium_devsweep.py [port-index 0|1]
 """
 
 from __future__ import annotations
@@ -41,7 +42,7 @@ def main() -> int:
         return msgs
 
     try:
-        print(f"Sweep: {port}, models={[hex(m) for m in MODELS]}, dev 0x00..0x7E, cmd 0x00")
+        print(f"Sweep: {port}, models={[hex(m) for m in MODELS]}, dev 0x00..0x7E, cmd 0x00 (vendor-specific device SysEx)")
         found = 0
         for model in MODELS:
             for dev in range(0x00, 0x7F):
@@ -50,11 +51,11 @@ def main() -> int:
                 for m in msgs:
                     found += 1
                     if m.type == "sysex":
-                        print(f"  ANTWORT model=0x{model:02X} dev=0x{dev:02X}: {bytes([0xF0, *m.data, 0xF7]).hex(' ')[:200]}")
+                        print(f"  REPLY model=0x{model:02X} dev=0x{dev:02X}: {bytes([0xF0, *m.data, 0xF7]).hex(' ')[:200]}")
                     else:
-                        print(f"  ANTWORT model=0x{model:02X} dev=0x{dev:02X}: {m}")
-            print(f"  model 0x{model:02X} durch, bisher {found} Antworten")
-        print("fertig, Antworten:", found)
+                        print(f"  REPLY model=0x{model:02X} dev=0x{dev:02X}: {m}")
+            print(f"  model 0x{model:02X} done, so far {found} replies")
+        print("done, replies:", found)
     finally:
         out.close()
         inp.close()

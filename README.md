@@ -2,24 +2,50 @@
 
 ## Objective - what this is about
 
-Transfer sound programs **programs (patches) from the Waldorf Blofeld to the Waldorf Iridium Synthesizer**.
+Transfer sound programs (patches) **from the Waldorf Blofeld to the Waldorf Iridium synthesizer**.
 
 An exact transfer is impossible, although those two synths are related and have a similar basic architecture, they are very different beasts. The conversion is therefore an **approximation**. 
 
 To close the gap, Bloridium provides tools to **measure and track the differences** between the original and the converted sound (A/B recordings over a Focusrite Scarlett 18i8, similarity score 0–100 from log-spectrogram + envelope comparison) and to **optimise parameters** until the Iridium patch matches the Blofeld as closely as possible.
 
-Hardware setup (empirically verified): both synths connected directly via USB to the Mac; audio through the Scarlett 18i8 — Blofeld on inputs 3/4 (MIDI channel 5), Iridium on inputs 5/6 (MIDI channels 6–9, Parts 1–4).
+### Hardware
+
+The test hardware used: 
+
+- Macbook Air
+- both synths connected directly via USB (**MIGHT CAUSE DIGITAL NOISE BY GROUND LOOP**)
+- Focusrite Scarlett 18i8 Audio interface
+- Blofeld on inputs 3/4 (MIDI channel 5), Iridium on inputs 5/6 (MIDI channels 6–9, Parts 1–4).
+
+### Configuration: `bloridium.yaml`
+
+All hardware-dependent settings live in the **user-editable `bloridium.yaml` in the project
+directory**: MIDI port names + channels per synth, fallback port candidates, and the audio
+device name, samplerate, raw channel count and per-synth input channels. Precedence:
+`--config PATH` flag → `$BLORIDIUM_CONFIG` env var → `./bloridium.yaml` → built-in defaults
+(so everything works without the file, too).
+
+To adapt to your own setup, run the discovery routine once:
+
+```bash
+bloridium discover              # list MIDI ports + audio devices + effective config (--json, --probe for identity replies)
+bloridium discover --write      # merge discovered values into bloridium.yaml (your edits are kept; only empty keys are filled)
+```
+
+`discover` scans MIDI ports via CoreMIDI/mido (optionally sending a Universal Device Inquiry
+per output port) and audio capture devices via `ffmpeg -list_devices` (AVFoundation on macOS,
+ALSA on Linux). Then edit `bloridium.yaml` by hand as needed.
 
 ### Sound control on the Iridium
 
-As infuriating as it may be: **there is no way to take full remote control of a sound on the Iridium.** The Iridium has no SysEx layer, so patches can only arrive as `.qpat` files (USB stick / SD card). It sends NRPN but does not interpret NRPN control command. 
+As infuriating as it may be: **right now, there is no official way to take full remote control of a sound on the Iridium.** The Iridium has no documented SysEx layer, so patches can only arrive as `.qpat` files (USB stick / SD card). It sends NRPN but does not interpret incoming NRPN.
 
 **The only way to control Iridium parameters from a computer is via MIDI CC.** This limits computer/MIDI control to the 116 MIDI CC commands that are free. To use them, you must upload a MIDI map to the Iridium, defining the controls and the parameters they speak to.  
 
 ## Installation
 
 ```bash
-pip install -e ".[dev]"   # installs the `bloridium` command (mido, python-rtmidi, numpy)
+pip install -e ".[dev]"   # installs the `bloridium` command (mido, python-rtmidi, numpy, pyyaml)
 brew install ffmpeg        # audio recording via AVFoundation
 cd tools && clang -framework CoreMIDI -framework Foundation -o ump_send ump_send.m
 ```

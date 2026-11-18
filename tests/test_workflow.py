@@ -1,5 +1,5 @@
-"""Task 3: workflow library – parse_location, load_sndd_file, read_sound,
-convert_parsed (offline aus vorhandenem Dump)."""
+"""Task 3: workflow library - parse_location, load_sndd_file, read_sound,
+convert_parsed (offline from an existing dump)."""
 
 from types import SimpleNamespace
 
@@ -28,7 +28,7 @@ def test_parse_location_valid():
 def test_parse_location_invalid_raises():
     from bloridium import workflow
 
-    for bad in ("A000", "A129", "1A03", "xyz"):  # "" ist legacy = edit
+    for bad in ("A000", "A129", "1A03", "xyz"):  # "" is legacy = edit
         with pytest.raises(ValueError):
             workflow.parse_location(bad)
 
@@ -65,7 +65,7 @@ def test_convert_parsed_writes_qpat(repo, tmp_path):
     out_path, mapped, unmapped = workflow.convert_parsed(
         parsed, "A043", tmp_path, repo / TEMPLATE)
     assert out_path.exists() and out_path.suffix == ".qpat"
-    assert out_path.name == "SH Power_A043.qpat"  # Legacy-Namenkonvention aus step3
+    assert out_path.name == "SH Power_A043.qpat"  # legacy naming convention from step3
     assert mapped > 0
     assert isinstance(unmapped, list) and len(unmapped) > 0
     q = qpat.load(out_path)
@@ -73,7 +73,7 @@ def test_convert_parsed_writes_qpat(repo, tmp_path):
     assert q["name"] == "SH Power"
 
 
-# ---- read_sound mit Fake-Synth (Retry nach Timeout) ----
+# ---- read_sound with FakeSynth (retry after timeout) ----
 
 def _fake_sndd_msg(name="SH Power", bb=0, nn=42):
     from bloridium import blofeld_dump as bd
@@ -98,10 +98,10 @@ class FakeSynth:
 def test_read_sound_retries_after_timeout():
     from bloridium import workflow
 
-    synth = FakeSynth([[], [_fake_sndd_msg()]])  # 1. Versuch: Timeout, 2.: SNDD
+    synth = FakeSynth([[], [_fake_sndd_msg()]])  # 1st try: timeout, 2nd: SNDD
     parsed = workflow.read_sound(synth, "A043", timeout=0.01, retries=2)
     assert parsed["name"] == "SH Power"
-    assert len(synth.requests) == 2  # SNDR wurde 2x gesendet
+    assert len(synth.requests) == 2  # SNDR sent 2x
 
 
 def test_read_sound_raises_after_all_retries():

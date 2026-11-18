@@ -1,95 +1,95 @@
-# Phase-B-Eval 2026-11-14 (CLAP-Embedding + LLM-Urteil vs Phase A)
+# Phase-B eval 2026-11-14 (CLAP embedding + LLM verdict vs Phase A)
 
 Spec: `docs/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md`
 Plan: `docs/superpowers/plans/2026-11-14-phaseb-sim-embed.md` (Task 10)
 
 ## Setup
 
-- CLAP: `models/larger_clap_music_and_speech-q8_0.gguf` (gorse-io, Q8_0, Apache-2.0) via clap-cpp 0.1.1, 512-d Embedding, `embed_score = 100*clip(cos,0,1)`.
-- LLM: ollama `lfm3-omni:2b`, Modus **audio** (base64 WAV im `audio`-Feld akzeptiert), Prompt-ID `judge-v2-pegel`, Contract `{"score":0-100,"summary","differences"}`.
-- `combined = 0.5*score + 0.5*embed_score`; LLM-Score informativ, nicht in combined.
-- Offline-Eval: `python3 scripts/sim_eval_offline.py` -> `recordings/phaseb_eval_20261114_171001.json`.
+- CLAP: `models/larger_clap_music_and_speech-q8_0.gguf` (gorse-io, Q8_0, Apache-2.0) via clap-cpp 0.1.1, 512-d embedding, `embed_score = 100*clip(cos,0,1)`.
+- LLM: ollama `lfm3-omni:2b`, mode **audio** (base64 WAV accepted in the `audio` field), prompt ID `judge-v2-pegel`, contract `{"score":0-100,"summary","differences"}`.
+- `combined = 0.5*score + 0.5*embed_score`; LLM score informative, not in combined.
+- Offline eval: `python3 scripts/sim_eval_offline.py` -> `recordings/phaseb_eval_20261114_171001.json`.
 
-## Tabelle (Eval 2026-11-14 17:10)
+## Table (eval 2026-11-14 17:10)
 
-| Paar | Phase A score | embed_score | combined | verdict |
+| Pair | Phase A score | embed_score | combined | verdict |
 |---|---|---|---|---|
-| ab_20261114_170201 (A001 live) | 92.3 | 32.24 | 62.27 | nahe |
-| ab_A001_20261114_154306 | – | – | – | fehler (Stille) |
-| ab_A001_20261114_160154 | 94.2 | 41.73 | 67.97 | nahe |
-| ab_A008_20261114_160856 | – | – | – | fehler (Stille) |
-| ab_A043_20261108_142609 | – | – | – | fehler (Stille) |
-| ab_A043_20261108_143856 | – | – | – | fehler (Stille) |
-| ab_A043_20261108_144314 | – | – | – | fehler (Stille) |
-| ab_A043_20261114_153000 | 93.08 | 56.61 | 74.84 | nahe |
-| check_20261108_152813 (Referenz) | 98.5 | 88.23 | 93.37 | nahe |
+| ab_20261114_170201 (A001 live) | 92.3 | 32.24 | 62.27 | close |
+| ab_A001_20261114_154306 | – | – | – | error (silence) |
+| ab_A001_20261114_160154 | 94.2 | 41.73 | 67.97 | close |
+| ab_A008_20261114_160856 | – | – | – | error (silence) |
+| ab_A043_20261108_142609 | – | – | – | error (silence) |
+| ab_A043_20261108_143856 | – | – | – | error (silence) |
+| ab_A043_20261108_144314 | – | – | – | error (silence) |
+| ab_A043_20261114_153000 | 93.08 | 56.61 | 74.84 | close |
+| check_20261108_152813 (reference) | 98.5 | 88.23 | 93.37 | close |
 
-Live-Messung 2026-11-14 17:00:55 (A001 Blofeld vs Iridium Set6/PC108, note 72):
-Phase A **91.19** (spec_cos 0.9116, env_dtw 0.0876, verdict nahe), embed **32.0**, combined **61.59**,
-LLM **5** — Grund laut LLM: Iridium **-66.5 dBFS** vs Blofeld **-22.9 dBFS** (Pegel, ~44 dB zu leise).
+Live measurement 2026-11-14 17:00:55 (A001 Blofeld vs Iridium Set6/PC108, note 72):
+Phase A **91.19** (spec_cos 0.9116, env_dtw 0.0876, verdict close), embed **32.0**, combined **61.59**,
+LLM **5** — reason per LLM: Iridium **-66.5 dBFS** vs Blofeld **-22.9 dBFS** (level, ~44 dB too quiet).
 Log: `recordings/sim_log.jsonl` (ts 20261114_170055, prompt_id `judge-v2-pegel`).
 
-## Befunde
+## Findings
 
-- Phase A ist pegel-invariant (normiert) -> hohe Scores trotz Pegel-Fehler.
-- CLAP-Embedding und LLM reagieren auf Pegel -> embed/combined/LLM brechen ein.
-  **Pegel-Normierung vor Phase B pruefen** (oder Scarlett-Gain Iridium In 5/6 / Iridium Master).
-- check-Paar (gleiches Geraet) embed 88.23 -> Embedding diskriminiert prinzipiell.
-- Filter-Cutoff-Skala (Blofeld raw -> Iridium norm) ist norm()-direkt falsch
-  (A001 am Iridium: Filter1 416 Hz, DF 199 Hz; Blofeld F1 raw 64 / F2 raw 52) ->
-  Cutoff-Kalibrierung (Blofeld CC-Sweep + Peak-Messung -> Hz) steht aus (HANDOVER-2026-11-10 Plan 4).
-- Osc-Octave-Vorzeichen gefixt 2026-11-14 (`qpat_map.py`: raw-64 statt 64-raw,
-  A001 Osc3 raw 52 -> CoarsePitch 12.0 statt 36.0; Test `test_osc_octave_sign_a001`).
+- Phase A is level-invariant (normalized) -> high scores despite the level error.
+- CLAP embedding and LLM react to level -> embed/combined/LLM break down.
+  **Check level normalization before Phase B** (or Scarlett gain Iridium In 5/6 / Iridium master).
+- check pair (same device) embed 88.23 -> the embedding fundamentally discriminates.
+- Filter cutoff scale (Blofeld raw -> Iridium norm) is wrong with direct norm()
+  (A001 on the Iridium: Filter1 416 Hz, DF 199 Hz; Blofeld F1 raw 64 / F2 raw 52) ->
+  cutoff calibration (Blofeld CC sweep + peak measurement -> Hz) pending (HANDOVER-2026-11-10 plan 4).
+- Osc octave sign fixed 2026-11-14 (`qpat_map.py`: raw-64 instead of 64-raw,
+  A001 Osc3 raw 52 -> CoarsePitch 12.0 instead of 36.0; test `test_osc_octave_sign_a001`).
 
-## Bewertung durch Benutzer (post-hoc, 0-100 Hoereindruck) — TODO
+## Rating by the user (post-hoc, 0-100 listening impression) — TODO
 
-| Paar | Blofeld | Iridium | Phase A | embed | combined | LLM | Benutzer 0-100 | Bemerkung |
+| Pair | Blofeld | Iridium | Phase A | embed | combined | LLM | User 0-100 | Comment |
 |---|---|---|---|---|---|---|---|---|
-| A001 live 170055 | A001 | Set6 PC108 | 91.19 | 32.0 | 61.59 | 5 | | Pegel -66 dBFS; Filter 416/199 Hz |
+| A001 live 170055 | A001 | Set6 PC108 | 91.19 | 32.0 | 61.59 | 5 | | Level -66 dBFS; Filter 416/199 Hz |
 | ab_A001_20261114_160154 | A001 | ? | 94.2 | 41.73 | 67.97 | – | | |
 | ab_A043_20261114_153000 | A043 | ? | 93.08 | 56.61 | 74.84 | – | | |
-| check_20261108_152813 | – | – | 98.5 | 88.23 | 93.37 | – | | Referenz |
+| check_20261108_152813 | – | – | 98.5 | 88.23 | 93.37 | – | | Reference |
 
-Ratings als JSON `{"<pair>": 0-100}` -> `python3 scripts/sim_eval_offline.py --ratings ratings.json`
--> Spearman score/embed/combined gegen Benutzer-Bewertung.
+Ratings as JSON `{"<pair>": 0-100}` -> `python3 scripts/sim_eval_offline.py --ratings ratings.json`
+-> Spearman of score/embed/combined against the user rating.
 
-**Caveat post-hoc:** Benutzer bewertet nach Kenntniss der numerischen Scores (nicht blind).
+**Caveat post-hoc:** the user rates with knowledge of the numeric scores (not blind).
 
-## Live-Durchlauf 9 Presets 2026-11-14 (Set 6 PC108-116, Note 72, Manual-Panel-Modus)
+## Live run 9 presets 2026-11-14 (Set 6 PC108-116, note 72, manual-panel mode)
 
-Iridium-PC-Umschaltung defekt (HANDOVER-2026-11-14) -> Favoriten am Panel gedreht,
-nur Noten per MIDI; Blofeld-PC (Bank A) vom Skript. Skript: `scripts/sim_manual_compare.py`
-(mode=`manual_panel`, Log `recordings/sim_log.jsonl`, ts 20261114_175046-180616).
-**Pegel-Normierung vor Phase B aktiv** (`norm_pegel=True` in `score_pair_embed`:
-embed/LLM auf Peak 0.5 angeglichen, Phase A + peak_dbfs roh) — Iridium roh weiterhin
-15-30 dB unter Blofeld (Seriell-Patches A001/A008/A039/A073 am staerksten, bis -64.8 dBFS
-Peak; nach Norm ist der RMS-Abstand gering, embed springt dadurch 29 -> 75.6 bei A001).
-WAVs (pegel-angeglichen, Peak 0.5) zum Reinhoeren: `recordings/ab_<LOC>_20261114_*_n72_{blo,irr}.wav`.
+Iridium PC switching broken (HANDOVER-2026-11-14) -> favorites turned on the panel,
+only notes via MIDI; Blofeld PC (Bank A) from the script. Script: `scripts/sim_manual_compare.py`
+(mode=`manual_panel`, log `recordings/sim_log.jsonl`, ts 20261114_175046-180616).
+**Level normalization before Phase B active** (`norm_pegel=True` in `score_pair_embed`:
+embed/LLM on peak-0.5-aligned copies, Phase A + raw peak_dbfs) — Iridium raw still
+15-30 dB below Blofeld (serial patches A001/A008/A039/A073 strongest, down to -64.8 dBFS
+peak; after norm the RMS distance is small, embed jumps 29 -> 75.6 on A001).
+WAVs (level-aligned, peak 0.5) for listening in: `recordings/ab_<LOC>_20261114_*_n72_{blo,irr}.wav`.
 
-| Preset | Iridium PC | ts | Phase A | embed | combined | LLM | Peak A/B dBFS | Benutzer 0-100 | Bemerkung |
+| Preset | Iridium PC | ts | Phase A | embed | combined | LLM | Peak A/B dBFS | User 0-100 | Comment |
 |---|---|---|---|---|---|---|---|---|---|
-| A001 JMX jun | 108 | 175046 | 92.86 | 75.58 | 84.22 | 45 | -19.4 / -47.9 | 70 | Leiser, Filter zu weit geschlossen, LFO1 Filter wirkt zu stark |
-| A008 Easy Piano | 109 | 175216 | 95.20 | 69.35 | 82.28 | 45 | -25.6 / -64.8 | 45 | Kaum zu hoehren; vermutl. 1 Oktave tiefer, sehr stark abgefiltert |
-| A010 Wurly Piano1 | 110 | 175258 | 97.00 | 78.22 | 87.61 | 45 | -44.2 / -42.8 | 80 | Hohe Lagen anderer Charakter (hohle square wave) |
-| A019 Tines DocT | 111 | 175329 | 95.05 | 87.77 | 91.41 | 45 | -29.4 / -45.5 | 90 | Reagiert nicht auf Aftertouch |
-| A022 ModWheelOrgDrive | 112 | 180424 | 94.74 | 83.62 | 89.18 | 45 | -15.5 / -29.2 | 95 | Iridium hörbar anderer Charakter, aber sehr aehnlich; mittl. Oberton am Blofeld lauter? |
-| A039 A Elektro | 113 | 180454 | 96.07 | 77.22 | 86.64 | 45 | -37.9 / -55.3 | 90 | Viel leiser; Delay beim Blofeld |
-| A043 SH Power | 114 | 180519 | 95.02 | 78.38 | 86.70 | 45 | -19.3 / -35.6 | 75 | Blofeld voller (Filter tiefer weiter geschlossen); Iridium stark Aftertouch-Bending; Problem Channel->Poly Aftertouch |
-| A071 Windowed SYNC2FM | 115 | 180547 | 94.38 | 86.71 | 90.54 | 45 | -23.2 / -40.6 | 70 | Kein Sync beim Iridium |
-| A073 Chord Hose T | 116 | 180616 | 96.63 | 81.01 | 88.82 | 45 | -27.0 / -53.9 | 85 | Unterschiedliche Effekte, aehnlicher Grundcharakter, Blofeld schneidender |
+| A001 JMX jun | 108 | 175046 | 92.86 | 75.58 | 84.22 | 45 | -19.4 / -47.9 | 70 | Quieter, filter closed too far, LFO1 filter acts too strong |
+| A008 Easy Piano | 109 | 175216 | 95.20 | 69.35 | 82.28 | 45 | -25.6 / -64.8 | 45 | Barely audible; presumably 1 octave lower, very strongly filtered |
+| A010 Wurly Piano1 | 110 | 175258 | 97.00 | 78.22 | 87.61 | 45 | -44.2 / -42.8 | 80 | High registers different character (hollow square wave) |
+| A019 Tines DocT | 111 | 175329 | 95.05 | 87.77 | 91.41 | 45 | -29.4 / -45.5 | 90 | Does not react to aftertouch |
+| A022 ModWheelOrgDrive | 112 | 180424 | 94.74 | 83.62 | 89.18 | 45 | -15.5 / -29.2 | 95 | Iridium audibly different character, but very similar; mid harmonic louder on the Blofeld? |
+| A039 A Elektro | 113 | 180454 | 96.07 | 77.22 | 86.64 | 45 | -37.9 / -55.3 | 90 | Much quieter; delay on the Blofeld |
+| A043 SH Power | 114 | 180519 | 95.02 | 78.38 | 86.70 | 45 | -19.3 / -35.6 | 75 | Blofeld fuller (filter further closed); Iridium strong aftertouch bending; problem Channel->Poly aftertouch |
+| A071 Windowed SYNC2FM | 115 | 180547 | 94.38 | 86.71 | 90.54 | 45 | -23.2 / -40.6 | 70 | No sync on the Iridium |
+| A073 Chord Hose T | 116 | 180616 | 96.63 | 81.01 | 88.82 | 45 | -27.0 / -53.9 | 85 | Different effects, similar basic character, Blofeld more cutting |
 
-Benutzer-Ratings: `recordings/phaseb_ratings_raw.json`.
-Spearman Benutzer vs Metrik (n=9): Phase A **+0.27**, embed **+0.50**, combined **+0.52**
--> embed/combined korrelieren besser mit dem Hoereindruck als Phase A allein.
+User ratings: `recordings/phaseb_ratings_raw.json`.
+Spearman user vs metric (n=9): Phase A **+0.27**, embed **+0.50**, combined **+0.52**
+-> embed/combined correlate better with the listening impression than Phase A alone.
 
-## LLM-Judge-Vergleich 2026-11-15 (d1-omni vs lfm3-omni auf denselben 9 WAV-Paaren)
+## LLM judge comparison 2026-11-15 (d1-omni vs lfm3-omni on the same 9 WAV pairs)
 
 Spike: `scripts/spike_d1_omni_eval.py` -> `recordings/d1_omni_eval_20261115_083238.json`.
-d1-omni:600m (Liquid AI, System One `/v1/systemone`, 850 MB) als **score**-Question
-(10 Levels) ueber Spektrogramm-PNGs, zwei Varianten: zwei Einzelbilder (spec2img) vs
-ein Side-by-Side-Bild (spec1img). Baseline lfm3-omni:2b im audio-Modus.
+d1-omni:600m (Liquid AI, System One `/v1/systemone`, 850 MB) as **score** question
+(10 levels) via spectrogram PNGs, two variants: two single images (spec2img) vs
+one side-by-side image (spec1img). Baseline lfm3-omni:2b in audio mode.
 
-| Preset | Benutzer | lfm3 audio | d1 spec2img | d1 spec1img |
+| Preset | User | lfm3 audio | d1 spec2img | d1 spec1img |
 |---|---|---|---|---|
 | A001 | 70 | 85 | 95.9 | 87.9 |
 | A008 | 45 | 85 | 92.0 | 88.1 |
@@ -101,26 +101,26 @@ ein Side-by-Side-Bild (spec1img). Baseline lfm3-omni:2b im audio-Modus.
 | A071 | 70 | 85 | 93.3 | 87.0 |
 | A073 | 85 | 85 | 96.0 | 89.4 |
 
-Spearman vs Benutzer (n=9): lfm3-audio **+0.35** (degeneriert: konstant 85 auf
-pegel-angeglichenen Clips), d1-spec2img **+0.07**, d1-spec1img **+0.12**.
+Spearman vs user (n=9): lfm3-audio **+0.35** (degenerate: constant 85 on
+level-aligned clips), d1-spec2img **+0.07**, d1-spec1img **+0.12**.
 
-**Befund:** d1-omni ist fuer Synth-Timbre-A/B nicht geeignet — Scores kollabieren bei
-88-96 (Musik-Spektrogramme sehen fuer das Modell alle aehnlich aus; Audio-Encoder ist
-auf englische Sprache trainiert, nicht Musik). lfm3-omni im spec-Modus halluziniert
-("Bildschirme", Spearman -0.39). **Fazit: embed/combined (ρ 0.50/0.52) bleiben die
-besten automatischen Proxy-Scores; LLM-Urteil bleibt informativ-only.**
-Fix aus dem Spike: `_extract_json` in `sim_embed.py` jetzt balancierter Brace-Scan
-(Prosa/Code-Fences nach dem JSON brachen den Greedy-Match; 2/9 spec-Calls schlugen fehl),
-Tests in `tests/test_sim_embed.py` (236 passed).
+**Finding:** d1-omni is not suitable for synth timbre A/B — scores collapse at
+88-96 (music spectrograms all look similar to the model; the audio encoder is
+trained on English speech, not music). lfm3-omni in spec mode hallucinates
+("screens", Spearman -0.39). **Conclusion: embed/combined (ρ 0.50/0.52) remain the
+best automatic proxy scores; the LLM verdict stays informative-only.**
+Fix from the spike: `_extract_json` in `sim_embed.py` now a more balanced brace scan
+(prose/code fences after the JSON broke the greedy match; 2/9 spec calls failed),
+tests in `tests/test_sim_embed.py` (236 passed).
 
-### d1-omni als Differenz-Profiler (noul-Fragen, Englisch) — 600m vs 2b
+### d1-omni as a difference profiler (noul questions, English) — 600m vs 2b
 
 Spike: `scripts/spike_d1_profile_eval.py` -> `recordings/d1_profile_eval_20261115_084819.json`.
-Pro Paar ein `/v1/systemone`-Call mit images=[spekA, spekB] + 8 Fragen: `similarity`
-(score 10 Levels) sowie noul `same_pitch, octave_lower, brighter, darker, noisier,
+Per pair one `/v1/systemone` call with images=[specA, specB] + 8 questions: `similarity`
+(score 10 levels) plus noul `same_pitch, octave_lower, brighter, darker, noisier,
 punchier, same_overall`.
 
-| Preset | Benutzer | 600m score | 2b score | 2b Flags (p>=0.5) |
+| Preset | User | 600m score | 2b score | 2b flags (p>=0.5) |
 |---|---|---|---|---|
 | A001 | 70 | 95.9 | 63.5 | darker |
 | A008 | 45 | 92.0 | 59.3 | octave_lower, brighter, darker |
@@ -132,30 +132,30 @@ punchier, same_overall`.
 | A071 | 70 | 93.3 | 67.3 | darker |
 | A073 | 85 | 96.0 | 64.3 | octave_lower, brighter, darker |
 
-Spearman vs Benutzer: score 600m +0.07 / 2b +0.13; `diff_count` 600m **-0.38**
-(richtige Richtung: mehr Flags = niedrigere Benutzerwertung), `score-k*diff` 600m +0.32;
-2b-Varianten schlechter. Flag-Praevalenz: `darker` 7/9 (600m) bzw. 9/9 (2b) — deckt sich
-mit den Benutzer-Bemerkungen ("Filter zu", "abgefiltert", "Blofeld voller");
-`octave_lower` bei 2b nur A008 (p=0.50, grenzwertig) + A073 — Benutzer-Verdacht A008
-"1 Oktave tiefer" also nur schwach bestaetigt. 600m ist bei noul teils saturiert
+Spearman vs user: score 600m +0.07 / 2b +0.13; `diff_count` 600m **-0.38**
+(correct direction: more flags = lower user rating), `score-k*diff` 600m +0.32;
+2b variants worse. Flag prevalence: `darker` 7/9 (600m) resp. 9/9 (2b) — matches
+the user comments ("filter closed", "filtered", "Blofeld fuller");
+`octave_lower` on 2b only A008 (p=0.50, borderline) + A073 — user suspicion A008
+"1 octave lower" thus only weakly confirmed. 600m partly saturates on noul
 (octave_lower 9/9, same_pitch 4/9).
 
-**Befund:** d1-omni:2b ist als absoluter Score kritischer (59-67 statt 92-96), aber als
-Ranking immer noch schwaecher als embed/combined (+0.13 vs +0.52, n=9 verrauscht).
-Wertvoll ist das **noul-Profil als Erklaer-Schicht** (Flags matchen Benutzer-Bemerkungen),
-nicht als Score. **Integriert 2026-11-15:** `D1ProfileBackend` in `sim_embed.py`,
-`profile`-Feld im Ergebnis/Log, `--profile` in `sim_compare.py` / `sim_manual_compare.py`
-/ `bloridium sim compare` (Default `d1-omni:2b`). combined bleibt Phase-B-Score.
+**Finding:** d1-omni:2b as an absolute score is more critical (59-67 instead of 92-96), but as
+a ranking still weaker than embed/combined (+0.13 vs +0.52, n=9 noisy).
+Valuable is the **noul profile as an explanation layer** (flags match the user comments),
+not as a score. **Integrated 2026-11-15:** `D1ProfileBackend` in `sim_embed.py`,
+`profile` field in result/log, `--profile` in `sim_compare.py` / `sim_manual_compare.py`
+/ `bloridium sim compare` (default `d1-omni:2b`). combined remains the Phase-B score.
 
-## Re-Messung 2026-11-15 nach P0-1/P0-2 (Set 6 neu importiert, Note 72, Wheel 0/50/100 %)
+## Re-measurement 2026-11-15 after P0-1/P0-2 (Set 6 re-imported, note 72, wheel 0/50/100 %)
 
-P0-1 (MatrixDst v14: DF Amount 95, Filter2 Cutoff 104, Volume 115 + Template-Leck-Fix)
-und P0-2 (AfterTouchDoPoly=0) gebaut, 9 qpats neu auf den Stick, re-importiert.
-Messung: `sim_manual_compare.py --wheel 0,50,100 --profile` (llm/profile nur bei wheel 0).
+P0-1 (MatrixDst v14: DF Amount 95, Filter2 Cutoff 104, Volume 115 + template-leak fix)
+and P0-2 (AfterTouchDoPoly=0) built, 9 qpats newly onto the stick, re-imported.
+Measurement: `sim_manual_compare.py --wheel 0,50,100 --profile` (llm/profile only at wheel 0).
 Log: `recordings/sim_log.jsonl` (mode=manual_panel + wheel_pct), WAVs
 `recordings/ab_<LOC>_20261115_*_n72_w<pct>_{blo,irr}.wav`.
 
-| Preset | wheel | Phase A | embed | combined | Peak B dBFS (alt→neu) | Top-Band-DTW (Hz) | d1-flags |
+| Preset | wheel | Phase A | embed | combined | Peak B dBFS (old→new) | Top-Band-DTW (Hz) | d1 flags |
 |---|---|---|---|---|---|---|---|
 | A001 | 0/50/100 | 93.4/90.3/90.0 | 77.7/74.4/77.3 | 85.6/82.4/83.6 | -47.9→**-37.6** | 2883-5223 | brighter, darker |
 | A008 | 0/50/100 | 96.1/95.8/96.1 | 78.2/70.9/72.2 | 87.1/83.3/84.1 | -64.8→**-51.3** | 990-1592 | brighter, darker |
@@ -164,25 +164,25 @@ Log: `recordings/sim_log.jsonl` (mode=manual_panel + wheel_pct), WAVs
 | A022 | 0/50/100 | 96.7/96.9/98.3 | 79.1/78.0/79.2 | 87.9/87.4/88.8 | -29.2→**-21.0** | 990-2274 | brighter, darker |
 | A039 | 0/50/100 | 97.1/98.1/98.3 | 75.5/59.0/**51.0** | 86.3/78.6/**74.7** | -55.3→-47.9 | 693-879 (0%), 1793-2019 (100%) | darker |
 | A043 | 0/50/100 | 94.6/95.6/92.1 | 76.6/75.9/71.8 | 85.6/85.7/81.9 | -35.6→-26.7 | 211-302 | brighter, darker |
-| A071 (deprio) | 0/50/100 | 93.2/96.9/94.6 | 60.1/68.7/64.0 | 76.6/82.8/79.3 | -40.6→-36.2 | 6624-12000 (Höhen/Sync) | darker, noisier |
+| A071 (deprio) | 0/50/100 | 93.2/96.9/94.6 | 60.1/68.7/64.0 | 76.6/82.8/79.3 | -40.6→-36.2 | 6624-12000 (highs/sync) | darker, noisier |
 | A073 | 0/50/100 | 97.3/94.7/93.1 | 75.5/75.1/65.0 | 86.4/84.9/79.0 | -53.9→-48.9 | 546-615 (0%), 131-166 (50/100%) | brighter, darker, noisier |
 
-**Befunde:**
-- **P0-1 wirkt**: Peak B bei allen seriellen Presets 7-13 dB besser (A022 am besten,
-  -21 dBFS). Serien-Patches nicht mehr "zu dunkel/leise" im Pegel.
-- **Wheel-Vergleich lokalisiert Mod-Defizite**: staerkste Wheel-Divergenz bei A010
-  (embed 75.7→37.9 bei 100 %), A039 (→51.0), A073 (→65.0) — Modwheel-Ziele im Matrix-
-  Mapping weichen ab; A022 dagegen stabil (~79 bei allen Stufen).
-- **band_dtw lokalisiert**: A001/A008 Mitten/Höhen 990-5223 Hz; A010/A043 Grundton
-  211-302 Hz ("Blofeld voller"); A071 Höhen 6.6-12 kHz (fehlende Sync-Sidebands);
-  A073 bei wheel>0 Tiefbass 131-166 Hz.
-- llm konstant 45 (bekannt nicht diskriminierend), d1-profile flags stabil.
+**Findings:**
+- **P0-1 works**: peak B on all serial presets 7-13 dB better (A022 best,
+  -21 dBFS). Serial patches no longer "too dark/quiet" in level.
+- **Wheel comparison localizes mod deficits**: strongest wheel divergence on A010
+  (embed 75.7→37.9 at 100 %), A039 (→51.0), A073 (→65.0) — mod wheel destinations in the matrix
+  mapping deviate; A022 stable (~79 at all levels).
+- **band_dtw localizes**: A001/A008 mids/highs 990-5223 Hz; A010/A043 fundamental
+  211-302 Hz ("Blofeld fuller"); A071 highs 6.6-12 kHz (missing sync sidebands);
+  A073 at wheel>0 low bass 131-166 Hz.
+- llm constant 45 (known non-discriminating), d1 profile flags stable.
 
-Befunde:
-- Phase A 92.9-97.0 (alle "nahe"), combined 82.3-91.4 — Rangfolge: A019 > A071 > A073 >
+Findings:
+- Phase A 92.9-97.0 (all "close"), combined 82.3-91.4 — ranking: A019 > A071 > A073 >
   A022 > A010 > A039 ~ A043 > A001 > A008.
-- LLM konstant 45 mit identischer Begruendung ("deutlich leiser") trotz pegel-angeglichener
-  Clips -> in diesem Run nicht diskriminierend, nur informativ.
-- Roh-Pegel des Iridiums bleibt bei Seriell-Patches (Filter>Former) deutlich zu niedrig
-  (bis -64.8 dBFS Peak) — Scarlett-Gain In 5/6 oder Patch (DigiFormer-Amount) Klaerung offen.
-- Fruehere A001-Runs ohne norm_pegel (ts 174650/174915): embed 44.6/29.0, LLM 15/5.
+- LLM constant 45 with identical reasoning ("significantly quieter") despite level-aligned
+  clips -> not discriminating in this run, only informative.
+- Raw level of the Iridium stays clearly too low on serial patches (Filter>Former)
+  (down to -64.8 dBFS peak) — Scarlett gain In 5/6 or patch (DigiFormer amount) clarification open.
+- Earlier A001 runs without norm_pegel (ts 174650/174915): embed 44.6/29.0, LLM 15/5.

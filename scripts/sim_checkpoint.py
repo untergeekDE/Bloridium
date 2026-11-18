@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-"""sim_checkpoint.py – Checkpoint-Messrunde: alle Presets × 4 Noten × Wheel-Stufen.
+"""sim_checkpoint.py – checkpoint measurement run: all presets x 4 notes x wheel steps.
 
-Iridium-PC-Umschaltung ist defekt (HANDOVER-2026-11-14) -> Manual-Panel-Modus:
-pro Preset meldet das Skript einen Prompt („Set 6 PC<irr_pc> am Panel einstellen“),
-der Mensch bestaetigt per Enter; das Skript sendet an den Iridium NUR Noten (ch6,
-Part 1) und CC1 (Wheel). Blofeld-PC (Bank A: CC0=0, CC32=0, PC = Location-1, ch5)
-setzt das Skript selbst.
+Iridium PC switching is broken (HANDOVER-2026-11-14) -> manual panel mode:
+per preset the script shows a prompt ("set Set 6 PC<irr_pc> on the panel"),
+the human confirms with Enter; the script sends ONLY notes (ch6,
+Part 1) and CC1 (wheel) to the Iridium. The Blofeld PC (bank A: CC0=0, CC32=0, PC = location-1, ch5)
+is set by the script itself.
 
-Aufruf:  python3 scripts/sim_checkpoint.py [--only A001] [--irr-pc 108]
+Usage:  python3 scripts/sim_checkpoint.py [--only A001] [--irr-pc 108]
               [--notes 36,48,60,72] [--wheel 0,50,100] [--dur 2.0] [--full-all]
               [--no-wait] [--no-embed] [--no-llm] [--no-norm-pegel] [--profile]
               [--log PATH] [--wav-dir recordings]
 
-Pro Kombination (Preset × Note × Wheel): ein JSONL-Eintrag im Log
-(meta mode="checkpoint" + blofeld/blofeld_pc/irr_pc/bank/note/wheel_pct) ueber
-sim_embed.score_pair_embed (Phase A + embed + combined) und pegel-angeglichene WAVs
-(<wav-dir>/ab_<LOC>_<ts>_n<note>_w<pct>_{blo,irr}.wav). llm/profile nur an der
-Referenz-Kombination (erste Wheel-Stufe + Note 72, sonst letzte Note), ausser
---full-all. Wheel wird nach JEDEM Preset auf 0 zurueckgesetzt (CC1 ch5 + ch6).
-Am Ende Summary-Pivot (combined pro Preset × Note ueber die Wheel-Stufen).
-Exit 1, wenn mind. eine Messung score=None (stumm) lieferte, sonst 0.
+Per combination (preset x note x wheel): one JSONL entry in the log
+(meta mode="checkpoint" + blofeld/blofeld_pc/irr_pc/bank/note/wheel_pct) via
+sim_embed.score_pair_embed (Phase A + embed + combined) and level-matched WAVs
+(<wav-dir>/ab_<LOC>_<ts>_n<note>_w<pct>_{blo,irr}.wav). llm/profile only on the
+reference combination (first wheel step + note 72, else last note), unless
+--full-all. Wheel is reset to 0 after EVERY preset (CC1 ch5 + ch6).
+At the end a summary pivot (combined per preset x note across the wheel steps).
+Exit 1 if at least one measurement returned score=None (silent), else 0.
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from bloridium import audio, midi, sim, sim_embed
-from sim_manual_compare import measure, set_wheel   # kein Duplikat
+from sim_manual_compare import measure, set_wheel   # no duplication
 from sim_sweep_pcs import DEFAULT_MAP
 
 REPO = Path(__file__).resolve().parent.parent
@@ -44,34 +44,34 @@ REPO = Path(__file__).resolve().parent.parent
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--only", help="nur eine Location (z. B. A001)")
+    ap.add_argument("--only", help="only one location (e.g. A001)")
     ap.add_argument("--irr-pc", type=int, default=None,
-                    help="nur mit --only; Default DEFAULT_MAP[loc]")
+                    help="only with --only; default DEFAULT_MAP[loc]")
     ap.add_argument("--notes", default="36,48,60,72",
-                    help="kommagetrennte Noten, eine pro Oktave (Default 36,48,60,72 = C2-C5)")
+                    help="comma-separated notes, one per octave (default 36,48,60,72 = C2-C5)")
     ap.add_argument("--wheel", default="0,50,100",
-                    help="Modwheel-Stufen in %% (CC1) auf beiden Synths (Default '0,50,100')")
+                    help="mod wheel steps in %% (CC1) on both synths (default '0,50,100')")
     ap.add_argument("--dur", type=float, default=2.0,
-                    help="Aufnahmedauer pro Note in s (Default 2.0; tiefe Noten brauchen Release-Zeit)")
+                    help="recording duration per note in s (default 2.0; low notes need release time)")
     ap.add_argument("--full-all", action="store_true",
-                    help="llm/profile nicht nur an Referenz-Kombination, sondern ueberall")
+                    help="llm/profile not only on the reference combination, but everywhere")
     ap.add_argument("--no-wait", action="store_true",
-                    help="kein Panel-Prompt warten (Tests/Non-interactive)")
+                    help="do not wait for the panel prompt (tests/non-interactive)")
     ap.add_argument("--log", default=str(sim.DEFAULT_LOG))
-    ap.add_argument("--no-embed", action="store_true", help="CLAP-Embedding abschalten")
-    ap.add_argument("--no-llm", action="store_true", help="ollama-LLM abschalten")
+    ap.add_argument("--no-embed", action="store_true", help="disable CLAP embedding")
+    ap.add_argument("--no-llm", action="store_true", help="disable ollama LLM")
     ap.add_argument("--no-norm-pegel", action="store_true",
-                    help="embed/LLM auf Roh-Pegel lassen (Default: auf Peak 0.5 angleichen)")
+                    help="leave embed/LLM at raw level (default: match to peak 0.5)")
     ap.add_argument("--profile", action="store_true",
-                    help="d1-omni noul-Profil (Erklaer-Schicht) mitloggen")
+                    help="log d1-omni noul profile (explanation layer)")
     ap.add_argument("--d1-model", default=sim_embed.DEFAULT_D1_MODEL)
     ap.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
     ap.add_argument("--wav-dir", default=str(REPO / "recordings"))
     ap.add_argument("--spec-png-dir", default=str(REPO / "recordings" / "spec"),
-                    help="Side-by-Side-Spektrogramm-PNGs (A|B|Delta dB) pro Messung, "
-                         "im Log verlinkt (Default recordings/spec/)")
+                    help="side-by-side spectrogram PNGs (A|B|delta dB) per measurement, "
+                         "linked in the log (default recordings/spec/)")
     ap.add_argument("--no-spec-png", action="store_true",
-                    help="kein Spektrogramm-PNG rendern")
+                    help="do not render a spectrogram PNG")
     args = ap.parse_args(argv)
 
     notes = [int(n) for n in args.notes.split(",")]
@@ -79,7 +79,7 @@ def main(argv=None) -> int:
     ref_note = 72 if 72 in notes else notes[-1]
     only = args.only.upper() if args.only else None
     if only and only not in DEFAULT_MAP:
-        ap.error(f"{only} nicht in DEFAULT_MAP (Set 6): {sorted(DEFAULT_MAP)}")
+        ap.error(f"{only} not in DEFAULT_MAP (Set 6): {sorted(DEFAULT_MAP)}")
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     wav_dir = Path(args.wav_dir)
     wav_dir.mkdir(parents=True, exist_ok=True)
@@ -99,24 +99,24 @@ def main(argv=None) -> int:
                 continue
             irr_pc = args.irr_pc if (only and args.irr_pc is not None) else irr_pc_map
             blo_pc = int(loc[1:]) - 1
-            # Blofeld: Bank A explizit + PC (CC0/CC32 = Bank select am BLOFELD).
-            # Iridium: KEIN CC0/CC32/PC -- Favorit wird am Panel gewaehlt!
+            # Blofeld: bank A explicitly + PC (CC0/CC32 = bank select on the BLOFELD).
+            # Iridium: NO CC0/CC32/PC -- the favorite is selected on the panel!
             blo.control_change(0, 0, channel=blo.channel)
             blo.control_change(32, 0, channel=blo.channel)
             blo.program_change(blo_pc, channel=blo.channel)
             time.sleep(0.7)
             if not args.no_wait:
-                input(f"== {loc}: bitte am Iridium Favorites Set 6 PC{irr_pc} "
-                      f"einstellen, dann Enter ==")
+                input(f"== {loc}: please select Favorites Set 6 PC{irr_pc} on the Iridium, "
+                      f"then Enter ==")
             print(f"== {loc} (blo PC{blo_pc} / irr Set6 PC{irr_pc}) ==", flush=True)
             for pct in wheel_pcts:
                 set_wheel(blo, irr, pct)
-                time.sleep(0.5)                     # Mod-Settling abwarten
+                time.sleep(0.5)                     # wait for mod settling
                 for note in notes:
                     bx, ix = measure(blo, irr, note, args.dur)
                     norm = not args.no_norm_pegel
                     wtag = f"_w{pct:.0f}"
-                    # WAVs pegel-angeglichen (Peak 0.5), damit A/B per Anhoeren vergleichbar
+                    # WAVs level-matched (peak 0.5) so A/B listening is comparable
                     if norm:
                         for arr, tag in ((bx, "blo"), (ix, "irr")):
                             p = sim_embed.peak_dbfs(arr)
@@ -145,22 +145,22 @@ def main(argv=None) -> int:
                         print(f"  peak_dbfs: A={r['peak_dbfs']['a']} B={r['peak_dbfs']['b']}")
                     if r["score"] is None:
                         fehler += 1
-                        print(f"  WARNUNG: {loc} note{note} wheel{pct:.0f}% -> "
+                        print(f"  WARNING: {loc} note{note} wheel{pct:.0f}% -> "
                               f"{r.get('error')}", file=sys.stderr)
                     summary.setdefault((loc, note), {})[pct] = (
                         r["score"], r.get("embed_score"), r.get("combined"))
-            set_wheel(blo, irr, 0.0)   # Mod Wheel nach jedem Preset zuruecksetzen
+            set_wheel(blo, irr, 0.0)   # reset mod wheel after each preset (so presets don't influence each other)
     finally:
         blo.close()
         irr.close()
 
-    print("\n== Summary (combined; ohne embed = Phase-A-score) ==")
+    print("\n== Summary (combined; without embed = Phase-A score) ==")
     for (loc, note), wheels in summary.items():
         line = " ".join(f"w{int(p)}={v[2] if v[2] is not None else v[0]}"
                         for p, v in sorted(wheels.items()))
         print(f"{loc} n{note}: {line}")
     if fehler:
-        print(f"\n{fehler} Messung(en) mit score=None (stumm) – siehe WARNUNGEN.",
+        print(f"\n{fehler} measurement(s) with score=None (silent) – see WARNINGS.",
               file=sys.stderr)
         return 1
     return 0

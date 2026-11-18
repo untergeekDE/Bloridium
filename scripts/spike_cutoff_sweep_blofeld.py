@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Blofeld Filter1-Cutoff-Kalibrierung v2: CC78-Sweep, Grenzfrequenz per Harmonischen-Knick.
+"""Blofeld Filter1 cutoff calibration v2: CC78 sweep, corner frequency via harmonic knee.
 
 CCs (docs/MAPPING-MASTER.md): 78 F1 Cutoff, 80 F1 Reso, 87 F1 Env Amount, 90 F1 Mod Amount
-(bipolar, 64 = neutral). Note 36 (C2, 65.4 Hz) -> viele Harmonische; Reso 0.
-LP24: A_k ~ (C/k) / sqrt(1+(k*f0/fc)^8). fc gesucht per Grid-Search (beste Anpassung).
+(bipolar, 64 = neutral). Note 36 (C2, 65.4 Hz) -> many harmonics; reso 0.
+LP24: A_k ~ (C/k) / sqrt(1+(k*f0/fc)^8). fc searched via grid search (best fit).
 
-Aufruf:  python3 scripts/spike_cutoff_sweep_blofeld.py
+Usage:  python3 scripts/spike_cutoff_sweep_blofeld.py
 Output:  recordings/cutoff_calib_blofeld_<ts>.json + stdout (raw->Hz + log-fit)
 """
 
@@ -29,7 +29,7 @@ RAWS = [0, 16, 32, 48, 64, 80, 96, 112, 127]
 
 
 def cutoff_hz(x: np.ndarray, sr: int, f0: float) -> float:
-    """Grenzfrequenz eines LP24-gefilterten Saw: Harmonische A_k, fit fc per Grid-Search."""
+    """Corner frequency of an LP24-filtered saw: harmonics A_k, fit fc via grid search."""
     x = np.asarray(x, dtype=np.float64)
     x = x - x.mean()
     n = len(x)
@@ -54,10 +54,10 @@ def main() -> int:
     try:
         for c in range(16):
             blo.control_change(123, 0, channel=c)
-        blo.control_change(7, 127, channel=ch)    # Volume voll
+        blo.control_change(7, 127, channel=ch)    # volume full
         blo.control_change(87, 0, channel=ch)     # F1 Env Amount = 0
         blo.control_change(90, 64, channel=ch)    # F1 Mod Amount neutral
-        blo.control_change(80, 0, channel=ch)     # Reso 0 (reiner LP24-Knick)
+        blo.control_change(80, 0, channel=ch)     # reso 0 (pure LP24 knee)
         time.sleep(0.3)
         rows = []
         for raw in RAWS:
@@ -83,9 +83,9 @@ def main() -> int:
         out = REPO / "recordings" / f"cutoff_calib_blofeld_{ts}.json"
         out.write_text(json.dumps({"ts": ts, "note": NOTE, "rows": rows,
                                    "fit": {"a": float(a), "b": float(b)}}, indent=2))
-        print("geschrieben:", out)
+        print("written:", out)
         blo.control_change(0, 0, channel=ch)      # Bank A
-        blo.program_change(0, channel=ch)          # A001 wiederherstellen
+        blo.program_change(0, channel=ch)          # restore A001
     finally:
         blo.close()
     return 0

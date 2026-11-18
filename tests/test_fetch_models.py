@@ -1,4 +1,4 @@
-"""fetch_models.py – Modelle laden (TDD Task 6, subprocess/hf gemockt)."""
+"""fetch_models.py - download models (TDD Task 6, subprocess/hf mocked)."""
 
 import sys
 from types import SimpleNamespace
@@ -20,12 +20,12 @@ def test_skips_existing_gguf(fm, tmp_path, monkeypatch, capsys):
 
     def fake_dl(models_dir):
         called.append(models_dir)
-        raise AssertionError("darf nicht aufgerufen werden")
+        raise AssertionError("must not be called")
 
     monkeypatch.setattr(fm, "_hf_download", fake_dl)
     assert fm.main(["--models-dir", str(tmp_path), "--skip-ollama"]) == 0
     assert called == []
-    assert "vorhanden" in capsys.readouterr().out
+    assert "GGUF present" in capsys.readouterr().out
 
 
 def test_downloads_gguf_and_pulls_ollama(fm, tmp_path, monkeypatch):
@@ -39,7 +39,7 @@ def test_downloads_gguf_and_pulls_ollama(fm, tmp_path, monkeypatch):
 
 def test_failure_exit_1(fm, tmp_path, monkeypatch):
     def boom(md):
-        raise RuntimeError("netz weg")
+        raise RuntimeError("network down")
     monkeypatch.setattr(fm, "_hf_download", boom)
     assert fm.main(["--models-dir", str(tmp_path), "--skip-ollama"]) == 1
 

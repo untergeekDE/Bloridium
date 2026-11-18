@@ -1,4 +1,4 @@
-"""Task 1: CLI-Skelett – main() mit --help, importierbares __main__."""
+"""Task 1: CLI skeleton - main() with --help, importable __main__."""
 
 import pytest
 

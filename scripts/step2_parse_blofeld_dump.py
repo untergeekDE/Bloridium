@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Schritt 2c: gespeicherten Blofeld-SNDD parsen und als Parameterliste ausgeben.
+"""Step 2c: parse the saved Blofeld SNDD and print it as a parameter list.
 
-Wrapper ueber bloridium.workflow (argv/Exit/Stdout unveraendert).
+Wrapper around bloridium.workflow (argv/exit/stdout unchanged).
 
-Aufruf:  python3 scripts/step2_parse_blofeld_dump.py [dumps/blofeld_sndd_*.bin]
+Usage:  python3 scripts/step2_parse_blofeld_dump.py [dumps/blofeld_sndd_*.bin]
 """
 
 from __future__ import annotations
@@ -24,16 +24,16 @@ def main() -> int:
     else:
         files = sorted(glob.glob(str(workflow.DUMPS / "blofeld_sndd_*.bin")))
     if not files:
-        print("Kein Dump gefunden – erst scripts/step2_read_blofeld_dump.py ausfuehren.")
+        print("No dump found – run scripts/step2_read_blofeld_dump.py first.")
         return 1
     path = files[-1]
     raw = workflow.load_sndd_file(path)
     r = bd.parse_sndd(raw)
-    print(f"Datei : {path}")
-    print(f"BB/NN : 0x{r['bb']:02X} 0x{r['nn']:02X}  (7F 00 = Sound-Mode Edit-Puffer)")
+    print(f"File  : {path}")
+    print(f"BB/NN : 0x{r['bb']:02X} 0x{r['nn']:02X}  (7F 00 = sound-mode edit buffer)")
     print(f"CHK   : 0x{r['chk']:02X}  ok={r['chk_ok']}")
     print(f"Name  : {r['name']!r}")
-    print(f"SDATA : {len(r['sdata'])} Bytes, {len(r['params'])} benannte Parameter\n")
+    print(f"SDATA : {len(r['sdata'])} bytes, {len(r['params'])} named parameters\n")
     for name, val in r["params"].items():
         print(f"  {name:32s} = {val}")
     return 0

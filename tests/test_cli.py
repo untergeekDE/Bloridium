@@ -1,4 +1,4 @@
-"""Task 5: CLI-Subcommands – offline getestet (monkeypatchte midi/audio, tmp-DB)."""
+"""Task 5: CLI subcommands - tested offline (monkeypatched midi/audio, tmp DB)."""
 
 import json
 from pathlib import Path
@@ -26,7 +26,7 @@ def test_bank_import_populates_db(repo, db_path, tmp_path, capsys):
     conn = db.connect(db_path)
     s = db.get_sound(conn, "A043")
     assert s is not None and s["name"] == "SH Power"
-    assert Path(s["sndd_path"]).exists()  # stabile Kopie unter banks-dir
+    assert Path(s["sndd_path"]).exists()  # stable copy under banks-dir
 
 
 def test_bank_list_json_and_missing_marker(repo, db_path, tmp_path, capsys):
@@ -40,11 +40,11 @@ def test_bank_list_json_and_missing_marker(repo, db_path, tmp_path, capsys):
     assert any(r["location"] == "A043" and r["missing"] is False for r in rows)
 
     conn = db.connect(db_path)
-    Path(db.get_sound(conn, "A043")["sndd_path"]).unlink()  # Datei weg
+    Path(db.get_sound(conn, "A043")["sndd_path"]).unlink()  # file deleted
     rc = run(cli, db_path, "bank", "list")
     assert rc == 0
     out = capsys.readouterr().out
-    assert "A043" in out and "FEHLT" in out
+    assert "A043" in out and "MISSING" in out
 
 
 def test_bank_show_prints_params(repo, db_path, tmp_path, capsys):
@@ -82,13 +82,13 @@ def test_convert_live_without_hardware_exits_2(repo, db_path, monkeypatch, capsy
     monkeypatch.setattr(midi, "list_ports", lambda: {"in": [], "out": ["SomePort"]})
 
     def boom(name, ports=None):
-        raise RuntimeError(f"MIDI-Port nicht gefunden: {name}")
+        raise RuntimeError(f"MIDI port not found: {name}")
 
     monkeypatch.setattr(midi, "connect", boom)
     rc = run(cli, db_path, "convert", "A043")
     assert rc == 2
     err = capsys.readouterr().err
-    assert "SomePort" in err  # verfügbare Ports in der Fehlermeldung
+    assert "SomePort" in err  # available ports in the error message
 
 
 # ---- qpat info ----
@@ -189,7 +189,7 @@ def test_ab_measure_sends_all_notes_off_before_note(db_path, tmp_path, monkeypat
     for fake in fakes.values():
         first_on = next(i for i, e in enumerate(fake.events) if e[0] == "on")
         cc123 = [e for e in fake.events[:first_on] if e == ("cc", 123, e[2])]
-        assert {e[2] for e in cc123} == set(range(16))  # CC123 auf allen 16 Kanaelen vor NoteOn
+        assert {e[2] for e in cc123} == set(range(16))  # CC123 on all 16 channels before note-on
     conn = db.connect(db_path)
     runs = db.list_ab_runs(conn, sound="A043")
     assert len(runs) == 1 and runs[0]["note"] == 36
@@ -198,13 +198,13 @@ def test_ab_measure_sends_all_notes_off_before_note(db_path, tmp_path, monkeypat
 # ---- Fix-Pass: I1/I2/I3/I4 ----
 
 def test_ab_measure_hardware_unreachable_exits_2(db_path, monkeypatch, capsys):
-    """I1: ab ohne erreichbares Geraet -> Exit 2 + Port-Liste, kein Traceback."""
+    """I1: ab without a reachable device -> exit 2 + port list, no traceback."""
     from bloridium import cli, midi
 
     monkeypatch.setattr(midi, "list_ports", lambda: {"in": [], "out": ["Blofeld"]})
 
     def boom(name, ports=None):
-        raise RuntimeError(f"MIDI-Port nicht gefunden: {name}")
+        raise RuntimeError(f"MIDI port not found: {name}")
 
     monkeypatch.setattr(midi, "connect", boom)
     rc = run(cli, db_path, "ab", "--label", "x")
@@ -213,7 +213,7 @@ def test_ab_measure_hardware_unreachable_exits_2(db_path, monkeypatch, capsys):
 
 
 def test_convert_live_read_failure_is_clean_exit_1(repo, db_path, monkeypatch, capsys):
-    """I1: Blofeld antwortet nicht auf SNDR -> sauberer Fehler, Exit 1, kein Traceback."""
+    """I1: Blofeld does not answer SNDR -> clean error, exit 1, no traceback."""
     from bloridium import cli, midi
 
     class SilentSynth(FakeSynth):
@@ -227,7 +227,7 @@ def test_convert_live_read_failure_is_clean_exit_1(repo, db_path, monkeypatch, c
 
 
 def test_status_audio_ffmpeg_failure_is_graceful(db_path, monkeypatch, capsys):
-    """I2: status --audio ohne ffmpeg -> Warnung, Exit 1, kein Traceback."""
+    """I2: status --audio without ffmpeg -> warning, exit 1, no traceback."""
     from bloridium import audio, cli, midi
 
     class Fake(FakeSynth):
@@ -241,7 +241,7 @@ def test_status_audio_ffmpeg_failure_is_graceful(db_path, monkeypatch, capsys):
     monkeypatch.setattr(midi, "connect", lambda name, ports=None: Fake(name))
 
     def boom(*a, **k):
-        raise RuntimeError("ffmpeg-Fehler: Device nicht verfuegbar")
+        raise RuntimeError("ffmpeg error: device not available")
 
     monkeypatch.setattr(audio, "play_and_measure", boom)
     rc = run(cli, db_path, "status", "--audio")
@@ -251,19 +251,19 @@ def test_status_audio_ffmpeg_failure_is_graceful(db_path, monkeypatch, capsys):
 
 
 def test_location_is_canonicalized_in_cli(repo, db_path, tmp_path):
-    """I3: convert a043 / bank show A43 landen kanonisch als A043 in der DB."""
+    """I3: convert a043 / bank show A43 land canonically as A043 in the DB."""
     from bloridium import cli, db
 
     run(cli, db_path, "bank", "import", str(repo / "dumps"), "--banks-dir", str(tmp_path / "banks"))
     rc = run(cli, db_path, "convert", "a043", "--dump", str(repo / DUMP_BIN), "--out", str(tmp_path / "t"))
     assert rc == 0
     conn = db.connect(db_path)
-    assert db.get_sound(conn, "A043") is not None  # nicht "a043"
-    assert db.list_conversions(conn, sound="A043")  # nicht "a043"
+    assert db.get_sound(conn, "A043") is not None  # not "a043"
+    assert db.list_conversions(conn, sound="A043")  # not "a043"
 
 
 def test_bank_show_warns_on_missing_file(repo, db_path, tmp_path, capsys):
-    """I4: bank show meldet fehlende .bin-Datei (FEHLT), zeigt aber gecachte Daten."""
+    """I4: bank show reports a missing .bin file (MISSING), but shows cached data."""
     from bloridium import cli, db
 
     run(cli, db_path, "bank", "import", str(repo / "dumps"), "--banks-dir", str(tmp_path / "banks"))
@@ -272,7 +272,7 @@ def test_bank_show_warns_on_missing_file(repo, db_path, tmp_path, capsys):
     capsys.readouterr()
     assert run(cli, db_path, "bank", "show", "A043") == 0
     out = capsys.readouterr().out
-    assert "FEHLT" in out and "SH Power" in out
+    assert "MISSING" in out and "SH Power" in out
 
 
 # ---- status ----
@@ -283,7 +283,7 @@ def test_status_without_ports_exits_2(db_path, monkeypatch, capsys):
     monkeypatch.setattr(midi, "list_ports", lambda: {"in": [], "out": ["Blofeld", "Iridium X"]})
 
     def boom(name, ports=None):
-        raise RuntimeError(f"MIDI-Port nicht gefunden: {name}")
+        raise RuntimeError(f"MIDI port not found: {name}")
 
     monkeypatch.setattr(midi, "connect", boom)
     rc = run(cli, db_path, "status")

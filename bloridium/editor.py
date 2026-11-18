@@ -1,7 +1,7 @@
-"""qpat-Editor – Parameter einer .qpat-Datei listen/anzeigen/setzen/speichern/diffen.
+"""qpat editor - list/show/set/save/diff parameters of a .qpat file.
 
-save() legt vor dem Ueberschreiben automatisch <path>.bak an (Backup des alten
-Stands), sofern backup=True. Werte sind qpat-normiert 0..1 (werden geclampt).
+save() automatically creates <path>.bak before overwriting (backup of the old
+state) if backup=True. Values are qpat-normalized 0..1 (clamped).
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from . import qpat
 
 
 def list_params(parsed: dict, grep: str | None = None) -> list[tuple[str, float, str]]:
-    """(name, value, display) pro Parameter; grep filtert case-insensitive auf den Namen."""
+    """(name, value, display) per parameter; grep filters case-insensitively on the name."""
     rows = [(k, v["value"], v["display"]) for k, v in parsed["params"].items()]
     if grep:
         g = grep.lower()
@@ -21,35 +21,35 @@ def list_params(parsed: dict, grep: str | None = None) -> list[tuple[str, float,
 
 
 def show_param(parsed: dict, key: str) -> tuple[float, str]:
-    """(value, display) eines Parameters; KeyError mit Klartext bei unbekanntem Key."""
+    """(value, display) of one parameter; KeyError with plain text on unknown key."""
     if key not in parsed["params"]:
-        raise KeyError(f"unbekannter qpat-Parameter: {key!r} "
-                       f"(verfuegbar: {len(parsed['params'])}, z. B. {sorted(parsed['params'])[0]!r})")
+        raise KeyError(f"unknown qpat parameter: {key!r} "
+                       f"(available: {len(parsed['params'])}, e.g. {sorted(parsed['params'])[0]!r})")
     p = parsed["params"][key]
     return p["value"], p["display"]
 
 
 def set_param(parsed: dict, key: str, value: float, display: str | None = None) -> None:
-    """Wert setzen (clamp 0..1); display nur ueberschreiben, wenn angegeben.
+    """Set value (clamp 0..1); only overwrite display if given.
 
-    Unbekannter Key -> KeyError (Tippfehler duerfen nicht stillschweigend einen
-    neuen, bedeutungslosen Parameter im Geraete-File anlegen).
+    Unknown key -> KeyError (typos must not silently create a new,
+    meaningless parameter in the device file).
     """
     if key not in parsed["params"]:
-        raise KeyError(f"unbekannter qpat-Parameter: {key!r} "
-                       f"(verfuegbar: {len(parsed['params'])}, z. B. {sorted(parsed['params'])[0]!r})")
+        raise KeyError(f"unknown qpat parameter: {key!r} "
+                       f"(available: {len(parsed['params'])}, e.g. {sorted(parsed['params'])[0]!r})")
     value = max(0.0, min(1.0, float(value)))
     old = parsed["params"][key]
     new_disp = display if display is not None else old["display"]
     parsed["params"][key] = {"value": value, "display": new_disp}
-    # rohe Record-Felder mitsyncen, damit save() das neue Display schreibt
+    # sync raw record fields so that save() writes the new display
     rf = parsed.get("_raw_fields", {})
     if key in rf:
         rf[key] = (rf[key][0], qpat._pad32(new_disp))
 
 
 def save(parsed: dict, path, backup: bool = True) -> Path:
-    """.qpat schreiben; vorher <path>.bak mit dem alten Dateiinhalt anlegen."""
+    """Write .qpat; beforehand create <path>.bak with the old file content."""
     p = Path(path)
     if backup and p.exists():
         Path(str(p) + ".bak").write_bytes(p.read_bytes())
@@ -74,7 +74,7 @@ def save(parsed: dict, path, backup: bool = True) -> Path:
 
 
 def diff_params(a: dict, b: dict) -> list[tuple]:
-    """Nur differing Keys: (key, value_a, value_b, display_a, display_b); fehlende Seite = None."""
+    """Only differing keys: (key, value_a, value_b, display_a, display_b); missing side = None."""
     out = []
     for k in sorted(set(a["params"]) | set(b["params"])):
         pa, pb = a["params"].get(k), b["params"].get(k)

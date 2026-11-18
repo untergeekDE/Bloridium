@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Cutoff-Sweep-Messung am Iridium: misst den aktuell geladenen Slot.
+"""Cutoff sweep measurement on the Iridium: measures the currently loaded slot.
 
-Aufruf:  python3 scripts/spike_cutoff_sweep_iridium.py <slot-label> [note]
-         z. B. python3 scripts/spike_cutoff_sweep_iridium.py 200
+Usage:  python3 scripts/spike_cutoff_sweep_iridium.py <slot-label> [note]
+         e.g. python3 scripts/spike_cutoff_sweep_iridium.py 200
 
-Ablauf pro Aufruf:
-  - All Notes Off (CC123=0) + CC7=127 (Output Level) auf allen 16 Kanaelen
-  - Note-On auf ch6-9 (Parts 1-4, damit der aktive Part egal ist)
-  - Aufnahme 1.6 s ueber Scarlett In 5/6 (audio.CHANNELS["iridium"])
-  - Sustain-Fenster 0.5-1.2 s (Filter-Env verfaelscht Attack, siehe HANDOVER)
-  - peak/rms dBFS + spektraler Centroid + Band-Energien
-  - Ergebnis als JSON nach recordings/cutoff_sweep_iridium_<label>_<ts>.json
+Flow per run:
+  - All Notes Off (CC123=0) + CC7=127 (output level) on all 16 channels
+  - Note-On on ch6-9 (Parts 1-4, so the active part does not matter)
+  - recording 1.6 s via Scarlett In 5/6 (audio.CHANNELS["iridium"])
+  - sustain window 0.5-1.2 s (filter env distorts the attack, see HANDOVER)
+  - peak/rms dBFS + spectral centroid + band energies
+  - result as JSON to recordings/cutoff_sweep_iridium_<label>_<ts>.json
 
-Slot-Wechsel am Geraet manuell (PC laedt nur Favorites) -> pro Slot ein Aufruf.
+Slot change on the device manually (PC only loads Favorites) -> one call per slot.
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 
 def _hp(seg: np.ndarray, sr: int, cutoff: float) -> np.ndarray:
-    """FFT-Hochpass (nur Analyse): kill DC/Netzbrumm < cutoff Hz."""
+    """FFT high-pass (analysis only): kill DC/mains hum < cutoff Hz."""
     X = np.fft.rfft(seg)
     f = np.fft.rfftfreq(len(seg), 1 / sr)
     X[f < cutoff] = 0
@@ -49,7 +49,7 @@ def _centroid(x: np.ndarray, sr: int) -> float:
 
 def _band_db(x: np.ndarray, sr: int, n_bands: int = 8,
              f_lo: float = 40.0, f_hi: float = 12000.0):
-    """Log-Band-Energien in dB + Kanten (1D-Eingang, lokal)."""
+    """Log-band energies in dB + edges (1D input, local)."""
     x = np.asarray(x, dtype=np.float64)
     X = np.abs(np.fft.rfft(x * np.hanning(len(x))))
     f = np.fft.rfftfreq(len(x), 1 / sr)
@@ -64,17 +64,17 @@ def _band_db(x: np.ndarray, sr: int, n_bands: int = 8,
 
 def main() -> int:
     label = sys.argv[1] if len(sys.argv) > 1 else "active"
-    note = int(sys.argv[2]) if len(sys.argv) > 2 else 60   # 60 = 262 Hz (weg vom Brumm)
+    note = int(sys.argv[2]) if len(sys.argv) > 2 else 60   # 60 = 262 Hz (away from the hum)
 
     irr = midi.connect("iridium")
     try:
         for ch in range(16):
             irr.control_change(123, 0, channel=ch)   # All Notes Off
-            irr.control_change(7, 127, channel=ch)     # Output Level voll
+            irr.control_change(7, 127, channel=ch)     # output level full
         time.sleep(0.4)
         for ch in (5, 6, 7, 8):                        # Parts 1-4
             irr.note_on(note=note, velocity=127, channel=ch)
-        time.sleep(0.25)                               # Attack/Onset abwarten
+        time.sleep(0.25)                               # wait for attack/onset
         d = audio.record(duration=1.6, channels=audio.CHANNELS["iridium"])
         for ch in (5, 6, 7, 8):
             irr.note_off(note=note, channel=ch)

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""sim_eval_offline.py – Phase-B-Eval auf allen .npy-Paaren in recordings/.
+"""sim_eval_offline.py – Phase-B eval on all .npy pairs in recordings/.
 
-Findet Paare <base>_blofeld.npy / <base>_iridium.npy, wertet jedes mit Phase A +
-CLAP-Embedding (combined) aus, schreibt recordings/phaseb_eval_<ts>.json und druckt
-eine Tabelle. Optional --ratings ratings.json ({"<base>": 0-100}) -> Spearman-
-Rangkorrelation von score/embed_score/combined gegen die Bewertungen ins JSON.
+Finds pairs <base>_blofeld.npy / <base>_iridium.npy, evaluates each with Phase A +
+CLAP embedding (combined), writes recordings/phaseb_eval_<ts>.json and prints
+a table. Optional --ratings ratings.json ({"<base>": 0-100}) -> Spearman
+rank correlation of score/embed_score/combined against the ratings into the JSON.
 
-Aufruf:  python3 scripts/sim_eval_offline.py [--rec-dir recordings] [--models-dir models]
+Usage:  python3 scripts/sim_eval_offline.py [--rec-dir recordings] [--models-dir models]
              [--out PATH] [--ratings PATH]
-Exit: 0 ok (fehlendes GGUF degradiert: embed_score null), 2 keine Paare gefunden.
+Exit: 0 ok (missing GGUF degrades: embed_score null), 2 no pairs found.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from bloridium import sim_embed
 
 
 def find_pairs(rec_dir) -> list[tuple[str, Path, Path]]:
-    """Alle <base>_blofeld.npy mit vorhandener <base>_iridium.npy, sortiert."""
+    """All <base>_blofeld.npy with an existing <base>_iridium.npy, sorted."""
     rec_dir = Path(rec_dir)
     pairs = []
     for b in sorted(rec_dir.glob("*_blofeld.npy")):
@@ -38,7 +38,7 @@ def find_pairs(rec_dir) -> list[tuple[str, Path, Path]]:
 
 
 def spearman(a, b) -> float:
-    """Spearman-Rangkorrelation (numpy, Ties gemittelt); n<2 oder konst. Folge -> 0.0."""
+    """Spearman rank correlation (numpy, ties averaged); n<2 or constant series -> 0.0."""
     a = np.asarray(a, dtype=np.float64)
     b = np.asarray(b, dtype=np.float64)
     if a.size < 2 or a.size != b.size:
@@ -70,12 +70,12 @@ def main(argv=None) -> int:
     ap.add_argument("--rec-dir", default=str(sim_embed.REPO / "recordings"))
     ap.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
     ap.add_argument("--out", default=None, help="Default: <rec-dir>/phaseb_eval_<ts>.json")
-    ap.add_argument("--ratings", default=None, help="JSON {\"<base>\": 0-100} fuers Spearman")
+    ap.add_argument("--ratings", default=None, help="JSON {\"<base>\": 0-100} for Spearman")
     args = ap.parse_args(argv)
 
     pairs = find_pairs(args.rec_dir)
     if not pairs:
-        print(f"keine .npy-Paare in {args.rec_dir}", file=sys.stderr)
+        print(f"no .npy pairs in {args.rec_dir}", file=sys.stderr)
         return 2
 
     gguf = Path(args.models_dir) / sim_embed.CLAP_GGUF_NAME
@@ -84,13 +84,13 @@ def main(argv=None) -> int:
         try:
             clap = sim_embed.ClapBackend(gguf)
         except Exception as e:
-            print(f"WARNUNG clap: {e}", file=sys.stderr)
+            print(f"WARNING clap: {e}", file=sys.stderr)
     else:
-        print(f"WARNUNG: {gguf} fehlt (scripts/fetch_models.py) – embed_score null",
+        print(f"WARNING: {gguf} missing (scripts/fetch_models.py) – embed_score null",
               file=sys.stderr)
 
     rows = []
-    print(f"{'Paar':<34} {'score':>7} {'embed':>7} {'combined':>9}  verdict / backend_error")
+    print(f"{'Pair':<34} {'score':>7} {'embed':>7} {'combined':>9}  verdict / backend_error")
     for base, pa, pb in pairs:
         r = sim_embed.score_pair_embed(_mono(pa), _mono(pb), sr=48000,
                                        meta={"run": "eval", "pair": base},
@@ -116,7 +116,7 @@ def main(argv=None) -> int:
                                           else -1 for r in common], ref),
                 "combined": spearman([r["combined"] for r in common], ref),
             }
-            print("\nSpearman gegen Bewertungen:",
+            print("\nSpearman vs ratings:",
                   {k: round(v, 3) for k, v in spearman_out.items()})
 
     ts = time.strftime("%Y%m%d_%H%M%S")
@@ -126,7 +126,7 @@ def main(argv=None) -> int:
         "models": {"clap_gguf": sim_embed.CLAP_GGUF_NAME if clap else None},
         "ratings": ratings, "spearman": spearman_out, "rows": rows,
     }, indent=2))
-    print(f"\ngeschrieben: {out}")
+    print(f"\nwritten: {out}")
     return 0
 
 

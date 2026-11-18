@@ -1,7 +1,7 @@
 # Don Solaris "Analog Voltage" — Blofeld vs Iridium (namensgleiche Sounds)
 
-Quelle: `dumps/DonSolarisAnalogVoltage/Single/*.mid` (Blofeld SNDD-SysEx) vs `dumps/export-005/*.qpat` (Iridium, v8/v9).
-Blofeld-Werte: raw 0..127 (+ Label); Iridium: norm 0..1 (+ Display). Enums ueber Display verglichen (versionsunabhaengig).
+Source: `dumps/DonSolarisAnalogVoltage/Single/*.mid` (Blofeld SNDD SysEx) vs `dumps/export-005/*.qpat` (Iridium, v8/v9).
+Blofeld values: raw 0..127 (+ label); Iridium: norm 0..1 (+ display). Enums compared via display (version-independent).
 
 ## 'Michael Cretu'  (BLO `124-Michael_Cretu.mid` ↔ IRR v9 `02033-Michael Cretu.qpat`)
 
@@ -180,7 +180,7 @@ Blofeld-Werte: raw 0..127 (+ Label); Iridium: norm 0..1 (+ Display). Enums ueber
 **Cutoff-Check:** Blofeld raw 48/127 = 0.3780 vs Iridium norm 0.5191 -> Faktor 1.373
 
 
-## Fazit ueber alle 4 Paare (Don Solaris eigene Skalierung)
+## Conclusion across all 4 pairs (Don Solaris' own scaling)
 
 | Sound | F1 Cutoff BLO raw/127 -> IRR norm (Faktor) | AmpVol raw -> MainVolume | FE Decay raw/127 -> IRR norm | AmpVelo raw -> AmpVeloAmount | F1 Type -> Filter12Type |
 |---|---|---|---|---|---|
@@ -189,10 +189,10 @@ Blofeld-Werte: raw 0..127 (+ Label); Iridium: norm 0..1 (+ Display). Enums ueber
 | Moog Lead | 66/127=0.520 -> 0.519 (x1.00) | 100 -> 1.000 | 66/127=0.520 -> 0.455 | 64 -> 0.500 | LP 24dB -> 3 ('24dB LP') |
 | Voyager Bass | 48/127=0.378 -> 0.519 (x1.37) | 127 -> 1.000 | 59/127=0.465 -> 0.455 | 117 -> 0.500 | LP 24dB -> 3 ('24dB LP') |
 
-**Beobachtungen:**
+**Observations:**
 
-- Cutoff: Faktor ~1 (linear norm), solange BLO != 0.
-- MainVolume wird von Don teils auf 1.0 gesetzt (AmpVol nicht 1:1 uebernommen).
-- Env-Zeiten sind NICHT linear (raw/127 != norm) -> andere Zeitskala am Iridium.
-- F1 Type Bypass (Blofeld) landet als 12dB LP (v8-Default), nicht als Bypass.
+- Cutoff: factor ~1 (linear norm), as long as BLO != 0.
+- MainVolume is partly set to 1.0 by Don (AmpVol not taken over 1:1).
+- Env times are NOT linear (raw/127 != norm) -> different time scale on the Iridium.
+- F1 Type Bypass (Blofeld) lands as 12dB LP (v8 default), not as Bypass.
 

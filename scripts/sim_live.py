@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""sim_live.py – Parameter am Iridium per CC drehen und gegen Referenz messen.
+"""sim_live.py – turn a parameter on the Iridium via CC and measure against a reference.
 
-Aufruf:
+Usage:
   python3 scripts/sim_live.py --param "Filter1 Cutoff" --value 90 --ref ref.npy
-  python3 scripts/sim_live.py --param "Filter1 Cutoff" --value 90   # Blofeld spielt live mit
+  python3 scripts/sim_live.py --param "Filter1 Cutoff" --value 90   # Blofeld plays live along
 
---ref: Blofeld-Referenz als .npy (z. B. aus sim_compare.py --live). Ohne --ref
-spielt der Blofeld (DEFAULT_PORTS, ch5) simultan mit. CC kommt aus
-ccmap.cc_for (docs/midi-maps/iridium_pid_map.csv). Ergebnis: Score + JSONL-Log.
+--ref: Blofeld reference as .npy (e.g. from sim_compare.py --live). Without --ref
+the Blofeld (DEFAULT_PORTS, ch5) plays simultaneously. CC comes from
+ccmap.cc_for (docs/midi-maps/iridium_pid_map.csv). Result: Score + JSONL log.
 """
 
 from __future__ import annotations
@@ -33,17 +33,17 @@ def _load_npy(p) -> np.ndarray:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--param", required=True, help="Parametername (z. B. 'Filter1 Cutoff')")
-    ap.add_argument("--value", type=int, required=True, help="CC-Wert 0..127")
-    ap.add_argument("--ref", help="Blofeld-Referenz-.npy (sonst Blofeld live)")
+    ap.add_argument("--param", required=True, help="parameter name (e.g. 'Filter1 Cutoff')")
+    ap.add_argument("--value", type=int, required=True, help="CC value 0..127")
+    ap.add_argument("--ref", help="Blofeld reference .npy (otherwise Blofeld live)")
     ap.add_argument("--note", type=int, default=60)
     ap.add_argument("--dur", type=float, default=1.6)
     ap.add_argument("--log", default=str(sim.DEFAULT_LOG))
-    ap.add_argument("--meta", nargs="*", default=[], help="k=v Paare fürs Log")
+    ap.add_argument("--meta", nargs="*", default=[], help="k=v pairs for the log")
     args = ap.parse_args(argv)
 
     cc, pid = ccmap.cc_for(args.param)
-    print(f"Param {args.param!r} -> CC{cc} (Pid {pid}) Wert {args.value}")
+    print(f"Param {args.param!r} -> CC{cc} (Pid {pid}) value {args.value}")
 
     irr = midi.connect("iridium")
     blo = None if args.ref else midi.connect("blofeld")
@@ -53,20 +53,20 @@ def main(argv=None) -> int:
                 s.control_change(123, 0, channel=ch)
         if blo:
             for ch in range(16):
-                blo.control_change(7, 127, channel=ch)  # nur Blofeld: echtes Volume
-        # Iridium: CC7 NICHT anfassen -- mit rdb-.mimap ist CC7 = Filter1 Amount!
-        for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
+                blo.control_change(7, 127, channel=ch)  # only Blofeld: real volume
+        # Iridium: do NOT touch CC7 -- with the rdb-.mimap CC7 = Filter1 Amount!
+        for ch in (5,):  # only Part 1 (ch6) - monophonic like Blofeld/keyboard
             irr.control_change(cc, args.value, channel=ch)
         time.sleep(0.2)
         if blo:
             blo.note_on(note=args.note, velocity=100, channel=blo.channel)
-        for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
+        for ch in (5,):  # only Part 1 (ch6) - monophonic like Blofeld/keyboard
             irr.note_on(note=args.note, velocity=100, channel=ch)
         time.sleep(0.25)
         d = audio.record(duration=args.dur, channels=None)
         if blo:
             blo.note_off(note=args.note, channel=blo.channel)
-        for ch in (5,):  # nur Part 1 (ch6) - monophon wie Blofeld/Tastatur
+        for ch in (5,):  # only Part 1 (ch6) - monophonic like Blofeld/keyboard
             irr.note_off(note=args.note, channel=ch)
         for s in [irr] + ([blo] if blo else []):
             for ch in range(16):

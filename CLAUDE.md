@@ -1,62 +1,61 @@
-# Ziel
+# Objective
 
-Eine Suite von Utilities und Skills, um Synthesizer-Programme von einem
-Synthesizer (Blofeld) auf einen anderen (Iridium) zu übertragen.
+A suite of utilities and skills to convert and transfer sound programs between two synthesizers:
+- Waldorf Blofeld (older)
+- Waldorf Iridium
 
-Nutze den ähnlichen Aufbau und entwickle Tools, um Unterschiede im Klang
-zu messen und durch Detailkorrekturen anzugleichen.
+## Sub-tasks
 
-## Beschreibung
+- Control: Get sound from synthesizer, manipulate sound on synthesizer, read or set single parameters
+- Listen: Trigger sound and record a sample for comparison
+- Analyse: Break down sampled synth sound for comparison
+- Compare: Calculate similarity between two sound samples
+- Categorize: Assess quality of conversion from the sound specifics
+- Tweak: Trial-and-error editing of the Iridium sound to get closer to the Blofeld original
+- Web app: Offer a simple conversion service to run as a container on a server
 
-Iridium-Synthesizer ist Nachfolger Blofeld-Synthesizer. Es gibt Ähnlichkeiten:
-- 3 Oszillatoren
-- Wavetable- und VA-Synthese
-- 2 Filter
-- Modulationsmatrix
+## Description
 
-Unterschiede: Iridium
-- Zusätzliche Synthesemodelle
+The Iridium synthesizer is a descendant of the Blofeld. 
 
-## Hardware (verifiziert, Stand: aktuelle Runde)
-
-- Waldorf Iridium Keyboard Synthesizer mit SOM2 Upgrade
-- Waldorf Blofeld Synthesizer mit SL Sampling License (Firmware 1.24)
-- Focusrite Scarlett 18i8 Audio Interface (USB, 20 Eingänge @ 48 kHz)
-	- Iridium verbunden mit Eingang 5/6
-	- Blofeld verbunden mit Eingang 3/4
-- Beide Synths **direkt per USB am Mac** (primärer MIDI-Weg, Launchpad abgeschaltet):
-	- Blofeld: CoreMIDI-Port `Blofeld` (bidirektional; Identity Reply: Hersteller `3E`, Modell `13`, FW 1.24); Global Channel = **MIDI-Kanal 5**; **SINGLE MODE aktiv** (umgeschaltet via Shift+Sound/Multi; verifiziert: nur Kanal 5 antwortet). Achtung: Modus ist per Kanal-Scan NICHT allein erkennbar, da Multi-Parts auf beliebigen Kanälen liegen dürfen.
-	- Iridium: USB-Endpunkt `Iridium Keyboard (MIDI 2.0) MIDI 2.0` (MIDI-1.0-Bytes werden als UMP zugestellt); Parts 1-4 auf **MIDI-Kanal 6-9**. Der Endpunkt `Synth` empfängt derzeit nichts.
-- Novation Launchpad Pro 3 nur als **Fallback** (MIDI-Interface per DIN, falls USB nicht greift; abgeschaltet):
-	- Iridium MIDI Out -> Launchpad MIDI In
-	- Launchpad MIDI Out2 -> Blofeld MIDI In
-	- CoreMIDI-Port `Launchpad Pro MK3 LPProMK3 DIN` (Blofeld antwortet dort auf Kanal 5, aber nur Out-Richtung nutzbar; Identity-Reply auf DIN ist das Launchpad selbst: `00 20 29`)
-
-Hinweis: Blofeld zusätzlich per USB = mögliche USB-Erdschleife (derzeit ok).
-
+Similarities:
+- 3 Oscillators
+- Synthesis: Wavetable, VA waveforms, sampling waveforms
+- Modulation matrix
+- 2 filters
+  
+Differences:
+- Iridium has additional synthesis models (FM, Resonance, Particles, Seeds) we should not try to use - keep to Wavetable and Waveforms models
+- Different filter architecture:
+    - Blofeld filters can be routed parallel or serial; filters can be routed via a mixing parameter to F1 or F2
+    - Iridium filters are fixed to parallel (with different link modes), but there is an additional "Digital Former" filter that can be used before or after filters;  filters can be routed via a mixing parameter to filters or Digital Former
+- Iridium has no oscillator FM, as it uses a dedicated synthesis model for FM synthesis - ignore in conversion
+- Iridium has more FX
+  
 ## Manuals
 
-`~/Nextcloud/AAA Musik/Manuals`:
-- `Blofeld.pdf` (Bedienhandbuch, inkl. Multi Mode / SysEx-Dumps)
-- `iridium_desk_kb_manual_os3.pdf`
-- `Iridium_os4_SOMv2_manual.pdf` (SOM2: USB-Ports "Computer" / "USB CTRL")
+Synth descriptions in the docs: 
+- `docs/manuals/blofeld_sysex_v1_04.txt`
+- `docs/manual-text/blofeld.txt`
+- `docs/manual-text/iridium_os3.txt`
+- `docs/manual-text/iridium_os4_som2.txt`
 
-## Verifizierte Messungen (Schritt 1: Verbindung + Sound messen)
+## Hardware & Setup
 
-`python3 scripts/step1_verify_connection.py` => beide "VERBUNDEN, Sound messbar":
-- Blofeld: Note auf Kanal 5 -> Scarlett In 3/4, Peak ca. -17 dBFS
-- Iridium: Note auf Kanal 6 (Part 1) -> Scarlett In 5/6, Peak ca. -28 dBFS
+- Mac (macOS, CoreMIDI/AVFoundation); both synths connected directly via USB (may cause digital noise via ground loop); Focusrite Scarlett 18i8 audio interface
+- Blofeld on Scarlett inputs 3/4 (MIDI channel 5), Iridium on inputs 5/6 (MIDI channels 6-9, Parts 1-4)
+- Install: `pip install -e ".[dev]"`, `brew install ffmpeg`, build `tools/ump_send` (details in `README.md`)
+- Workflow (convert -> upload -> A/B measure -> tweak): see `README.md`; current inventory/plan: `docs/STATUS.md`; empirical findings: `docs/FINDINGS.md`
 
-Blofeld-Kanaele/Mode: `python3 scripts/check_blofeld_mode.py`
-(zeigt empfangende Kanaele + Identity + GLBD. Stand: SINGLE MODE aktiv, nur Kanal 5 antwortet.
-Modus am Geraet aendern: Shift+Sound/Multi. Kanal-Scan erkennt den Modus NICHT allein,
-da Multi-Parts auf beliebigen Kanaelen liegen duerfen. Release-Reste vorher per
-All-Notes-Off beseitigen!)
+## Skills
 
-## Prinzipien
+- bloridium
 
-- Frage nach, bevor du Hardware-Einstellungen am Geraet aenderst.
-- Aufnahme immer ueber Scarlett 18i8 (Blofeld In 3/4, Iridium In 5/6), 48 kHz.
-- Vor Kanal-Scans All Notes Off (CC123) auf allen Kanaelen + Release abwarten.
-- Siehe `README.md` (Setup/Nutzung), `docs/FINDINGS.md` (alle Funde),
-  `docs/STATUS.md` (Werkzeug-Inventar + Plan fuer die naechste Session).
+# Rules
+
+- Ask before changing settings on either unit
+- Try to be hardware-agnostic, using generic MIDI and Audio interfaces
+- Repository language is English
+- When improving the code, always document your findings
+- When improving the code, always correct the bloridium skill accordingly
+

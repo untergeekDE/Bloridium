@@ -1,0 +1,33 @@
+# bloridium.yaml -- Bloridium configuration (edit freely).
+# Precedence: --config flag > $BLORIDIUM_CONFIG > ./bloridium.yaml > built-in defaults.
+# `bloridium discover --write` only fills keys you left empty.
+# MIDI channels are 0-based (Blofeld Global Channel 5 -> 4; Iridium Part 1 = ch 6 -> 5).
+# Audio channels are 0-based input numbers on the audio interface.
+midi:
+  blofeld:
+    out_port: Launchpad Pro MK3 LPProMK3 DIN
+    in_port: Launchpad Pro MK3 LPProMK3 DIN
+    channel: 4
+  iridium:
+    out_port: Launchpad Pro MK3 LPProMK3 DIN
+    in_port: Launchpad Pro MK3 LPProMK3 DIN
+    channel: 5
+  fallback_out_ports:
+    blofeld:
+    - Launchpad Pro MK3 LPProMK3 DIN
+    - Blofeld
+    iridium:
+    - Launchpad Pro MK3 LPProMK3 DIN
+    - Iridium Keyboard (MIDI 2.0) MIDI 2.0
+    - Iridium Keyboard (MIDI 2.0) Synth
+audio:
+  device: Scarlett 18i8 USB
+  samplerate: 48000
+  raw_channels: 20
+  channels:
+    blofeld:
+    - 2
+    - 3
+    iridium:
+    - 4
+    - 5

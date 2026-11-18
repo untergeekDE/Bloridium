@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Spike: A/B-Vergleich Blofeld A043 'SH Power' vs Iridium (geladener konvertierter Patch).
+"""Spike: A/B comparison Blofeld A043 'SH Power' vs Iridium (loaded converted patch).
 
-Messreihen (beide Synths simultan, Scarlett alle 20 Kanaele):
-  1. Velocity-Kurve:   note 36 bei vel [1, 32, 64, 96, 127]
+Measurement series (both synths simultaneously, Scarlett all 20 channels):
+  1. Velocity curve:  note 36 at vel [1, 32, 64, 96, 127]
   2. Modwheel (CC1):   note 36 vel 100, CC1 [0, 32, 64, 96, 127]
   3. Aftertouch (Channel Pressure): note 36 vel 100, Pressure [0, 32, 64, 96, 127]
-Pro Take: peak/rms dBFS + spectral centroid pro Synth (Blofeld In3/4, Iridium In5/6).
-Output: JSON-Report + .npy pro Take unter OUT.
+Per take: peak/rms dBFS + spectral centroid per synth (Blofeld In3/4, Iridium In5/6).
+Output: JSON report + .npy per take under OUT.
 """
 import json
 import sys
@@ -23,7 +23,7 @@ from bloridium import audio, blofeld_dump as bd, midi, waldorf, workflow
 OUT = Path("/private/var/folders/kg/zkn9b6n546vfmpb6qd3n4pdr0000gn/T/opencode/ab_spike")
 OUT.mkdir(parents=True, exist_ok=True)
 NOTE = 36
-IRR_CH = 5  # 0-basiert = MIDI 6 (Part 1)
+IRR_CH = 5  # 0-based = MIDI 6 (Part 1)
 
 
 def all_notes_off(synths):
@@ -77,7 +77,7 @@ def main():
     blo = midi.connect("blofeld")
     irr = midi.connect("iridium")
     report = {"note": NOTE, "blofeld_edit": blofeld_edit_name(blo), "series": {}}
-    print("Blofeld Edit-Puffer:", repr(report["blofeld_edit"]))
+    print("Blofeld edit buffer:", repr(report["blofeld_edit"]))
     all_notes_off([blo, irr])
     ts = time.strftime("%Y%m%d_%H%M%S")
 

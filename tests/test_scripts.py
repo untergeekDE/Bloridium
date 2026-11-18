@@ -1,6 +1,6 @@
-"""Task 6: step-Skripte sind duenne Wrapper ueber bloridium.workflow.
+"""Task 6: step scripts are thin wrappers over bloridium.workflow.
 
-argv/Exit-Codes/stdout bleiben kompatibel (Golden-Test gegen main-Checkout).
+argv/exit codes/stdout stay compatible (golden test against the main checkout).
 """
 
 import subprocess
@@ -22,7 +22,7 @@ def run_script(root, name, *args):
 def test_wrappers_delegate_to_workflow(repo):
     for name in SCRIPTS:
         src = (repo / "scripts" / name).read_text()
-        assert "workflow" in src, f"{name} soll bloridium.workflow nutzen"
+        assert "workflow" in src, f"{name} should use bloridium.workflow"
 
 
 def test_step2_parse_output_contains_sound(repo):
@@ -32,10 +32,10 @@ def test_step2_parse_output_contains_sound(repo):
 
 
 def test_step2_parse_stdout_matches_original_on_main(repo):
-    """Golden: stdout des Wrappers == stdout des urspruenglichen Skripts (main)."""
-    main_repo = repo.parent.parent  # .worktrees/bloridium-cli -> Repo-Root
+    """Golden: stdout of the wrapper == stdout of the original script (main)."""
+    main_repo = repo.parent.parent  # .worktrees/bloridium-cli -> repo root
     if not (main_repo / "scripts" / "step2_parse_blofeld_dump.py").exists():
-        pytest.skip("main-Checkout nicht gefunden")
+        pytest.skip("main checkout not found")
     dump = str(repo / DUMP)
     a = run_script(main_repo, "step2_parse_blofeld_dump.py", dump)
     b = run_script(repo, "step2_parse_blofeld_dump.py", dump)
@@ -69,7 +69,7 @@ def test_check_connection_structure_offline(monkeypatch):
 
 
 def test_sim_compare_npy_offline(repo, tmp_path):
-    """sim_compare.py --npy: offline-Vergleich zweier .npy, loggt JSONL."""
+    """sim_compare.py --npy: offline comparison of two .npy files, logs JSONL."""
     import json
     import numpy as np
     sr = 48000
@@ -87,11 +87,11 @@ def test_sim_compare_npy_offline(repo, tmp_path):
     rows = [json.loads(l) for l in log.read_text().splitlines()]
     assert len(rows) == 1
     assert rows[0]["meta"]["pair"] == "sine_vs_saw"
-    assert rows[0]["result"]["score"] < 95.0   # Saw != Sinus
+    assert rows[0]["result"]["score"] < 95.0   # saw != sine
 
 
-def test_sim_live_mit_fakes(repo, tmp_path, monkeypatch):
-    """sim_live.main(): sendet CC am Iridium, misst gegen Ref-.npy, loggt JSONL."""
+def test_sim_live_with_fakes(repo, tmp_path, monkeypatch):
+    """sim_live.main(): sends CC on the Iridium, measures against ref-.npy, logs JSONL."""
     import json
     import sys
     import numpy as np
@@ -115,7 +115,7 @@ def test_sim_live_mit_fakes(repo, tmp_path, monkeypatch):
     ref = np.stack([0.5 * np.sin(2 * np.pi * 220 * t)] * 2)
     ref_path = tmp_path / "ref.npy"
     np.save(ref_path, ref)
-    live = 0.5 * (2 * ((220 * t) % 1) - 1)  # Saw statt Sinus -> Score < 100
+    live = 0.5 * (2 * ((220 * t) % 1) - 1)  # saw instead of sine -> score < 100
 
     monkeypatch.setattr(midi, "connect", lambda name, ports=None: FakeSynth())
     def fake_record(duration, channels=None, **kw):
@@ -128,14 +128,14 @@ def test_sim_live_mit_fakes(repo, tmp_path, monkeypatch):
     rc = sim_live.main(["--param", "Filter1 Cutoff", "--value", "90",
                         "--ref", str(ref_path), "--log", str(log), "--note", "60"])
     assert rc == 0
-    assert any(cc == 0 and v == 90 for cc, v, ch in sent)   # CC0 (Cutoff lt. pid_map)
+    assert any(cc == 0 and v == 90 for cc, v, ch in sent)   # CC0 (Cutoff per pid_map)
     rows = [json.loads(l) for l in log.read_text().splitlines()]
     assert rows[0]["meta"]["param"] == "Filter1 Cutoff"
     assert rows[0]["result"]["score"] < 100.0
 
 
-def test_sim_live_ohne_ref_spielt_blofeld_mit(repo, tmp_path, monkeypatch):
-    """Fix Critical 1: ohne --ref wird der Blofeld live mit angespielt."""
+def test_sim_live_without_ref_plays_blofeld_too(repo, tmp_path, monkeypatch):
+    """Fix Critical 1: without --ref the Blofeld is played live as well."""
     import json
     import sys
     import numpy as np
@@ -175,16 +175,16 @@ def test_sim_live_ohne_ref_spielt_blofeld_mit(repo, tmp_path, monkeypatch):
     rc = sim_live.main(["--param", "Filter1 Cutoff", "--value", "90",
                         "--log", str(log), "--note", "60"])
     assert rc == 0
-    assert notes["blofeld"], "Blofeld wurde nicht angespielt"
-    assert notes["iridium"], "Iridium wurde nicht angespielt"
+    assert notes["blofeld"], "Blofeld was not played"
+    assert notes["iridium"], "Iridium was not played"
     rows = [json.loads(l) for l in log.read_text().splitlines()]
     assert rows[0]["meta"]["blofeld"] == "live"
-    assert rows[0]["result"]["score"] > 95.0   # gleiches Signal -> nahe
+    assert rows[0]["result"]["score"] > 95.0   # same signal -> close
 
 
 def test_sim_manual_compare_wheel_sweep(repo, tmp_path, monkeypatch):
-    """--wheel 0,50,100: CC1=0/64/127 auf Blofeld ch5 UND Iridium ch6, Reset auf 0,
-    ein Log-Eintrag pro Wheel-Stufe mit meta.wheel_pct."""
+    """--wheel 0,50,100: CC1=0/64/127 on Blofeld ch5 AND Iridium ch6, reset to 0,
+    one log entry per wheel level with meta.wheel_pct."""
     import json
     import sys
     import numpy as np

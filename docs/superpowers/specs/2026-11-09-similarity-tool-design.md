@@ -1,88 +1,88 @@
-# Design: Ähnlichkeits-Tool Blofeld ↔ Iridium (Ansatz A: Spektral + Hüllkurve)
+# Design: similarity tool Blofeld ↔ Iridium (approach A: spectral + envelope)
 
-Datum: 2026-11-09 · Status: Entwurf zur Genehmigung
+Date: 2026-11-09 · Status: draft for approval
 
 ## Intent & Why
-Toolset, das eine erste Approximation eines Blofeld-Sounds auf den Iridium überträgt
-(qpat-Konvertierung + Live-CCs). Das Ähnlichkeits-Tool schließt den Regelkreis:
-Sound klingt nicht wie das Vorbild → messen wie sehr → Parameter drehen → erneut messen.
+Toolset that transfers a first approximation of a Blofeld sound to the Iridium
+(qpat conversion + live CCs). The similarity tool closes the loop:
+sound doesn't sound like the original → measure how much → turn parameters → measure again.
 
-Vier Ziele (vom Human vorgegeben):
-1. **Feedback an den Human** — wie sehr weicht der Iridium-Sound vom Blofeld-Vorbild ab?
-2. **Verbesserung der Transfer-Skripte** — Score als objektive Metrik statt Ohr.
-3. **LLM-gestützte Exploration** — systematisch an Parametern drehen, bis der Score steigt
-   (braucht eine gute CC-Map: `docs/midi-maps/iridium_pid_map.csv` + `iridium_rdb.mimap`).
-4. **Trainingsdaten für ein späteres Mapping-Modell** — jedes Messung als geloggter Datensatz.
+Four goals (given by the human):
+1. **Feedback to the human** — how much does the Iridium sound deviate from the Blofeld original?
+2. **Improving the transfer scripts** — score as an objective metric instead of the ear.
+3. **LLM-supported exploration** — systematically turn parameters until the score rises
+   (needs a good CC map: `docs/midi-maps/iridium_pid_map.csv` + `iridium_rdb.mimap`).
+4. **Training data for a later mapping model** — every measurement as a logged dataset.
 
 ## Goals / Non-goals / Anti-goals
-- Goals: Score 0–100 + interpretierbare Abweichungen (pro Frequenzband, Hüllkurve);
-  offline auf vorhandenen Takes UND live (CC ändern → messen); JSONL-Log pro Run.
-- Non-goals (Phase A): ML-Embeddings (recherchiert parallel, spätere Phase B);
-  mehrstimmige Sounds; Sample-basierte Oszillatoren.
-- Anti-goals: kein "Ohr-Ersatz"-Anspruch, nur erste Approximation; kein Training in Phase A.
+- Goals: score 0-100 + interpretable deviations (per frequency band, envelope);
+  offline on existing takes AND live (change CC → measure); JSONL log per run.
+- Non-goals (Phase A): ML embeddings (researched in parallel, later Phase B);
+  polyphonic sounds; sample-based oscillators.
+- Anti-goals: no "ear replacement" claim, only a first approximation; no training in Phase A.
 
 ## Constraints
-- macOS, Python 3.10, **numpy only in Phase A** (kein neues ML-Dependency).
-- Aufnahme: `bloridium.audio.record` (ffmpeg/avfoundation, Scarlett 18i8, 48 kHz,
+- macOS, Python 3.10, **numpy only in Phase A** (no new ML dependency).
+- Recording: `bloridium.audio.record` (ffmpeg/avfoundation, Scarlett 18i8, 48 kHz,
   Blofeld In 3/4 = ch (2,3), Iridium In 5/6 = ch (4,5)).
-- MIDI: Blofeld + Iridium hängen am Launchpad Pro 3 DIN-Out (`bloridium/midi.py`,
-  Blofeld ch5/idx4, Iridium Parts ch6-9/idx5-8). USB ist wegen Masseschleife abgehängt.
-- Iridium-Patches nur per qpat-Import (Stick); CCs live steuerbar.
-- Bestehende Artefakte: A/B-.npy-Takes (`spike_ab_compare.py`), `recordings/*.json`,
+- MIDI: Blofeld + Iridium on the Launchpad Pro 3 DIN out (`bloridium/midi.py`,
+  Blofeld ch5/idx4, Iridium Parts ch6-9/idx5-8). USB is unplugged because of the ground loop.
+- Iridium patches only via qpat import (stick); CCs controllable live.
+- Existing artifacts: A/B .npy takes (`spike_ab_compare.py`), `recordings/*.json`,
   `docs/refs/qpat_params_v14/v15`, `docs/midi-maps/iridium_pid_map.csv`.
 
 ## Approaches
-- **A (gewählt): Spektral + Hüllkurve, numpy-only.** Log-magnitude-Spektrogramm
-  (log-Bänder ~40 Hz–12 kHz) + RMS-Hüllkurve; Distanz = Cosine auf mittlerem
-  Sustain-Spektrogramm + DTW auf der Hüllkurve; Score 0–100 gewichtet.
-  Trade-off: weniger "semantisch" als Embeddings, dafür interpretierbar
-  (pro-Band-dB → direktes Parameter-Feedback) und ohne Modell-Download.
-- B: Audio-Embedding — **Recherche abgeschlossen** (Subagent, 2026-11-09). Top-Kandidaten
-  (alle ≤ 4 GB, CPU-tauglich):
-  - **LAION CLAP2-xxs/xs** ([HF laion/clap2-xxs-audioxl-s1B](https://huggingface.co/laion/clap2-xxs-audioxl-s1B), 109–200 MB, Apache-2.0, 224/320-d, 32 kHz, keine 10-s-Paddung → ideal für 1–2-s-Clips) — Empfehlung für Embedding-Score.
-  - **MERT-v1-95M** ([HF m-a-p/MERT-v1-95M](https://huggingface.co/m-a-p/MERT-v1-95M), 378 MB, 768-d @ 24 kHz, rein musikalisch) — beste Timbre-Auflösung, aber **CC-BY-NC** (nur intern/experimentell).
-  - **EnCodec 48 kHz** ([HF facebook/encodec_48khz](https://huggingface.co/facebook/encodec_48khz), 76 MB, MIT) — Encoder-Latent/Code-Histogramm als Timbre-Signatur (FAD-Ansatz), volle 48-kHz-Bandbreite.
-  - 16-kHz-Modelle (VGGish, BEATs, wav2vec2, music2vec) wegen Synth-Oberwellen > 8 kHz nur als schnelle Referenz.
-  - **Kombinationsprinzip (empfohlen):** neuronaler Embedding-Score (CLAP2) + klassische
-    Features (log-mel/MFCC/Chroma/Centroid) = robuster Score + interpretierbare Deltas.
-  Trade-off: Modell-Download, Score schwerer interpretierbar als reine Band-Deltas.
-- C: reiner qpat-Parameter-Vergleich (kein Audio) — als schnelle Vorab-Prüfung
-  ergänzt (cf. `docs/DONSOLARIS-COMPARE.md`), nicht als Ersatz.
+- **A (chosen): spectral + envelope, numpy-only.** Log-magnitude spectrogram
+  (log bands ~40 Hz-12 kHz) + RMS envelope; distance = cosine on the mean
+  sustain spectrogram + DTW on the envelope; score 0-100 weighted.
+  Trade-off: less "semantic" than embeddings, but interpretable
+  (per-band dB → direct parameter feedback) and without a model download.
+- B: audio embedding — **research complete** (subagent, 2026-11-09). Top candidates
+  (all ≤ 4 GB, CPU-capable):
+  - **LAION CLAP2-xxs/xs** ([HF laion/clap2-xxs-audioxl-s1B](https://huggingface.co/laion/clap2-xxs-audioxl-s1B), 109-200 MB, Apache-2.0, 224/320-d, 32 kHz, no 10-s padding → ideal for 1-2-s clips) — recommendation for the embedding score.
+  - **MERT-v1-95M** ([HF m-a-p/MERT-v1-95M](https://huggingface.co/m-a-p/MERT-v1-95M), 378 MB, 768-d @ 24 kHz, purely musical) — best timbre resolution, but **CC-BY-NC** (internal/experimental only).
+  - **EnCodec 48 kHz** ([HF facebook/encodec_48khz](https://huggingface.co/facebook/encodec_48khz), 76 MB, MIT) — encoder latent/code histogram as timbre signature (FAD approach), full 48 kHz bandwidth.
+  - 16 kHz models (VGGish, BEATs, wav2vec2, music2vec) only as a fast reference because of synth harmonics > 8 kHz.
+  - **Combination principle (recommended):** neural embedding score (CLAP2) + classical
+    features (log-mel/MFCC/chroma/centroid) = more robust score + interpretable deltas.
+  Trade-off: model download, score harder to interpret than pure band deltas.
+- C: pure qpat parameter comparison (no audio) — as a quick pre-check
+  added (cf. `docs/DONSOLARIS-COMPARE.md`), not as a replacement.
 
 ## Design (Phase A)
-Neues Modul `bloridium/sim.py`:
+New module `bloridium/sim.py`:
 - `features(x, sr)` → `(log_spec [n_bands × n_frames], env_rms [n_frames], band_edges)`
-  (FFT + Hann, log-spaced Bänder 40 Hz–12 kHz, ~50 ms Hop).
+  (FFT + Hann, log-spaced bands 40 Hz-12 kHz, ~50 ms hop).
 - `compare(feat_a, feat_b)` → `{"score": 0-100, "spec_cos": .., "env_dtw": ..,
-  "band_delta_db": [...], "verdict": "nahe/mittel/weit"}`.
-- Sustain-Fenster 0.5–1.2 s nach Note-On (Filter-Env verfälscht Attack — HANDOVER).
+  "band_delta_db": [...], "verdict": "close/medium/far"}`.
+- Sustain window 0.5-1.2 s after note-on (filter env distorts the attack — HANDOVER).
 - `log_run(result, meta)` → `recordings/sim_log.jsonl` (features summary + score + meta:
-  blofeld loc, iridium slot, CC-Zustände, timestamp) → Trainingsdaten für Ziel 4.
+  Blofeld loc, Iridium slot, CC states, timestamp) → training data for goal 4.
 
-Skripte (konsistent zu `scripts/spike_*.py`):
-- `scripts/sim_compare.py` — misst frisch (Note auf beiden Synths, Aufnahme, Vergleich)
-  ODER wertet vorhandene .npy-Takes aus (`--npy dir`). Output: Score + Band-Deltas
-  + JSONL-Log.
-- `scripts/sim_live.py` — Dreh-Loop für Ziel 3: lädt CC-Map (`iridium_pid_map.csv`),
-  nimmt Parameter-Name oder CC, setzt Wert am Iridium (ch6-9), misst, loggt.
-  `--auto` später: LLM schlägt nächste Änderung vor.
+Scripts (consistent with `scripts/spike_*.py`):
+- `scripts/sim_compare.py` — measures fresh (note on both synths, record, compare)
+  OR evaluates existing .npy takes (`--npy dir`). Output: score + band deltas
+  + JSONL log.
+- `scripts/sim_live.py` — turn loop for goal 3: loads the CC map (`iridium_pid_map.csv`),
+  takes a parameter name or CC, sets the value on the Iridium (ch6-9), measures, logs.
+  `--auto` later: LLM proposes the next change.
 
-CLI später: `bloridium sim compare ...` / `bloridium sim live ...` (Phase B).
+CLI later: `bloridium sim compare ...` / `bloridium sim live ...` (Phase B).
 
-CC-Map-Integration: `bloridium/ccmap.py` existiert (CSV-Namen → CC). Erweitern um
-Pid-Spalte aus `iridium_pid_map.csv`, damit `sim_live` Parameternamen ↔ CC ↔ Pid kennt.
+CC map integration: `bloridium/ccmap.py` exists (CSV names → CC). Extend with the
+pid column from `iridium_pid_map.csv`, so `sim_live` knows parameter names ↔ CC ↔ pid.
 
-## Phase B (nach Phase A, optional)
-- `bloridium/sim_embed.py`: optionaler Embedding-Score via CLAP2-xxs (HuggingFace, 109 MB,
-  Apache-2.0) als zweiter Score; Kombination mit Phase-A-Score (gewichtet) im JSONL-Log.
-- Nur wenn Lizenz ok: MERT-95M für feinere Timbre-Deltas (CC-BY-NC → nur intern).
-- Embeddings landen ebenfalls im `sim_log.jsonl` → Features für Ziel 4 (Mapping-Modell).
+## Phase B (after Phase A, optional)
+- `bloridium/sim_embed.py`: optional embedding score via CLAP2-xxs (HuggingFace, 109 MB,
+  Apache-2.0) as a second score; combination with the Phase A score (weighted) in the JSONL log.
+- Only if the license is ok: MERT-95M for finer timbre deltas (CC-BY-NC → internal only).
+- Embeddings also land in `sim_log.jsonl` → features for goal 4 (mapping model).
 
-## Was der Builder noch klären muss (Vorschläge = meine Calls)
-- DTW-Implementierung: eigene kleine DP (numpy) statt scipy-Dependency → Call: eigene DP.
-- Band-Anzahl: 48 log-Bänder → Call: 48.
-- Score-Gewichtung: 70 % Spektrogramm-Cosine, 30 % Hüllkurve-DTW → Call: 70/30.
-- JSONL-Pfad: `recordings/sim_log.jsonl` → Call: dort.
+## What the builder still has to clarify (proposals = my calls)
+- DTW implementation: own small DP (numpy) instead of a scipy dependency → call: own DP.
+- Band count: 48 log bands → call: 48.
+- Score weighting: 70 % spectrogram cosine, 30 % envelope DTW → call: 70/30.
+- JSONL path: `recordings/sim_log.jsonl` → call: there.
 
-## Nächster Schritt nach Genehmigung
-Plan via superpowers:writing-plans, dann TDD-Implementierung (test-sim.py zuerst).
+## Next step after approval
+Plan via superpowers:writing-plans, then TDD implementation (test_sim.py first).

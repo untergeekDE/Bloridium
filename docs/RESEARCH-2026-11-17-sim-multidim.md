@@ -1,246 +1,246 @@
-# Forschungsstand 2026-11-17 – Zwei-Sound-Vergleich: mehrere Dimensionen + Embedding-Distanz
+# Research status 2026-11-17 – two-sound comparison: multiple dimensions + embedding distance
 
-Anlass: geplantes Tool, das zwei aufgenommene Sounds (Blofeld vs Iridium, ein A/B-Paar)
-über **mehrere Dimensionen** vergleicht und zusätzlich einen **Distanzwert der Embeddings**
-liefert. Dieses Dokument ist der Stand der Technik (Literatur 2025–2026) plus der Stand
-im eigenen Repo – als Grundlage für das Design des Tools.
+Reason: planned tool that compares two recorded sounds (Blofeld vs Iridium, one A/B pair)
+across **multiple dimensions** and additionally delivers an **embedding distance**
+value. This document is the state of the art (literature 2025-2026) plus the status
+in our own repo – as the basis for the tool's design.
 
-## 1. Stand im Repo (was heute schon messen wir)
+## 1. Status in the repo (what we already measure today)
 
 - **Phase A** (`bloridium/sim.py`, numpy-only): `score = 100·(0.7·spec_cos + 0.3·(1−env_dtw))`
-  plus diagnostische Felder `band_dtw` (pro Frequenzband DTW über die Zeit), `spec_dtw`,
+  plus diagnostic fields `band_dtw` (per frequency band DTW over time), `spec_dtw`,
   `frame_cos`, `band_delta_db`, `band_edges_hz`.
-- **Phase B** (`bloridium/sim_embed.py`): CLAP-GGUF (`larger_clap_music_and_speech-q8_0`,
+- **Phase B** (`bloridium/sim_embed.py`): CLAP GGUF (`larger_clap_music_and_speech-q8_0`,
   512-d, clap.cpp) → `embed_cos` / `embed_score = 100·clip(cos,0,1)`; `combined = 0.5·A + 0.5·embed`;
-  ollama-LLM-Judge (lfm3-omni:2b) und d1-omni:2b-Profil (noul-Flags) als Erklär-Schicht.
-  `norm_pegel=True` (Peak 0.5 vor embed/LLM) ist essentiell (sonst kollabiert embed bei
-  leisen Iridium-Takes: A001 29 statt 75.6).
-- **Eval gegen Benutzer-Ratings** (n=9 Presets, post-hoc 0–100, `docs/PHASEB-EVAL-2026-11-14.md`):
-  Spearman ρ Phase A **+0.27**, embed **+0.50**, combined **+0.52**. LLM-Scores degeneriert
-  (lfm3 konstant 85; d1-omni als Score ρ +0.07/+0.13), d1-Flags als Profil brauchbar
-  (`darker` 9/9 matcht Benutzer-Bemerkungen).
-- **Bekannte Schwäche** (HANDOVER-2026-11-09, Offen Punkt 5): Phase A liefert 93–97, obwohl
-  der Höreindruck „oft sehr anders" ist → der Bedarf an zusätzlichen Dimensionen ist genau
-  das, was das geplante Tool adressieren soll.
+  ollama LLM judge (lfm3-omni:2b) and d1-omni:2b profile (noul flags) as explanation layer.
+  `norm_pegel=True` (peak 0.5 before embed/LLM) is essential (otherwise embed collapses on
+  quiet Iridium takes: A001 29 instead of 75.6).
+- **Eval against user ratings** (n=9 presets, post-hoc 0-100, `docs/PHASEB-EVAL-2026-11-14.md`):
+  Spearman ρ Phase A **+0.27**, embed **+0.50**, combined **+0.52**. LLM scores degenerate
+  (lfm3 constant 85; d1-omni as score ρ +0.07/+0.13), d1 flags usable as profile
+  (`darker` 9/9 matches the user comments).
+- **Known weakness** (HANDOVER-2026-11-09, open point 5): Phase A delivers 93-97, although
+  the listening impression is "often very different" → the need for additional dimensions is exactly
+  what the planned tool should address.
 
-## 2. Forschungsstand: Embedding-Modelle und Distanzmetriken
+## 2. State of the art: embedding models and distance metrics
 
-### 2.1 Welche Embeddings für paarweisen Audio-Vergleich?
+### 2.1 Which embeddings for pairwise audio comparison?
 
-- **CLAP-Familie** (LAION / MS-CLAP): 512-d, L2-normalisiert, cosine = dot product.
-  Varianten: `630k-audioset` (general, <10 s), `music_audioset`, `music_speech`,
-  `music_speech_audioset`. M2D-CLAP (IEEE 2025): auf Musik-Tasks sind general-purpose- und
-  Musik-Modelle vergleichbar; Musik-Modelle nur bei Pitch-Classification vorne. Für unsere
-  **kurzen monophonen Synth-Noten** ist `music_and_speech` (GGUF via clap.cpp, Apache-2.0)
-  ein guter Default – wir nutzen ihn bereits.
-- **MuQ / MuQ-MuLan** (music-only, 512/1024-d) und **MERT** (frame-level, 768/1024-d):
-  MuQ-MuLan und CLAP ohne Fine-Tuning auf ABX/Inst-Sim benchmarks vergleichbar
-  (arXiv 2601.19109). MERIT (arXiv 2605.27346) nutzt MERT-Backbone + 3 Projektions-Heads.
-- **clap.cpp** (gorse-io, Stand 2026-11) unterstützt als GGUF direkt **CLAP, CLaMP3,
-  MERT v1/v2, MuQ, MuQ-MuLan** – alle lokal, CPU, ROCm-portabel. Damit sind Modell-Wechsel
-  ohne Code-Änderung möglich (subprocess/HTTP-Schnittstelle bleibt).
-- **Wichtig für uns – Caveat „Don't CLAP"** (Cheng & Lerch, arXiv 2609.30540, 2026):
-  CLAP-Scores verhalten sich bei feinen Attribut-Vertauschungen (z. B. Timbre-Swap in
-  Captions) wie ein Bag-of-Words; LAION-CLAP swap-accuracy ≈ 0.51 (Chance). Heißt: der
-  globale CLAP-cosine ist für **grobe** Ähnlichkeit gut, für feine Synth-Timbre-Details
-  (einzelne Oberton-Deltas) blind. Deshalb: Embedding-Distanz als eine Dimension unter
-  mehreren, nicht als alleinige Wahrheit.
-- **Timbre-Alignment-Eval** (Tian, Lattner, Saitis, ISMIR 2025, arXiv 2507.07764):
-  auf 21 psychoakustischen Timbre-Datensätzen (2 614 Paar-Ratings) sind **Huang-Style-
-  Embeddings aus CLAP** (Mittelwert+Varianz über die Feature-Dims der ersten Swin-Blöcke,
-  konkateniert) die stärkste Repräsentation, **MFCC bleibt kompetitiv**, EnCodec-24k
-  schlägt EnCodec-48k. Distanzfunktionen: **cosine distance (1−cos) und L2** auf
-  L2-normalisierten Vektoren; Eval-Metriken: triplet agreement (mit Margin 0.1), Kendall,
-  Spearman, NDCG gegen menschliche Ratings. → Empfehlung: neben `embed_cos` auch
-  `embed_l2` und optional **MFCC-cosine** als robuste, cheap Komponente.
-- **Cross-cultural Similarity** (TISMIR 2026, tismir.341): Foundation Models schlagen
-  handgefertigte Features; **CLAP-Music&Speech** höchste Alignment mit menschlicher
-  Ähnlichkeitsbeurteilung; bei den Features ist **Melodie** prädiktivster Einzelfaktor.
+- **CLAP family** (LAION / MS-CLAP): 512-d, L2-normalized, cosine = dot product.
+  Variants: `630k-audioset` (general, <10 s), `music_audioset`, `music_speech`,
+  `music_speech_audioset`. M2D-CLAP (IEEE 2025): on music tasks, general-purpose and
+  music models are comparable; music models only ahead on pitch classification. For our
+  **short monophonic synth notes**, `music_and_speech` (GGUF via clap.cpp, Apache-2.0)
+  is a good default – we already use it.
+- **MuQ / MuQ-MuLan** (music-only, 512/1024-d) and **MERT** (frame-level, 768/1024-d):
+  MuQ-MuLan and CLAP without fine-tuning are comparable on ABX/instrument-sim benchmarks
+  (arXiv 2601.19109). MERIT (arXiv 2605.27346) uses a MERT backbone + 3 projection heads.
+- **clap.cpp** (gorse-io, status 2026-11) directly supports as GGUF **CLAP, CLaMP3,
+  MERT v1/v2, MuQ, MuQ-MuLan** – all local, CPU, ROCm-portable. Model switching
+  without code change is thus possible (subprocess/HTTP interface stays).
+- **Important for us – caveat "Don't CLAP"** (Cheng & Lerch, arXiv 2609.30540, 2026):
+  CLAP scores behave like a bag-of-words on fine attribute swaps (e.g. timbre swap in
+  captions); LAION-CLAP swap accuracy ≈ 0.51 (chance). Meaning: the global CLAP cosine is good for
+  **coarse** similarity, blind for fine synth timbre details
+  (individual harmonic deltas). Therefore: embedding distance as one dimension among
+  several, not as the sole truth.
+- **Timbre-alignment eval** (Tian, Lattner, Saitis, ISMIR 2025, arXiv 2507.07764):
+  on 21 psychoacoustic timbre datasets (2 614 pair ratings), **Huang-style
+  embeddings from CLAP** (mean+variance over the feature dims of the first Swin blocks,
+  concatenated) are the strongest representation, **MFCC stays competitive**, EnCodec-24k
+  beats EnCodec-48k. Distance functions: **cosine distance (1−cos) and L2** on
+  L2-normalized vectors; eval metrics: triplet agreement (with margin 0.1), Kendall,
+  Spearman, NDCG against human ratings. → Recommendation: besides `embed_cos` also
+  `embed_l2` and optionally **MFCC cosine** as a robust, cheap component.
+- **Cross-cultural similarity** (TISMIR 2026, tismir.341): foundation models beat
+  handcrafted features; **CLAP-Music&Speech** highest alignment with human
+  similarity judgments; among the features **melody** is the most predictive single factor.
 
-### 2.2 Mehrdimensionale / entkoppelte Similarity (der Trend 2026)
+### 2.2 Multidimensional / disentangled similarity (the 2026 trend)
 
-- **MERIT** (arXiv 2605.27346): einzelner monolithischer Score ist das Problem; MERT-
-  Backbone (frozen, Layer 3–6 + 23) + **drei getrennte Heads für Melodie, Rhythmus,
-  Timbre**, je 128-d auf der Einheitssphäre, Retrieval per cosine pro Head → explizite
-  per-Faktor-Scores. Human Eval bestätigt Selektivität der Heads.
-- **Post-hoc CSN-Disentanglement** (arXiv 2611.14415, Nov 2026): gelernte Masken auf
-  gefrorenen Foundation-Embeddings (CLAP/MERT/MuQ) gating in attributspezifische
-  Subräume; minimale Adaptation reicht, verbessert attributspezifische Disentanglement.
-- **Instrumenten-gewichtetes Cosine** (arXiv 2601.19109): Source Separation → pro-Stem-
-  Embeddings, gewichtete Summe; auf ABX mit listening tests.
-- **Timbre-Trait-Predictor für Synthesizer** (arXiv 2606.30369): statt globalem FAD ein
-  **20-dimensionales Timbre-Trait-Profil** (Reymore & Huron: bright, percussive, woody …)
-  prädiziert aus CLAP-Embedding + shallow head (RWC-Datenbank) – direkt übertragbar auf
-  „Vergleich über mehrere Dimensionen" für Synth-Sounds.
-- **SynthCloner** (arXiv 2509.24286, 2026): Synth-Sound = **Timbre (zeitinvariant,
-  spektral) + ADSR-Envelope** – genau die zwei Achsen, die unser A/B-Vergleich trennen
-  sollte (Spektrum vs Hüllkurve).
+- **MERIT** (arXiv 2605.27346): a single monolithic score is the problem; MERT
+  backbone (frozen, layers 3-6 + 23) + **three separate heads for melody, rhythm,
+  timbre**, each 128-d on the unit sphere, retrieval per cosine per head → explicit
+  per-factor scores. Human eval confirms the selectivity of the heads.
+- **Post-hoc CSN disentanglement** (arXiv 2611.14415, Nov 2026): learned masks on
+  frozen foundation embeddings (CLAP/MERT/MuQ) gate into attribute-specific
+  subspaces; minimal adaptation suffices, improves attribute-specific disentanglement.
+- **Instrument-weighted cosine** (arXiv 2601.19109): source separation → per-stem
+  embeddings, weighted sum; on ABX with listening tests.
+- **Timbre-trait predictor for synthesizers** (arXiv 2606.30369): instead of a global FAD a
+  **20-dimensional timbre-trait profile** (Reymore & Huron: bright, percussive, woody …)
+  predicted from the CLAP embedding + shallow head (RWC database) – directly transferable to
+  "comparison across multiple dimensions" for synth sounds.
+- **SynthCloner** (arXiv 2509.24286, 2026): synth sound = **timbre (time-invariant,
+  spectral) + ADSR envelope** – exactly the two axes our A/B comparison
+  should separate (spectrum vs envelope).
 
-### 2.3 Interpretierbare Timbre-Dimensionen (psychoakustische Features)
+### 2.3 Interpretable timbre dimensions (psychoacoustic features)
 
-Klassische Korrelate (McAdams 2019; Kazazis 2021; Peeters 2011): **spectral centroid**
-↔ Brightness, **attack time**, **spectral flux**, spread/skewness/slope, odd-to-even
-Harmonic-Ratio, harmonic deviation.
-DAGA 2025 (Czedik-Eysenberg & Reuter, „Evaluating Timbre-Related Audio Descriptors"):
-- **Brightness**: Sharpness (DIN 45692 / AudioCommons) r≈0.57–0.73, spectral centroid
-  r≈0.55–0.63 – **aber stark pitch-abhängig** (bei gleicher Note E4: F0 r=−0.16).
-  → Wir messen bei fester Note (72), daher ist centroid/sharpness hier valide.
-- **Roughness**: Vassilakis-Roughness (log) r≈0.82–0.87, Dissonance r≈0.67–0.74.
-- **Percussiveness**: Loudness-Differenz perkussiv/harmonisch nach HPSS (librosa
-  harmonic-percussive separation) am besten.
-- Embedding-Similarity zu verbalen Descriptors korreliert nur partiell (r bis 0.65 für
-  „bright") → klassische Features sind für die *benannten* Dimensionen zuverlässiger als
-  CLAP-Cosine gegen Text.
+Classical correlates (McAdams 2019; Kazazis 2021; Peeters 2011): **spectral centroid**
+↔ brightness, **attack time**, **spectral flux**, spread/skewness/slope, odd-to-even
+harmonic ratio, harmonic deviation.
+DAGA 2025 (Czedik-Eysenberg & Reuter, "Evaluating Timbre-Related Audio Descriptors"):
+- **Brightness**: sharpness (DIN 45692 / AudioCommons) r≈0.57-0.73, spectral centroid
+  r≈0.55-0.63 – **but strongly pitch-dependent** (at the same note E4: F0 r=−0.16).
+  → We measure at a fixed note (72), so centroid/sharpness are valid here.
+- **Roughness**: Vassilakis roughness (log) r≈0.82-0.87, dissonance r≈0.67-0.74.
+- **Percussiveness**: loudness difference percussive/harmonic after HPSS (librosa
+  harmonic-percussive separation) best.
+- Embedding similarity to verbal descriptors correlates only partly (r up to 0.65 for
+  "bright") → classical features are more reliable for the *named* dimensions than
+  CLAP cosine against text.
 
-### 2.4 Distanzmetriken und Vergleichsmethodik (MIR-Standard)
+### 2.4 Distance metrics and comparison methodology (MIR standard)
 
-- Distanzen in der Musikähnlichkeits-Literatur (CMMR 2021 Survey): **Manhattan, Euclidean,
-  Cosine, KL, Earth Mover's Distance (EMD)**, Sequenz-Distanzen (Levenshtein/LCS).
-  Für Embeddings: **cosine distance + L2** (Standard); EMD eher für Histogram-Features
-  (chroma, MFCC-Histogramme).
-- Paarweise Vergleiche kurzer Clips: globaler Vektor (mean-pooled) → cosine/L2; für
-  zeitliche Struktur: **DTW/soft-DTW auf Hüllkurven** (arXiv 2506.22628, sound-matching:
-  DTW-Envelope empfohlen für amplitudenmodulierte Signale; spectrogram-L1 ohne Alignment
-  empfindlich gegen lokale Zeitverschiebungen). Wir nutzen bereits DTW auf env + bands.
-- **Eval gegen Menschen**: triplet agreement / ABX mit Margin, Spearman/Kendall gegen
-  Ratings (das machen wir mit ρ gegen post-hoc 0–100; Caveat post-hoc dokumentieren).
-- **Preprocessing ist kritisch**: Pegel-Normierung vor Embedding-Vergleich (CLAP reagiert
-  auf Gain – unser norm_pegel-Befund), feste Tonhöhe, mono, 48 kHz; CLAP-Fenster 10 s mit
-  repeat-padding kurzer Clips (clap.cpp-Verhalten, verifiziert).
+- Distances in the music-similarity literature (CMMR 2021 survey): **Manhattan, Euclidean,
+  cosine, KL, Earth Mover's Distance (EMD)**, sequence distances (Levenshtein/LCS).
+  For embeddings: **cosine distance + L2** (standard); EMD rather for histogram features
+  (chroma, MFCC histograms).
+- Pairwise comparison of short clips: global vector (mean-pooled) → cosine/L2; for
+  temporal structure: **DTW/soft-DTW on envelopes** (arXiv 2506.22628, sound matching:
+  DTW envelope recommended for amplitude-modulated signals; spectrogram L1 without alignment
+  sensitive to local time shifts). We already use DTW on env + bands.
+- **Eval against humans**: triplet agreement / ABX with margin, Spearman/Kendall against
+  ratings (we do this with ρ against post-hoc 0-100; document the post-hoc caveat).
+- **Preprocessing is critical**: level normalization before embedding comparison (CLAP reacts
+  to gain – our norm_pegel finding), fixed pitch, mono, 48 kHz; CLAP window 10 s with
+  repeat-padding of short clips (clap.cpp behavior, verified).
 
-### 2.5 LLM-Judges als Score – negativer Befund (Repo + Literatur)
+### 2.5 LLM judges as score – negative finding (repo + literature)
 
-- Eigenes Eval: lfm3-omni:2b konstant 85 (ρ +0.35 degeneriert), d1-omni:600m kollabiert
-  88–96 (ρ +0.07), spec-Modus halluziniert (ρ −0.39). d1-omni:2b als noul-Profiler
-  (darker/octave_lower/brighter…) matcht Benutzer-Bemerkungen → **Erklär-Schicht ja,
-  Score nein**.
-- Literatur bestätigt: „Don't CLAP" (s. o.) und FIGMA (ACL 2026): CLAP & Co. sind für
-  feine musikalische Attribute (key, chords, feine Timbre-Bindungen) unzuverlässig.
-- **Befund bestätigt 2026-11-17 (Benutzer-Recall vs `docs/PHASEB-EVAL-2026-11-14.md`):
-  d1-omni:2b vs lfm3-omni:2b auf denselben 9 WAV-Paaren — als Score beide schwach
-  (d1:600m kollabiert 88–96, ρ +0.07; d1:2b 59–67, ρ +0.13; lfm3 audio konstant 85,
-  ρ +0.35 degeneriert ohne Varianz; lfm3 spec halluziniert, ρ −0.39). Als
-  **beschreibungs-kodierte Dimensionen** (noul-Profil via `/v1/systemone`) war das
-  Decision-Modell etwas besser: Flags matchen Benutzer-Bemerkungen (`darker` 9/9,
-  `octave_lower` A008 nur p=0.50 grenzwertig), diff_count ρ −0.38, score−k·diff +0.32 —
-  insgesamt aber geringer Gewinn; beste Proxy-Scores bleiben embed ρ +0.50 /
-  combined ρ +0.52 (n=9). → d1-Profil bleibt Erklär-Schicht (`profile`-Feld), nie Score.
+- Own eval: lfm3-omni:2b constant 85 (ρ +0.35 degenerate), d1-omni:600m collapses
+  88-96 (ρ +0.07), spec mode hallucinates (ρ −0.39). d1-omni:2b as noul profiler
+  (darker/octave_lower/brighter…) matches the user comments → **explanation layer yes,
+  score no**.
+- Literature confirms: "Don't CLAP" (see above) and FIGMA (ACL 2026): CLAP & Co. are
+  unreliable for fine musical attributes (key, chords, fine timbre bindings).
+- **Finding confirmed 2026-11-17 (user recall vs `docs/PHASEB-EVAL-2026-11-14.md`):
+  d1-omni:2b vs lfm3-omni:2b on the same 9 WAV pairs — as a score both weak
+  (d1:600m collapses 88-96, ρ +0.07; d1:2b 59-67, ρ +0.13; lfm3 audio constant 85,
+  ρ +0.35 degenerate without variance; lfm3 spec hallucinates, ρ −0.39). As
+  **description-encoded dimensions** (noul profile via `/v1/systemone`) the
+  decision model was somewhat better: flags match the user comments (`darker` 9/9,
+  `octave_lower` A008 only p=0.50 borderline), diff_count ρ −0.38, score−k·diff +0.32 —
+  overall though a smaller gain; the best proxy scores remain embed ρ +0.50 /
+  combined ρ +0.52 (n=9). → the d1 profile stays an explanation layer (`profile` field), never a score.
 
-## 3. Konsequenzen für das geplante Tool (Vorschlag)
+## 3. Consequences for the planned tool (proposal)
 
-Vergleichs-Ergebnis als JSON mit zwei Ebenen:
+Comparison result as JSON with two levels:
 
-1. **Dimensions-Vergleich** (interpretierbar, je Dimension 0–100 oder Delta):
-   - *Spektrum/Timbre*: `spec_cos` (global, bestehend), `band_dtw`/`band_delta_db` mit
-     `band_edges_hz` (Lokalisierung: Filter→tiefe Bänder, Obertöne→hohe — bewährt),
-     plus psychoakustische Traits als Deltas: `d_centroid` (brightness), `d_sharpness`,
+1. **Dimension comparison** (interpretable, per dimension 0-100 or delta):
+   - *Spectrum/timbre*: `spec_cos` (global, existing), `band_dtw`/`band_delta_db` with
+     `band_edges_hz` (localization: filter→low bands, harmonics→high — proven),
+     plus psychoacoustic traits as deltas: `d_centroid` (brightness), `d_sharpness`,
      `d_roughness` (Vassilakis log), `d_percussive` (HPSS-Δloudness), `d_flatness`.
-   - *Zeit/Envelope*: `env_dtw` (bestehend), attack-time delta, `frame_cos` (LFO/Mod-
-     Divergenz über die Zeit, bestehend).
-   - *Pitch*: F0-Delta in Halbtönen (bei gleicher Note ≈0; lokalisiert Oktave-Fehler wie
-     A008-Verdacht besser als d1-flag p=0.50).
-   - *Semantisch*: d1-Profil-Flags (bestehend, Erklär-Schicht).
-2. **Embedding-Distanz** (hart, numerisch):
-   - `embed_cos` + `embed_l2` auf CLAP-512-d (bestehend `embed_cos`; L2 ergänzt),
-     optional `mfcc_cos` (robust, kompetitiv laut ISMIR 2025) als cheap第二层,
-     optional Huang-Style-Embedding-Distanz aus CLAP (beste Timbre-Alignment 2025) als
-     `timbre_dist` – Extraktion: mean/var der ersten Swin-Blöcke (clap.cpp liefert nur
-     den finalen Vektor → dafür HF-Referenz oder clap.cpp-Patch; Spike nötig).
-   - Score-Mapping: linear geclippt (bestehend), Kalibrierung gegen User-Ratings per
-     Spearman (Eval wie gehabt).
-3. **Preprocessing-Pflicht**: `norm_pegel` (Peak 0.5), feste Note, mono, 48 kHz – sonst
-   sind embed/LLM wertlos (bewiesen).
-4. **LLM-Score nicht als Metrik** führen; nur Profil/Erklärung.
+   - *Time/envelope*: `env_dtw` (existing), attack-time delta, `frame_cos` (LFO/mod
+     divergence over time, existing).
+   - *Pitch*: F0 delta in semitones (at the same note ≈0; localizes octave errors like
+     the A008 suspicion better than the d1 flag p=0.50).
+   - *Semantic*: d1 profile flags (existing, explanation layer).
+2. **Embedding distance** (hard, numeric):
+   - `embed_cos` + `embed_l2` on CLAP-512-d (existing `embed_cos`; L2 added),
+     optionally `mfcc_cos` (robust, competitive per ISMIR 2025) as a cheap second layer,
+     optionally Huang-style embedding distance from CLAP (best timbre alignment 2025) as
+     `timbre_dist` – extraction: mean/var of the first Swin blocks (clap.cpp only delivers
+     the final vector → HF reference or clap.cpp patch; spike needed).
+   - Score mapping: linearly clipped (existing), calibration against user ratings via
+     Spearman (eval as before).
+3. **Preprocessing mandatory**: `norm_pegel` (peak 0.5), fixed note, mono, 48 kHz – otherwise
+   embed/LLM are worthless (proven).
+4. **Do not use the LLM score as a metric**; only profile/explanation.
 
-Offene Design-Fragen fürs Tool (nächster Schritt):
-- Huang-Style-Embedding: clap.cpp patchen vs HF-Referenz (nur Eval) vs weglassen.
-- MFCC-cos als zweite Embedding-Distanz: ja (cheap, robust) – numpy-Implementierung
-  ohne librosa.
-- Psychoakustische Traits: eigene numpy-Implementierung (sharpness DIN, roughness
-  Vassilakis, HPSS via median filtering) – kein neues Dependency.
+Open design questions for the tool (next step):
+- Huang-style embedding: patch clap.cpp vs HF reference (eval only) vs drop it.
+- MFCC cosine as second embedding distance: yes (cheap, robust) – numpy implementation
+  without librosa.
+- Psychoacoustic traits: own numpy implementation (DIN sharpness, Vassilakis roughness,
+  HPSS via median filtering) – no new dependency.
 
-## 4. Nachtrag 2026-11-17: lokal verfügbare Modelle & Instrumente (Bestand dieser Maschine + Stand)
+## 4. Addendum 2026-11-17: locally available models & instruments (inventory of this machine + status)
 
-Zwei Ebenen: **(a) lauffähige Modelle** für Embedding-Distanz / Urteil, **(b) klassische
-DSP-/Parameter-Instrumente** für die interpretierbaren Dimensionen.
+Two levels: **(a) runnable models** for embedding distance / verdict, **(b) classical
+DSP/parameter instruments** for the interpretable dimensions.
 
-### 4.1 Modelle – was hier lokal läuft bzw. ohne Weiteres ladbar ist
+### 4.1 Models – what runs locally here or is readily downloadable
 
-| Instrument | Wo | Status lokal | Lizenz | Für unseren A/B-Vergleich (kurze monophone Synth-Noten) |
+| Instrument | Where | Local status | License | For our A/B comparison (short monophonic synth notes) |
 |---|---|---|---|---|
-| **CLAP `larger_clap_music_and_speech` Q8_0 GGUF** (512-d, 48 kHz) | `models/` + clap-cpp 0.1.1 (pip) | ✅ in Nutzung (`ClapBackend`) | Apache-2.0 | **Primär-Embedding** (`embed_cos`/`embed_l2`) |
-| **clap.cpp GGUF-Familie** (gorse-io@HF): CLAP alle Varianten, **CLaMP3** (768-d, 24 kHz), **MERT v1 95M/330M + v2**, **MuQ** (1024-d), **MuQ-MuLan** (512-d, Text+Audio) | `hf download gorse-io/...` → `models/`, CPU, ROCm-portabel | ⬇️ ladbar, ~0.2–2 GB | CLAP Apache-2.0, CLaMP3 MIT, **MERT/MuQ CC-BY-NC-4.0** (nur Research/Nicht-kommerziell – für Strix-Halo-Migration merken) | Modell-Wechsel per Pfad, kein Code-Wechsel. **MuQ-MuLan**: laut arXiv 2510.14249 beste Pearson/Spearman (0.535/0.530) bei EQ/Reverb-Timbre-Semantik – relevant für Filter-Deltas; LAION-CLAP konsistenteste Instrumental-Timbre |
-| **Music2Latent** | HF via torch 2.2.2 + transformers 4.47.1 (installiert) | ⬇️ ladbar (Referenz/Eval) | research | laut ISMIR 2025 (arXiv 2507.07764) aligned **besser als CLAP** mit menschlichen Timbre-Ratings, hohe Kompression, music+speech |
-| **ollama lokal**: `d1-omni:2b` (4,4 GB), `d1-omni:600m`, `lfm3-omni:2b` (2,4 GB) | `ollama list` | ✅ vorhanden | LFM Open License | d1-omni:2b als noul-Profiler (integriert), lfm3 audio-Judge (degeneriert als Score) — **Erklär-Schicht, nicht Metrik** |
-| **ollama Bibliothek**: `lfm3-audio:2b` (2,1 GB, reines Audio-LM, 16 kHz), `qwen2.5-omni-3b/7b`, `qwen3-omni` (GGUF) | pull | ✅ gepullt + Spike 2026-11-17 | LFM Open License | **lfm3-audio:2b getestet (ollama 0.40.16):** `/api/chat` mit `audio`-Feld → 200 aber Audio kommt nicht an („you haven't provided any audio“); `content` als Teile-Liste → 400 (nicht unterstützt); nur `/v1/chat/completions` mit `input_audio` liefert Audio (200), aber **unzuverlässig bei reinen Synth-Tönen** (440 Hz → „low vocalization“, 220 Hz → „440 Hz“ falsch); `/api/embeddings` + `/api/embed` → „does not support embeddings“ → **kein Embedding-Modell** (generatives Audio-LM). Fazit: nicht als Judge/Metrik; Embeddings bleiben CLAP-GGUF (+ MuQ-MuLan/MERT/MuQ-GGUF, MFCC). Qwen-Omni: Kandidat für Captioner; gleiches Degenerations-Risiko wie d1/lfm3 |
-| **jina-embeddings-v2-base-de** (322 MB) | ollama ✅ | Text-Embeddings DE | Apache-2.0 | nur Text-Seite (z. B. Beschreibungs-Vergleich); CLAP-Text-Encoder ist RoBERTa (EN) → Prompts auf Englisch |
-| **CLAP-Text-Encoder** (im GGUF) via `clap embedding --text` | clap.cpp ✅ | zero-shot: Audio-Embedding gegen Text-Prompts („bright synth pad“, „dull filtered bass“…) projizieren | Apache-2.0 | **Per-Attribut-Scores ohne neues Modell** (Brightness/Roughness als Text-Probes) – DAGA 2025: Embedding↔„bright“ nur r≈0.65, also ergänzend zu DSP-Features |
-| **timbremetrics** (Python-Paket, Tian/Lattner/Saitis) | pip | ⬇️ | — | **Eval-Instrument**: 21 Timbre-Datensätze (334 Samples, 2 614 Ratings), triplet agreement/Kendall/Spearman/NDCG — damit evaluieren wir unsere Metriken gegen menschliche Ratings (statt nur unseres n=9) |
-| **NSynth** (305 979 monophone Noten, 1 006 Instrumente, Pitch/Timbre/Envelope-Labels) | HF ✅ | Datensatz | CC-BY | **Kalibrier-Datensatz**: exakt unser Setting (einzelne gehaltene Noten); z. B. self-similarity von CLAP/MFCC auf NSynth electronic/synthetic als Referenzskala |
+| **CLAP `larger_clap_music_and_speech` Q8_0 GGUF** (512-d, 48 kHz) | `models/` + clap-cpp 0.1.1 (pip) | ✅ in use (`ClapBackend`) | Apache-2.0 | **primary embedding** (`embed_cos`/`embed_l2`) |
+| **clap.cpp GGUF family** (gorse-io@HF): all CLAP variants, **CLaMP3** (768-d, 24 kHz), **MERT v1 95M/330M + v2**, **MuQ** (1024-d), **MuQ-MuLan** (512-d, text+audio) | `hf download gorse-io/...` → `models/`, CPU, ROCm-portable | ⬇️ downloadable, ~0.2-2 GB | CLAP Apache-2.0, CLaMP3 MIT, **MERT/MuQ CC-BY-NC-4.0** (research/non-commercial only – note for the Strix-Halo migration) | model switch per path, no code change. **MuQ-MuLan**: per arXiv 2510.14249 best Pearson/Spearman (0.535/0.530) on EQ/reverb timbre semantics – relevant for filter deltas; LAION-CLAP most consistent instrumental timbre |
+| **Music2Latent** | HF via torch 2.2.2 + transformers 4.47.1 (installed) | ⬇️ downloadable (reference/eval) | research | per ISMIR 2025 (arXiv 2507.07764) aligned **better than CLAP** with human timbre ratings, high compression, music+speech |
+| **ollama local**: `d1-omni:2b` (4.4 GB), `d1-omni:600m`, `lfm3-omni:2b` (2.4 GB) | `ollama list` | ✅ present | LFM Open License | d1-omni:2b as noul profiler (integrated), lfm3 audio judge (degenerate as score) — **explanation layer, not metric** |
+| **ollama library**: `lfm3-audio:2b` (2.1 GB, pure audio LM, 16 kHz), `qwen2.5-omni-3b/7b`, `qwen3-omni` (GGUF) | pull | ✅ pulled + spike 2026-11-17 | LFM Open License | **lfm3-audio:2b tested (ollama 0.40.16):** `/api/chat` with `audio` field → 200 but audio doesn't arrive ("you haven't provided any audio"); `content` as part list → 400 (not supported); only `/v1/chat/completions` with `input_audio` delivers audio (200), but **unreliable on pure synth tones** (440 Hz → "low vocalization", 220 Hz → "440 Hz" wrong); `/api/embeddings` + `/api/embed` → "does not support embeddings" → **no embedding model** (generative audio LM). Conclusion: not as judge/metric; embeddings stay CLAP GGUF (+ MuQ-MuLan/MERT/MuQ GGUF, MFCC). Qwen-Omni: candidate for captioner; same degeneration risk as d1/lfm3 |
+| **jina-embeddings-v2-base-de** (322 MB) | ollama ✅ | Text embeddings DE | Apache-2.0 | text side only (e.g. description comparison); the CLAP text encoder is RoBERTa (EN) → prompts in English |
+| **CLAP text encoder** (in the GGUF) via `clap embedding --text` | clap.cpp ✅ | zero-shot: project the audio embedding against text prompts ("bright synth pad", "dull filtered bass"…) | Apache-2.0 | **per-attribute scores without a new model** (brightness/roughness as text probes) – DAGA 2025: embedding↔"bright" only r≈0.65, so complementary to DSP features |
+| **timbremetrics** (Python package, Tian/Lattner/Saitis) | pip | ⬇️ | — | **eval instrument**: 21 timbre datasets (334 samples, 2 614 ratings), triplet agreement/Kendall/Spearman/NDCG — with this we evaluate our metrics against human ratings (instead of only our n=9) |
+| **NSynth** (305 979 monophonic notes, 1 006 instruments, pitch/timbre/envelope labels) | HF ✅ | dataset | CC-BY | **calibration dataset**: exactly our setting (single sustained notes); e.g. self-similarity of CLAP/MFCC on NSynth electronic/synthetic as a reference scale |
 
-### 4.2 Stand: welche Repräsentation schlägt wen (für Timbre/kurze Noten)
+### 4.2 Status: which representation beats which (for timbre/short notes)
 
-- **timbremetrics-Benchmark** (arXiv 2507.07764; Paket `timbremetrics`): LAION-CLAP 70.8–71.8 % triplet agreement, **MFCC 68.7 %**, **PANNs (AudioSet) nur 61.4 %**, EnCodec-24k > 48k, Music2Latent stark, **Huang-Style-Embedding aus CLAP-Internal am besten**. → tiefe Modelle sind für feine Timbre nur marginal besser als MFCC; PANNs/VGGish nicht holen.
-- **Effekt-induzierte Timbre-Änderungen** (arXiv 2510.14249): **MuQ-MuLan** stärkste monotone/lineare Abbildung (Pearson 0.535), LAION-CLAP konsistenteste über Instrumente; Reverb wird besser kodiert als EQ → für unsere Filter-Deltas (EQ-artig) ist CLAP/MuQ-MuLan ok, aber begrenzt.
-- **„Don't CLAP“** (arXiv 2609.30540): CLAP-Score ≈ Bag-of-Words bei feinen Attribut-Swaps → globale Embedding-Distanz ist **grober** Indikator, feine Deltas brauchen DSP-Features (Abschnitt 2.3).
-- **Synth-spezifisch (Parameter↔Audio)**: **Synth-JEPA** (arXiv 2609.31024, Hayes/Tian/Lattner 2026; Surge XT, 85 % Listening-Preference, renderer-free objective), **FM-SynAPSE/DX7-GNN** (arXiv 2608.18226; Audio↔Parameter joint space, DX7AllTheWeb 31k Presets), DDSynth-RL (Dexed, arXiv 2608.03032), SynthRL (IJCAI 2025). → Forschungsstand für **Parameter-Ebene**: wir haben beide Seiten (Blofeld-SNDD ↔ qpat) – ein direkter Parameter-Diff (bereits `qpat_map` overrides/unmapped) ist das „Instrument“ ohne Rendering; joint audio-parameter embeddings sind Future Work (Training nötig – gegen unsere No-Training-Regel).
-- **Sound-Matching-Losses** (arXiv 2506.22628): MSS, **wMFCC**, CLAP, P-Loss, soft-DTW(Envelope), JTFS — wMFCC und DTW-Envelope sind die praxisrelevanten für uns (wMFCC = gewichtete MFCC-Distanz, cheap in numpy/scipy).
+- **timbremetrics benchmark** (arXiv 2507.07764; package `timbremetrics`): LAION-CLAP 70.8-71.8 % triplet agreement, **MFCC 68.7 %**, **PANNs (AudioSet) only 61.4 %**, EnCodec-24k > 48k, Music2Latent strong, **Huang-style embedding from CLAP internals best**. → deep models are only marginally better than MFCC for fine timbre; don't bother with PANNs/VGGish.
+- **Effect-induced timbre changes** (arXiv 2510.14249): **MuQ-MuLan** strongest monotone/linear mapping (Pearson 0.535), LAION-CLAP most consistent across instruments; reverb is encoded better than EQ → for our filter deltas (EQ-like) CLAP/MuQ-MuLan are ok, but limited.
+- **"Don't CLAP"** (arXiv 2609.30540): CLAP score ≈ bag-of-words on fine attribute swaps → global embedding distance is a **coarse** indicator, fine deltas need DSP features (section 2.3).
+- **Synth-specific (parameter↔audio)**: **Synth-JEPA** (arXiv 2609.31024, Hayes/Tian/Lattner 2026; Surge XT, 85 % listening preference, renderer-free objective), **FM-SynAPSE/DX7-GNN** (arXiv 2608.18226; audio↔parameter joint space, DX7AllTheWeb 31k presets), DDSynth-RL (Dexed, arXiv 2608.03032), SynthRL (IJCAI 2025). → state of the art for the **parameter level**: we have both sides (Blofeld-SNDD ↔ qpat) – a direct parameter diff (already `qpat_map` overrides/unmapped) is the "instrument" without rendering; joint audio-parameter embeddings are future work (training needed – against our no-training rule).
+- **Sound-matching losses** (arXiv 2506.22628): MSS, **wMFCC**, CLAP, P-loss, soft-DTW (envelope), JTFS — wMFCC and DTW envelope are the practically relevant ones for us (wMFCC = weighted MFCC distance, cheap in numpy/scipy).
 
-### 4.3 DSP-Instrumente (numpy/scipy-only, kein neues Dependency; scipy 1.11.4 ist installiert)
+### 4.3 DSP instruments (numpy/scipy only, no new dependency; scipy 1.11.4 is installed)
 
-- Spektral: log-mel/log-STFT (numpy FFT), **MFCC/wMFCC** (DCT via scipy), centroid, spread, skewness, slope, rolloff, flatness, crest, odd-to-even-Harmonic-Ratio, harmonic deviation (Peeters/Kazazis).
-- Psychoakustisch (DAGA 2025): **Sharpness DIN 45692** ↔ brightness (r≈0.57–0.73), **Roughness Vassilakis (log)** ↔ roughness (r≈0.82–0.87), **HPSS-ΔLoudness** (median filter via scipy.ndimage) ↔ percussiveness.
-- Zeitlich: env-RMS + **DTW** (haben wir), attack time, spectral flux, frame_cos (haben wir).
-- Pitch: F0 per Autokorrelation (scipy) → Oktav-Deltas in Halbtönen (besser als d1-flag für A008-Verdacht).
-- Parameter-Ebene (haben wir): SNDD/qpat-Diff, `unmapped`-Listen.
+- Spectral: log-mel/log-STFT (numpy FFT), **MFCC/wMFCC** (DCT via scipy), centroid, spread, skewness, slope, rolloff, flatness, crest, odd-to-even harmonic ratio, harmonic deviation (Peeters/Kazazis).
+- Psychoacoustic (DAGA 2025): **DIN 45692 sharpness** ↔ brightness (r≈0.57-0.73), **Vassilakis roughness (log)** ↔ roughness (r≈0.82-0.87), **HPSS-Δloudness** (median filter via scipy.ndimage) ↔ percussiveness.
+- Temporal: env RMS + **DTW** (we have it), attack time, spectral flux, frame_cos (we have it).
+- Pitch: F0 via autocorrelation (scipy) → octave deltas in semitones (better than the d1 flag for the A008 suspicion).
+- Parameter level (we have it): SNDD/qpat diff, `unmapped` lists.
 
-### 4.4 Spike 2026-11-17: CLAP vs MERT auf unseren 9 Paaren (eigene Daten)
+### 4.4 Spike 2026-11-17: CLAP vs MERT on our 9 pairs (own data)
 
-`scripts/spike_mert_clap_eval.py` (Ergebnis: `recordings/mert_clap_eval_20261117_213852.json`):
-die 9 pegel-angeglichenen WAV-Paare `ab_<LOC>_20261115_*_n72_w0_{blo,irr}.wav` mit drei
-GGUFs via clap-cpp eingebettet, Cosine-Score vs Benutzer-Ratings (`phaseb_ratings_raw.json`):
+`scripts/spike_mert_clap_eval.py` (result: `recordings/mert_clap_eval_20261117_213852.json`):
+the 9 level-aligned WAV pairs `ab_<LOC>_20261115_*_n72_w0_{blo,irr}.wav` embedded with three
+GGUFs via clap-cpp, cosine score vs user ratings (`phaseb_ratings_raw.json`):
 
-| Modell (GGUF, clap-cpp) | Scores (Bereich) | Spearman ρ vs Benutzer (n=9) |
+| Model (GGUF, clap-cpp) | Scores (range) | Spearman ρ vs user (n=9) |
 |---|---|---|
-| `larger_clap_music_and_speech-q8_0` (bisher Produktion) | 60–84 | **+0.227** |
-| `larger_clap_music-q8_0` (music-only) | 84–99 (komprimiert oben) | **+0.462** |
-| `MERT-v1-95M-q8_0` (24 kHz, Resample) | 76–92 | **+0.454** |
+| `larger_clap_music_and_speech-q8_0` (previous production) | 60-84 | **+0.227** |
+| `larger_clap_music-q8_0` (music-only) | 84-99 (compressed at the top) | **+0.462** |
+| `MERT-v1-95M-q8_0` (24 kHz, resample) | 76-92 | **+0.454** |
 
-Befunde: auf unseren Daten **CLAP music-only ≈ MERT**, beide klar vor dem bisherigen
-`music_and_speech`; MERT hat die bessere Score-Spanne (weniger Sättigung oben), CLAP-music
- die etwas höhere Rangkorrelation. Caveats: n=9 verrauscht; MERT hier nur mean-gepoolt
-(768-d), MERIT-style Layer-Concat (3–6+23) geht nicht via GGUF; MERT-Lizenz CC-BY-NC-4.0.
+Findings: on our data **CLAP music-only ≈ MERT**, both clearly ahead of the previous
+`music_and_speech`; MERT has the better score spread (less saturation at the top), CLAP-music
+the slightly higher rank correlation. Caveats: n=9 noisy; MERT here only mean-pooled
+(768-d), MERIT-style layer concat (3-6+23) not possible via GGUF; MERT license CC-BY-NC-4.0.
 
-### 4.5 Konsequenz fürs Tool (aktualisiert)
+### 4.5 Consequence for the tool (updated)
 
-- **Embedding-Distanz**: primär **CLAP music-only GGUF** (`larger_clap_music-q8_0`, Spike 4.4: ρ +0.46 > music_and_speech +0.23 auf unseren Paaren; music-only laut M2D-CLAP auch bei Pitch vorne) mit `embed_cos` + `embed_l2`; **zweite Distanz: wMFCC/MFCC-cosine** (numpy, kompetitiv laut Benchmark); optional als dritte: **MERT-v1-95M-GGUF** via gleichem clap.cpp-Pfad (ρ +0.45, bessere Score-Spanne; Lizenz CC-BY-NC) oder MuQ-MuLan-GGUF für EQ/Reverb-Deltas; Music2Latent + Huang-Style nur als HF-Referenz im Eval (torch vorhanden, transformers 4.47.1 hat kein MERT – GGUF-Pfad ist der richtige).
-- **Per-Attribut-Scores ohne Training**: CLAP-Text-Prompts (EN) für bright/dull/rough/percussive + DSP-Traits als harte Deltas.
-- **Eval gegen Human Ratings**: `timbremetrics`-Paket + NSynth als Referenzskala, statt nur eigener n=9-Spearman.
-- **LLM-Urteile** (lfm3-omni audio, d1-omni profile, optional qwen2.5-omni): nur Erklär-Schicht — eigener Befund + „Don't CLAP“.
+- **Embedding distance**: primary **CLAP music-only GGUF** (`larger_clap_music-q8_0`, spike 4.4: ρ +0.46 > music_and_speech +0.23 on our pairs; music-only also ahead on pitch per M2D-CLAP) with `embed_cos` + `embed_l2`; **second distance: wMFCC/MFCC cosine** (numpy, competitive per the benchmark); optional as third: **MERT-v1-95M GGUF** via the same clap.cpp path (ρ +0.45, better score spread; license CC-BY-NC) or MuQ-MuLan GGUF for EQ/reverb deltas; Music2Latent + Huang-style only as HF reference in the eval (torch present, transformers 4.47.1 has no MERT – the GGUF path is the right one).
+- **Per-attribute scores without training**: CLAP text prompts (EN) for bright/dull/rough/percussive + DSP traits as hard deltas.
+- **Eval against human ratings**: `timbremetrics` package + NSynth as reference scale, instead of only our own n=9 Spearman.
+- **LLM verdicts** (lfm3-omni audio, d1-omni profile, optional qwen2.5-omni): explanation layer only — own finding + "Don't CLAP".
 
-## 5. Referenzen
+## 5. References
 
-- Tian, Lattner, Saitis: „Assessing the Alignment of Audio Representations with Timbre
-  Similarity Ratings", ISMIR 2025, arXiv:2507.07764 (Huang-Style-Embeddings, MFCC
-  kompetitiv, cosine+L2, triplet agreement).
-- Cheng & Lerch: „Don't CLAP: Are Music-Text Models Bag-of-Words?", arXiv:2609.30540 (2026).
-- MERIT: „Learning Disentangled Music Representations for Audio Similarity",
-  arXiv:2605.27346 (2026) – 3 Heads Melodie/Rhythmus/Timbre auf MERT.
-- arXiv:2611.14415 (Nov 2026): Post-hoc CSN-Disentanglement gefrorener Foundation-Embeddings.
-- arXiv:2601.19109 (Jan 2026): CLAP/MuQ-MuLan auf ABX; instrumenten-gewichtetes Cosine via MSS.
-- TISMIR 2026: „Cross-Cultural Music Similarity…", tismir.341 – CLAP-Music&Speech beste Alignment.
-- arXiv:2606.30369 (2026): Timbre-Trait-Predictor (20 Reymore-Huron-Qualia) auf CLAP für
-  Synthesizer-Eval statt FAD.
-- SynthCloner, arXiv:2509.24286 (2026): Timbre-vs-ADSR-Entkopplung für Synth-Sounds.
-- arXiv:2506.22628 (2025): sound-matching losses – soft-DTW auf Envelope, JTFS, MSS, P-loss.
-- Czedik-Eysenberg & Reuter, DAGA 2025: Sharpness↔brightness, Vassilakis(log)↔roughness,
-  HPSS-Δloudness↔percussiveness; Pitch-Abhängigkeit von Brightness.
-- McAdams 2019 (Timbre chapter); Kazazis 2021 (JASA, ordinal scaling spectral descriptors);
-  Peeters 2011 (descriptor set); CMMR 2021 survey (Distanzmetriken: Manhattan/Euclidean/
-  Cosine/KL/EMD/Levenshtein).
-- M2D-CLAP, IEEE SPL 2025: general vs music CLAP auf Musik-Tasks.
-- clap.cpp (gorse-io, Stand 2026-11): GGUF-Support CLAP/CLaMP3/MERT/MuQ/MuQ-MuLan,
-  10-s-Fenster mit repeat-pad, 48 kHz.
-- Repo-intern: `docs/PHASEB-EVAL-2026-11-14.md`, `docs/HANDOVER-2026-11-15.md`,
+- Tian, Lattner, Saitis: "Assessing the Alignment of Audio Representations with Timbre
+  Similarity Ratings", ISMIR 2025, arXiv:2507.07764 (Huang-style embeddings, MFCC
+  competitive, cosine+L2, triplet agreement).
+- Cheng & Lerch: "Don't CLAP: Are Music-Text Models Bag-of-Words?", arXiv:2609.30540 (2026).
+- MERIT: "Learning Disentangled Music Representations for Audio Similarity",
+  arXiv:2605.27346 (2026) – 3 heads melody/rhythm/timbre on MERT.
+- arXiv:2611.14415 (Nov 2026): post-hoc CSN disentanglement of frozen foundation embeddings.
+- arXiv:2601.19109 (Jan 2026): CLAP/MuQ-MuLan on ABX; instrument-weighted cosine via MSS.
+- TISMIR 2026: "Cross-Cultural Music Similarity…", tismir.341 – CLAP-Music&Speech best alignment.
+- arXiv:2606.30369 (2026): timbre-trait predictor (20 Reymore-Huron qualia) on CLAP for
+  synthesizer eval instead of FAD.
+- SynthCloner, arXiv:2509.24286 (2026): timbre-vs-ADSR disentanglement for synth sounds.
+- arXiv:2506.22628 (2025): sound-matching losses – soft-DTW on envelope, JTFS, MSS, P-loss.
+- Czedik-Eysenberg & Reuter, DAGA 2025: sharpness↔brightness, Vassilakis(log)↔roughness,
+  HPSS-Δloudness↔percussiveness; pitch dependence of brightness.
+- McAdams 2019 (timbre chapter); Kazazis 2021 (JASA, ordinal scaling spectral descriptors);
+  Peeters 2011 (descriptor set); CMMR 2021 survey (distance metrics: Manhattan/Euclidean/
+  cosine/KL/EMD/Levenshtein).
+- M2D-CLAP, IEEE SPL 2025: general vs music CLAP on music tasks.
+- clap.cpp (gorse-io, status 2026-11): GGUF support CLAP/CLaMP3/MERT/MuQ/MuQ-MuLan,
+  10-s window with repeat-pad, 48 kHz.
+- Repo-internal: `docs/PHASEB-EVAL-2026-11-14.md`, `docs/HANDOVER-2026-11-15.md`,
   `docs/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md`, `bloridium/sim.py`,
   `bloridium/sim_embed.py`.

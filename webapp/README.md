@@ -1,21 +1,21 @@
 # Bloridium Web-App (Podman)
 
-Kleine Web-App: **Blofeld-Midi-Dump hochladen → in Iridium-`.qpat` konvertieren →
-ZIP herunterladen**, inkl. deterministischer Match-Schätzung (Score 0–100) pro Sound.
-Läuft als Podman-Container (z. B. auf dem Debian-Server).
+Small web app: **upload Blofeld MIDI dump -> convert to Iridium `.qpat` ->
+download ZIP**, including a deterministic match estimate (score 0-100) per sound.
+Runs as a Podman container (e.g. on the Debian server).
 
-## Deployment auf dem Debian-Server (Podman)
+## Deployment on the Debian server (Podman)
 
-Image bauen (Build-Kontext ist das Repo-Root):
+Build the image (build context is the repo root):
 
 ```bash
-cd /pfad/zum/Bloridium
+cd /path/to/Bloridium
 podman build -f webapp/Containerfile -t localhost/bloridium-web:latest .
 ```
 
-Dann eine der beiden Varianten:
+Then one of the two variants:
 
-**A) systemd-Quadlet (empfohlen auf dem Server, rootless):**
+**A) systemd Quadlet (recommended on the server, rootless):**
 
 ```bash
 mkdir -p ~/.config/containers/systemd
@@ -28,51 +28,51 @@ systemctl --user enable --now bloridium-web.container
 **B) podman compose:**
 
 ```bash
-podman compose -f webapp/compose.yaml up -d --build    # bzw. podman-compose ...
+podman compose -f webapp/compose.yaml up -d --build    # or podman-compose ...
 ```
 
-**C) direkt:**
+**C) directly:**
 
 ```bash
 podman run -d --name bloridium-web -p 8000:8000 \
   -v "$HOME/bloridium-web-data:/data" localhost/bloridium-web:latest
 ```
 
-App erreichbar unter `http://<server>:8000` (Healthcheck: `GET /health`;
-bei Variante A uebernimmt das Quadlet den Healthcheck via `HealthCmd`,
-`podman healthcheck bloridium-web`). Hinweis: Podman ignoriert das `HEALTHCHECK`
-aus dem Image (OCI-Format) – wer es im Image haben moechte, baut mit
+App reachable at `http://<server>:8000` (healthcheck: `GET /health`;
+with variant A the Quadlet takes over the healthcheck via `HealthCmd`,
+`podman healthcheck bloridium-web`). Note: Podman ignores the `HEALTHCHECK`
+from the image (OCI format) – if you want it in the image, build with
 `podman build --format docker ...`.
 
-## Benutzung
+## Usage
 
-1. `http://<server>:8000` öffnen (Layout wie `webpage.pdf`, Hintergrund
-   `bloridium-scaled.jpg` aus `webapp/static/`)
-2. `.syx`-Bank-Backup hochladen (z. B. `bank-a-2019-06-17.syx` aus den Sysex
-   Backups – 128 SNDD-Nachrichten; einzelner Sound geht auch als `.bin`/`.hex`)
-3. Ergebnisseite zeigt pro Sound Location, Name, **Score** (Platzhalter),
-   gemappte/unmapped Parameter
-4. **ZIP-Download**: ein `<LOC>_<Name>.qpat` pro Sound + `MANIFEST.md` + `report.json`
-   - Am Iridium: USB-Stick/SD → `Load > Actions > Import` (Favorites Bank 6,
-     dann `CC0=6` + PC; mido-PC = MIDI-Nummer − 2)
+1. Open `http://<server>:8000` (layout like `webpage.pdf`, background
+   `bloridium-scaled.jpg` from `webapp/static/`)
+2. Upload a `.syx` bank backup (e.g. `bank-a-2019-06-17.syx` from the SysEx
+   backups – 128 SNDD messages; a single sound also works as `.bin`/`.hex`)
+3. The results page shows per sound: location, name, **score** (placeholder),
+   mapped/unmapped parameters
+4. **ZIP download**: one `<LOC>_<Name>.qpat` per sound + `MANIFEST.md` + `report.json`
+   - On the Iridium: USB stick/SD -> `Load > Actions > Import` (Favorites Bank 6,
+     then `CC0=6` + PC; mido PC = MIDI number - 2)
 
-## Versionierung
+## Versioning
 
-- **Conversion-Tool: v0.3** (`convert.CONVERSION_VERSION`) – UI-Titel
-  „Bloridium Tool v0.3“, `conversion_version` in `report.json` und `MANIFEST.md`
-- **Similarity-Tool: v0.2** (`matching.SIMILARITY_VERSION`) – `similarity_version`
-  in `report.json`, Score-Hinweis auf der Ergebnisseite
+- **Conversion tool: v0.3** (`convert.CONVERSION_VERSION`) – UI title
+  "Bloridium Tool v0.3", `conversion_version` in `report.json` and `MANIFEST.md`
+- **Similarity tool: v0.2** (`matching.SIMILARITY_VERSION`) – `similarity_version`
+  in `report.json`, score note on the results page
 
-## Matching-Schätzung
+## Match estimate
 
-`webapp/matching.py` (`estimate_match`) ist ein **deterministischer Platzhalter v0.2**:
-gleicher Dump → gleicher Score, gewichtet aus Osc/Filter/FX/Env-Mod/Arp mit
-Abzügen für Näherungen (Wavetable ohne Bridge, BP/Notch/Comb, Triple FX, Arp).
-Die echte Matching-Funktion konstruieren wir später aus den A/B-Vergleichen
-(`recordings/sim_log.jsonl`) – deshalb landet pro Sound der Feature-Vektor
-(geparste Parameter, unmapped, mapped) in `report.json` im ZIP.
+`webapp/matching.py` (`estimate_match`) is a **deterministic placeholder v0.2**:
+same dump -> same score, weighted from osc/filter/FX/env-mod/arp with
+deductions for approximations (wavetable without bridge, BP/Notch/Comb, triple FX, arp).
+We will construct the real matching function later from the A/B comparisons
+(`recordings/sim_log.jsonl`) – that's why the feature vector
+(parsed parameters, unmapped, mapped) lands in `report.json` in the ZIP per sound.
 
-## Lokal entwickeln (ohne Container)
+## Local development (without container)
 
 ```bash
 pip install -r webapp/requirements.txt
@@ -80,21 +80,21 @@ python3 webapp/app.py        # http://localhost:8000
 python3 -m pytest tests/test_webapp.py -q
 ```
 
-## Dateien
+## Files
 
-- `Containerfile` – Image (python:3.12-slim-bookworm, gunicorn); `.containerignore`
-  am Repo-Root hält Build-Kontext klein
+- `Containerfile` – image (python:3.12-slim-bookworm, gunicorn); `.containerignore`
+  at the repo root keeps the build context small
 - `compose.yaml` – `podman compose`
-- `bloridium-web.container` – systemd-Quadlet (rootless)
-- `app.py` / `convert.py` / `matching.py` – die App
+- `bloridium-web.container` – systemd Quadlet (rootless)
+- `app.py` / `convert.py` / `matching.py` – the app
 
-## Env-Variablen
+## Env variables
 
-| Variable | Default | Bedeutung |
+| Variable | Default | Meaning |
 |---|---|---|
-| `DATA_DIR` | `./data` bzw. `/data` im Container | Artefakte (ZIP/Report) je Upload-Token |
-| `DATA_TTL_HOURS` | `24` | Aufbewahrung der Artefakte |
-| `MAX_UPLOAD_MB` | `8` | Upload-Limit |
-| `PORT` | `8000` | nur lokaler Dev-Server |
-| `BLORIDIUM_CORE_DIR` | `/app/core` im Container | pure-python bloridium-Module |
-| `BLORIDIUM_TEMPLATE` | `/app/template_waveform.qpat` | qpat-Template |
+| `DATA_DIR` | `./data` or `/data` in the container | Artifacts (ZIP/report) per upload token |
+| `DATA_TTL_HOURS` | `24` | Retention of the artifacts |
+| `MAX_UPLOAD_MB` | `8` | Upload limit |
+| `PORT` | `8000` | local dev server only |
+| `BLORIDIUM_CORE_DIR` | `/app/core` in the container | pure-python bloridium modules |
+| `BLORIDIUM_TEMPLATE` | `/app/template_waveform.qpat` | qpat template |

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Minimaler UMP-Test am Iridium: wenige Pakete als echtes UMP an Endpunkt 'MIDI 2.0'.
+"""Minimal UMP test on the Iridium: a few packets as real UMP to endpoint 'MIDI 2.0'.
 
-Sendet: Universal Device Inquiry + Waldorf-Style Requests (ausgewaehlte Model-IDs)
-und liest Antworten auf dem Input 'MIDI 2.0'.
-Aufruf:  python3 scripts/step2_probe_iridium_ump_min.py
+Sends: Universal Device Inquiry + vendor-specific device SysEx requests (selected model IDs)
+and reads replies on input 'MIDI 2.0'.
+Usage:  python3 scripts/step2_probe_iridium_ump_min.py
 """
 
 from __future__ import annotations
@@ -19,11 +19,11 @@ import mido
 from bloridium import midi
 
 UMP_TOOL = str(Path(__file__).resolve().parent.parent / "tools" / "ump_send")
-DEST = "MIDI 2.0"  # CoreMIDI-Endpunktname (siehe midi2.list_destinations)
+DEST = "MIDI 2.0"  # CoreMIDI endpoint name (see midi2.list_destinations)
 
 
 def ump_sysex7(payload: list[int]) -> list[int]:
-    """Komplette SysEx7 (F0..F7) als 128-Bit-UMP-Paket (mt=3, status=0 complete)."""
+    """Complete SysEx7 (F0..F7) as a 128-bit UMP packet (mt=3, status=0 complete)."""
     b = [0xF0] + [d & 0x7F for d in payload] + [0xF7]
     assert len(b) <= 14
     b += [0] * (14 - len(b))
@@ -43,7 +43,7 @@ def ump_sysex7(payload: list[int]) -> list[int]:
 def send_ump(pkt: list[int], dest: str = DEST):
     r = subprocess.run([UMP_TOOL, dest, " ".join(f"{x:02X}" for x in pkt)], capture_output=True, text=True)
     if r.returncode != 0:
-        print("ump_send Fehler:", r.stderr.strip()[:200])
+        print("ump_send error:", r.stderr.strip()[:200])
         return False
     return True
 
@@ -63,7 +63,7 @@ def main() -> int:
         return msgs
 
     tests = [("Identity", [0x7E, 0x7F, 0x06, 0x01])]
-    # ausgewaehlte Waldorf-Model-IDs mit SNDR-Varianten
+    # selected model IDs with SNDR variants
     for model in [0x13, 0x14, 0x15, 0x10, 0x0F, 0x00, 0x1D, 0x1E, 0x1F]:
         tests.append((f"m{model:02X} SNDR", [0x3E, model, 0x00, 0x00]))
         tests.append((f"m{model:02X} SNDR loc", [0x3E, model, 0x00, 0x00, 0x7F, 0x00]))
@@ -72,14 +72,14 @@ def main() -> int:
             send_ump(ump_sysex7(payload))
             msgs = drain(0.4)
             if msgs:
-                print(f"[{name}] -> {len(msgs)} Antwort(en):")
+                print(f"[{name}] -> {len(msgs)} replies:")
                 for m in msgs:
                     if m.type == "sysex":
                         print(f"   SysEx {len(m.data)} B: {bytes([0xF0, *m.data, 0xF7]).hex(' ')[:200]}")
                     else:
                         print(f"   {m}")
             else:
-                print(f"[{name}] keine Antwort")
+                print(f"[{name}] no reply")
     finally:
         inp.close()
     return 0

@@ -1,8 +1,8 @@
-"""Audio-Aufnahme & -Messung über das Focusrite Scarlett 18i8 (macOS, ffmpeg/AVFoundation).
+"""Audio recording & measurement via the Focusrite Scarlett 18i8 (macOS, ffmpeg/AVFoundation).
 
-Kanalbelegung (siehe CLAUDE.md), 0-basiert:
-- Blofeld  -> Scarlett-Eingänge 3/4  -> Kanäle c2/c3
-- Iridium  -> Scarlett-Eingänge 5/6  -> Kanäle c4/c5
+Channel assignment (see CLAUDE.md), 0-based:
+- Blofeld  -> Scarlett inputs 3/4  -> channels c2/c3
+- Iridium  -> Scarlett inputs 5/6  -> channels c4/c5
 """
 
 from __future__ import annotations
@@ -12,36 +12,52 @@ import time
 
 import numpy as np
 
-DEVICE = "Scarlett 18i8 USB"
-SAMPLERATE = 48000
+from . import config as _config
 
-# Scarlett-Eingänge pro Synth (0-basierte Kanalindizes im 20-Kanal-Stream)
-CHANNELS = {
-    "blofeld": (2, 3),   # Eingänge 3/4
-    "iridium": (4, 5),   # Eingänge 5/6
-}
+# Built-in defaults (single source of truth: config.DEFAULTS; the user-editable
+# bloridium.yaml overrides them at runtime - see settings()).
+DEVICE = _config.DEFAULTS["audio"]["device"]       # "Scarlett 18i8 USB"
+SAMPLERATE = _config.DEFAULTS["audio"]["samplerate"]  # 48000
+
+# Audio interface inputs per synth (0-based channel indices in the raw stream)
+CHANNELS = {k: tuple(v) for k, v in _config.DEFAULTS["audio"]["channels"].items()}
+
+
+def settings(config_path=None) -> dict:
+    """Effective audio settings: YAML config (bloridium.yaml) over built-in defaults.
+
+    Returns {"device", "samplerate", "raw_channels", "channels": {synth: [..]}}.
+    """
+    return _config.audio_settings(_config.load_config(config_path))
 
 
 def _pan_filter(channels) -> str | None:
-    """ffmpeg-pan-Filter für die gewünschten Kanäle; None = alle Kanäle 1:1."""
+    """ffmpeg pan filter for the desired channels; None = all channels 1:1."""
     if channels is None:
         return None
     n = len(channels)
-    if n >= 16:  # pan kennt keine Layouts > 8 Kanäle -> roh aufnehmen und in numpy slicen
+    if n >= 16:  # pan has no layouts > 8 channels -> record raw and slice in numpy
         return None
     layout = f"{n}c" if n > 1 else "mono"
     mapping = "|".join(f"c{i}=c{ch}" for i, ch in enumerate(channels))
     return f"pan={layout}|{mapping}"
 
 
-def record(duration: float = 2.0, channels=(2, 3), device: str = DEVICE,
-           samplerate: int = SAMPLERATE, raw_channels: int = 20) -> np.ndarray:
-    """Nimmt `duration` Sekunden von den Scarlett-Eingängen auf.
+def record(duration: float = 2.0, channels=(2, 3), device: str | None = None,
+           samplerate: int | None = None, raw_channels: int | None = None,
+           config_path=None) -> np.ndarray:
+    """Records `duration` seconds from the audio interface inputs.
 
-    `channels`: 0-basierte Kanalindizes, die zurückgegeben werden sollen
-                (None = alle Kanäle des Geräts).
-    Rückgabe: float32-ndarray der Form (len(channels), samples), Werte in [-1, 1].
+    `channels`: 0-based channel indices to return
+                (None = all channels of the device).
+    `device`/`samplerate`/`raw_channels`: None = take from the YAML config
+    (bloridium.yaml) or the built-in defaults.
+    Returns: float32 array of shape (len(channels), samples), values in [-1, 1].
     """
+    s = settings(config_path)
+    device = device if device is not None else s["device"]
+    samplerate = samplerate if samplerate is not None else s["samplerate"]
+    raw_channels = raw_channels if raw_channels is not None else s["raw_channels"]
     sel = tuple(channels) if channels is not None else tuple(range(raw_channels))
     pan = _pan_filter(sel if len(sel) < 16 else None)
     cmd = [
@@ -53,31 +69,34 @@ def record(duration: float = 2.0, channels=(2, 3), device: str = DEVICE,
         cmd += ["-af", pan]
     cmd += ["-ar", str(samplerate), "-f", "f32le", "-"]
     last_err = ""
-    for _attempt in range(4):  # AVFoundation gibt das Device manchmal nicht sofort frei
+    for _attempt in range(4):  # AVFoundation sometimes does not release the device immediately
         proc = subprocess.run(cmd, capture_output=True)
         if proc.returncode == 0:
             break
         last_err = proc.stderr.decode(errors="replace")
         time.sleep(1.0)
     else:
-        raise RuntimeError("ffmpeg-Fehler: " + last_err)
+        raise RuntimeError("ffmpeg error: " + last_err)
     data = np.frombuffer(proc.stdout, dtype=np.float32)
     if pan:
-        # pan hat bereits genau die gewuenschten Kanaele in Reihenfolge geliefert
+        # pan already delivered exactly the desired channels in order
         n_in = len(sel)
         if data.size % n_in:
             data = data[: data.size - (data.size % n_in)]
         return data.reshape(-1, n_in).T.copy()
-    # roher Stream mit allen Geraetekanaelen -> gewuenschte spalten slicen
+    # raw stream with all device channels -> slice the desired columns
     if data.size % raw_channels:
         data = data[: data.size - (data.size % raw_channels)]
     data = data.reshape(-1, raw_channels)
     return data[:, list(sel)].T.copy()
 
 
-def record_wav(path, duration: float = 2.0, channels=(2, 3), device: str = DEVICE,
-               samplerate: int = SAMPLERATE) -> None:
-    """Wie `record`, speichert aber eine WAV-Datei (16 Bit)."""
+def record_wav(path, duration: float = 2.0, channels=(2, 3), device: str | None = None,
+               samplerate: int | None = None, config_path=None) -> None:
+    """Like `record`, but saves a WAV file (16 bit). None args come from the YAML config."""
+    s = settings(config_path)
+    device = device if device is not None else s["device"]
+    samplerate = samplerate if samplerate is not None else s["samplerate"]
     cmd = [
         "ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
         "-f", "avfoundation", "-i", f":{device}",
@@ -90,9 +109,9 @@ def record_wav(path, duration: float = 2.0, channels=(2, 3), device: str = DEVIC
 
 
 def measure(x: np.ndarray) -> dict:
-    """Pegelmessung pro Kanal: RMS und Peak (linear + dBFS).
+    """Level measurement per channel: RMS and peak (linear + dBFS).
 
-    x: Array der Form (channels, samples) oder (samples,).
+    x: array of shape (channels, samples) or (samples,).
     """
     x = np.asarray(x, dtype=np.float64)
     if x.ndim == 1:
@@ -108,11 +127,11 @@ def measure(x: np.ndarray) -> dict:
 
 def play_and_measure(synth, channels, note: int = 60, velocity: int = 100, channel: int | None = None,
                      duration: float = 2.0, pre_roll: float = 0.3, **rec_kw):
-    """Spielt eine Note auf dem Synth und misst dabei den Pegel am Scarlett.
+    """Plays a note on the synth and measures the level at the Scarlett.
 
-    Sendet note_on, wartet `pre_roll` s (ffmpeg-Start), nimmt `duration` s auf
-    und sendet danach note_off. `channel=None` -> Standardkanal des Synth-Objekts.
-    Rückgabe: (samples, measure-Ergebnis).
+    Sends note_on, waits `pre_roll` s (ffmpeg startup), records `duration` s,
+    then sends note_off. `channel=None` -> default channel of the synth object.
+    Returns: (samples, measure result).
     """
     ch = synth.channel if channel is None else channel
     synth.note_on(note=note, velocity=velocity, channel=ch)

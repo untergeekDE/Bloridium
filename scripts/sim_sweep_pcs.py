@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""sim_sweep_pcs.py – PC-gesteuerter Vergleich ueber alle konvertierten Sounds.
+"""sim_sweep_pcs.py – PC-controlled comparison across all converted sounds.
 
-Blofeld: Bank A, PC = Location-Nummer - 1 (A001 -> PC0, A043 -> PC42), ch5.
-Iridium: Favorites-Set 6, PC lt. DEFAULT_MAP (aktuell 2026-11-14: A001->108 ...
-          A073->116, mido-PC 0-basiert — nach Re-Import verschoben, siehe Kommentar).
+Blofeld: bank A, PC = location number - 1 (A001 -> PC0, A043 -> PC42), ch5.
+Iridium: Favorites set 6, PC per DEFAULT_MAP (current 2026-11-14: A001->108 ...
+          A073->116, mido PC 0-based — shifted after re-import, see comment).
 
-Aufruf:  python3 scripts/sim_sweep_pcs.py [--only A043] [--notes 60,72] [--bank 6] [--log PATH]
+Usage:  python3 scripts/sim_sweep_pcs.py [--only A043] [--notes 60,72] [--bank 6] [--log PATH]
 """
 
 from __future__ import annotations
@@ -21,12 +21,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from bloridium import audio, midi, sim
 
-# Blofeld-Location -> Iridium-PC (mido, 0-basiert) in der aktiven Favorites-Bank.
-# AKTUELL 2026-11-14 (beide Synths wieder angeschlossen; Favorites-Set 6 neu belegt
-# nach Re-Import, Reihenfolge wie transfer/upload/MANIFEST.md):
+# Blofeld location -> Iridium PC (mido, 0-based) in the active Favorites bank.
+# CURRENT 2026-11-14 (both synths reconnected; Favorites set 6 re-assigned
+# after re-import, order as in transfer/upload/MANIFEST.md):
 #   A001 JMX jun = PC108, A008 Easy Piano = PC109, ... A073 Chord Hose = PC116.
-# Historie 2026-11-09 (vor Reset): A001->105 ... A073->113 (Display: mido-PC = "MIDI" - 2).
-# Achtung: Slots 0200+ sind der Speicher; per PC werden nur Favorites ausgewaehlt.
+# History 2026-11-09 (before reset): A001->105 ... A073->113 (display: mido PC = "MIDI" - 2).
+# Attention: slots 0200+ are the storage; via PC only Favorites are selected.
 DEFAULT_MAP = {
     "A001": 108, "A008": 109, "A010": 110, "A019": 111, "A022": 112,
     "A039": 113, "A043": 114, "A071": 115, "A073": 116,
@@ -39,13 +39,13 @@ def measure(blo, irr, note: int, dur: float, sr: int):
     for s in (blo, irr):
         for ch in range(16):
             s.control_change(123, 0, channel=ch)
-    # CC7=127 nur am Blofeld (echtes Volume). Am Iridium ist CC7 mit rdb-Map
-    # Filter1 Amount -- CC7=0/127 auf ch6 wuerde den Sound veraendern!
+    # CC7=127 only on the Blofeld (real volume). On the Iridium CC7 is Filter1 Amount
+    # with the rdb map -- CC7=0/127 on ch6 would change the sound!
     for ch in range(16):
         blo.control_change(7, 127, channel=ch)
     time.sleep(0.3)
     blo.note_on(note=note, velocity=100, channel=blo.channel)
-    irr.note_on(note=note, velocity=100, channel=5)   # Part 1 (ch6) - monophon
+    irr.note_on(note=note, velocity=100, channel=5)   # Part 1 (ch6) - monophonic
     time.sleep(0.3)
     d = audio.record(duration=dur, channels=None)
     blo.note_off(note=note, channel=blo.channel)
@@ -60,7 +60,7 @@ def measure(blo, irr, note: int, dur: float, sr: int):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--only", help="nur eine Location (z. B. A043)")
+    ap.add_argument("--only", help="only one location (e.g. A043)")
     ap.add_argument("--notes", default="60,72")
     ap.add_argument("--bank", type=int, default=6)
     ap.add_argument("--dur", type=float, default=1.5)
@@ -76,20 +76,20 @@ def main(argv=None) -> int:
             if args.only and loc != args.only:
                 continue
             blo_pc = int(loc[1:]) - 1
-            # Bank A explizit waehlen (CC0/CC32 = Bank select am BLOFELD);
-            # sonst landet der PC in der am Geraet aktiven Bank (B008-Falle!)
+            # Select bank A explicitly (CC0/CC32 = bank select on the BLOFELD);
+            # otherwise the PC lands in the bank active on the device (B008 trap!)
             blo.control_change(0, 0, channel=blo.channel)
             blo.control_change(32, 0, channel=blo.channel)
             blo.program_change(blo_pc, channel=blo.channel)
-            # Iridium: KEIN CC0/CC32 mehr senden -- mit rdb-.mimap sind das
-            # Parameter (CC0=Cutoff, CC32=FinePitch), Bank 6 bleibt aktiv.
+            # Iridium: do NOT send CC0/CC32 anymore -- with the rdb-.mimap those are
+            # parameters (CC0=Cutoff, CC32=FinePitch), bank 6 stays active.
             irr.program_change(irr_pc, channel=5)
             time.sleep(0.7)
             for note in notes:
                 r = measure(blo, irr, note, args.dur, audio.SAMPLERATE)
                 if r["score"] is None:
-                    print(f"  WARNUNG: {loc} note{note} stumm (score=None) -- evtl. falsche "
-                          f"Favorites-Bank am Iridium (mit rdb-Map nicht per CC0 steuerbar)!")
+                    print(f"  WARNING: {loc} note{note} silent (score=None) -- possibly the wrong "
+                          f"Favorites bank on the Iridium (not controllable via CC0 with the rdb map)!")
                 meta = {"mode": "pc_sweep", "blofeld": loc, "irr_pc": irr_pc,
                         "bank": args.bank, "note": note}
                 r2 = sim.score_pair.__wrapped__ if False else None
@@ -104,7 +104,7 @@ def main(argv=None) -> int:
         irr.close()
     if rows:
         best = max(rows, key=lambda r: r[2] if r[2] is not None else -1)
-        print(f"\nBeste: {best[0]} note{best[1]} score={best[2]}")
+        print(f"\nBest: {best[0]} note{best[1]} score={best[2]}")
     return 0
 
 

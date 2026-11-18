@@ -1,4 +1,4 @@
-"""sim_eval_offline.py – Phase-B-Eval auf recordings/-Paaren (TDD Task 8, gemockt)."""
+"""sim_eval_offline.py - phase B eval on recordings/ pairs (TDD Task 8, mocked)."""
 
 import json
 import sys
@@ -41,7 +41,7 @@ def test_pairs_discovery(ev, tmp_path):
     rec.mkdir()
     _mk_pair(rec, "ab_X_20260101_000000")
     _mk_pair(rec, "check_20260101_111111")
-    np.save(rec / "orphan_20260101_222222_blofeld.npy", np.zeros(48000))  # ohne iridium
+    np.save(rec / "orphan_20260101_222222_blofeld.npy", np.zeros(48000))  # without iridium
     pairs = ev_mod.find_pairs(rec)
     assert [p[0] for p in pairs] == ["ab_X_20260101_000000", "check_20260101_111111"]
 
@@ -63,7 +63,7 @@ def test_eval_writes_json_and_table(ev, tmp_path, capsys):
     assert row["pair"] == "check_20260101_111111"
     assert set(row) >= {"pair", "score", "embed_score", "combined", "verdict", "backend_error"}
     assert row["embed_score"] is not None and row["backend_error"] is None
-    assert "check_20260101_111111" in capsys.readouterr().out  # Tabelle auf stdout
+    assert "check_20260101_111111" in capsys.readouterr().out  # table on stdout
 
 
 def test_no_gguf_degrades(ev, tmp_path):
@@ -72,7 +72,7 @@ def test_no_gguf_degrades(ev, tmp_path):
     rec.mkdir()
     _mk_pair(rec, "check_20260101_111111")
     md = tmp_path / "models"
-    md.mkdir()  # leer
+    md.mkdir()  # empty
     out = tmp_path / "eval.json"
     rc = ev_mod.main(["--rec-dir", str(rec), "--models-dir", str(md), "--out", str(out)])
     assert rc == 0
@@ -85,8 +85,8 @@ def test_spearman_perfect_inverse_ties(ev):
     ev_mod, _ = ev
     assert ev_mod.spearman([1, 2, 3, 4], [10, 20, 30, 40]) == pytest.approx(1.0)
     assert ev_mod.spearman([1, 2, 3, 4], [40, 30, 20, 10]) == pytest.approx(-1.0)
-    assert ev_mod.spearman([1, 1, 2], [5, 5, 9]) == pytest.approx(1.0)  # Ties auf beiden Seiten
-    assert ev_mod.spearman([1, 1, 2], [1, 2, 3]) == pytest.approx(0.866, abs=1e-3)  # Tie nur in x
+    assert ev_mod.spearman([1, 1, 2], [5, 5, 9]) == pytest.approx(1.0)  # ties on both sides
+    assert ev_mod.spearman([1, 1, 2], [1, 2, 3]) == pytest.approx(0.866, abs=1e-3)  # tie only in x
     assert ev_mod.spearman([5], [5]) == 0.0  # n<2
 
 
@@ -94,8 +94,8 @@ def test_ratings_spearman_in_json(ev, tmp_path):
     ev_mod, sim_embed = ev
     rec = tmp_path / "rec"
     rec.mkdir()
-    _mk_pair(rec, "p1_20260101_000000", fa=440.0, fb=440.0)   # sehr aehnlich
-    _mk_pair(rec, "p2_20260101_000001", fa=440.0, fb=110.0)   # verschieden
+    _mk_pair(rec, "p1_20260101_000000", fa=440.0, fb=440.0)   # very similar
+    _mk_pair(rec, "p2_20260101_000001", fa=440.0, fb=110.0)   # different
     md = tmp_path / "models"
     md.mkdir()
     (md / sim_embed.CLAP_GGUF_NAME).write_bytes(b"x")

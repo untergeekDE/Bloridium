@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Spike 2026-11-15: d1-omni als Differenz-Profiler (noul-Fragen, Englisch) auf den
-9 vorhandenen A/B-WAV-Paaren — d1-omni:600m vs d1-omni:2b.
+"""Spike 2026-11-15: d1-omni as difference profiler (noul questions, English) on the
+9 existing A/B WAV pairs — d1-omni:600m vs d1-omni:2b.
 
-Pro Paar EIN /v1/systemone-Aufruf mit images=[spekA, spekB] (spec2img) und 8 Fragen:
-  similarity (score, 10 Levels -> 0-100) + 7 noul-Profilfragen.
-Auswertung: Spearman gegen Benutzer-Ratings (recordings/phaseb_ratings_raw.json)
-fuer score / same_overall / diff_count pro Modell.
-Output: recordings/d1_profile_eval_<ts>.json. Throwaway-Spike.
+Per pair ONE /v1/systemone call with images=[specA, specB] (spec2img) and 8 questions:
+  similarity (score, 10 levels -> 0-100) + 7 noul profile questions.
+Evaluation: Spearman vs user ratings (recordings/phaseb_ratings_raw.json)
+for score / same_overall / diff_count per model.
+Output: recordings/d1_profile_eval_<ts>.json. Throwaway spike.
 """
 
 from __future__ import annotations
@@ -101,10 +101,10 @@ def main():
         sp[f"same_overall_{model}"] = round(spearman(user, [out["pairs"][k]["models"][model]["same_overall"] for k in LOCS]), 3)
         sp[f"diff_count_{model}"] = round(spearman(user, [out["pairs"][k]["models"][model]["diff_count"] for k in LOCS]), 3)
     out["spearman_user"] = sp
-    print("\nSpearman vs Benutzer:", json.dumps(sp, indent=1))
+    print("\nSpearman vs user:", json.dumps(sp, indent=1))
     outp = REPO / "recordings" / f"d1_profile_eval_{ts}.json"
     outp.write_text(json.dumps(out, indent=2))
-    print("geschrieben:", outp)
+    print("written:", outp)
     return 0
 
 

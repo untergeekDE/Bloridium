@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Spike 2026-11-15: d1-omni (System One /v1/systemone) als LLM-Judge fuer die
-vorhandenen 9 A/B-WAV-Paare (recordings/ab_<LOC>_*_n72_{blo,irr}.wav, pegel-angeglichen).
+"""Spike 2026-11-15: d1-omni (System One /v1/systemone) as LLM judge for the
+existing 9 A/B WAV pairs (recordings/ab_<LOC>_*_n72_{blo,irr}.wav, level-matched).
 
-Zwei Input-Varianten pro Paar:
-  - spec2img: zwei Spektrogramm-PNGs (A, B) als `images` (Reihenfolge erklaert im state)
-  - spec1img: ein Side-by-Side-PNG (links A, rechts B)
-Question type "score", 10 Levels (0..9) -> llm_score = round(100*score/9);
+Two input variants per pair:
+  - spec2img: two spectrogram PNGs (A, B) as `images` (order explained in the state)
+  - spec1img: one side-by-side PNG (left A, right B)
+Question type "score", 10 levels (0..9) -> llm_score = round(100*score/9);
 plus noul "same_pitch". Baseline: lfm3-omni:2b via OllamaBackend.judge (audio mode)
-auf denselben WAVs. Metrik: Spearman gegen Benutzer-Ratings
-(recordings/phaseb_ratings_raw.json) und Phase A/embed/combined aus sim_log.jsonl
-(norm_pegel-Runs). Output: recordings/d1_omni_eval_<ts>.json. Throwaway-Spike.
+on the same WAVs. Metric: Spearman vs user ratings
+(recordings/phaseb_ratings_raw.json) and Phase A/embed/combined from sim_log.jsonl
+(norm_pegel runs). Output: recordings/d1_omni_eval_<ts>.json. Throwaway spike.
 """
 
 from __future__ import annotations
@@ -183,10 +183,10 @@ def main():
         name: round(spearman(user, [out["pairs"][k][name] for k in LOCS]), 3)
         for name in ("phaseA", "embed", "combined", "llm_lfm3", "d1_spec2img", "d1_spec1img")
     }
-    print("\nSpearman vs Benutzer:", json.dumps(out["spearman_user"]))
+    print("\nSpearman vs user:", json.dumps(out["spearman_user"]))
     outp = REPO / "recordings" / f"d1_omni_eval_{ts}.json"
     outp.write_text(json.dumps(out, indent=2))
-    print("geschrieben:", outp)
+    print("written:", outp)
     return 0
 
 

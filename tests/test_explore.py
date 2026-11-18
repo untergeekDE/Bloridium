@@ -1,25 +1,25 @@
-"""Task 1-3: bloridium.explore – NRPN-Decoder, CSV-State, CLI-Subcommand (offline, kein Live-MIDI)."""
+"""Tasks 1-3: bloridium.explore - NRPN decoder, CSV state, CLI subcommand (offline, no live MIDI)."""
 
 import mido
 
 
-def test_decoder_mitschnitt_pid3113():
+def test_decoder_recording_pid3113():
     from bloridium.explore import NrpnDecoder
     d = NrpnDecoder()
     msgs = [mido.Message("control_change", control=c, value=v, channel=5)
             for c, v in [(99, 0x18), (98, 0x29), (6, 0x7F), (38, 0x7F)]]
     events = [e for e in (d.feed(m) for m in msgs) if e]
-    # CC6 allein ist Event mit LSB=0, CC38 nutzt letzten MSB:
+    # CC6 alone is an event with LSB=0, CC38 uses the last MSB:
     assert events == [(3113, 16256), (3113, 16383)]  # (0x18<<7)|0x29 = 3113
 
 
-def test_decoder_cc6_only_zero_aus_mitschnitt():
-    # Log-Zeilen 11-12 (2026-11-09): 'B5 06 00' OHNE folgendes '26 00' -> Wert 0 darf nicht verloren gehen
+def test_decoder_cc6_only_zero_from_recording():
+    # log lines 11-12 (2026-11-09): 'B5 06 00' WITHOUT a following '26 00' -> value 0 must not be lost
     from bloridium.explore import NrpnDecoder
     d = NrpnDecoder()
     for c, v in [(99, 0x18), (98, 0x29), (6, 0x7F), (38, 0x7F)]:
         d.feed(_cc(c, v))
-    assert d.feed(_cc(6, 0x00)) == (3113, 0)   # CC6 allein: MSB=0, LSB implizit 0
+    assert d.feed(_cc(6, 0x00)) == (3113, 0)   # CC6 alone: MSB=0, LSB implicitly 0
 
 
 def _cc(c, v, ch=5):
@@ -30,8 +30,8 @@ def test_decoder_sweep_multiple_values():
     from bloridium.explore import NrpnDecoder
     d = NrpnDecoder()
     seq = [_cc(99, 0x08), _cc(98, 0x02),        # Pid 1026
-           _cc(6, 10), _cc(38, 20),              # 1280 (LSB=0) dann 1300
-           _cc(6, 50), _cc(38, 60)]              # 6400 dann 6460 (Pid bleibt gesetzt)
+           _cc(6, 10), _cc(38, 20),              # 1280 (LSB=0) then 1300
+           _cc(6, 50), _cc(38, 60)]              # 6400 then 6460 (pid stays set)
     events = [e for e in (d.feed(m) for m in seq) if e]
     assert events == [(1026, 1280), (1026, 1300), (1026, 6400), (1026, 6460)]
 
@@ -40,12 +40,12 @@ def test_decoder_reset_cases():
     from bloridium.explore import NrpnDecoder
     d = NrpnDecoder()
     assert d.feed(_cc(99, 0x18)) is None
-    assert d.feed(_cc(98, 0x29)) is None          # Pid komplett, aber noch kein Data -> kein Event
+    assert d.feed(_cc(98, 0x29)) is None          # pid complete, but no data yet -> no event
     assert d.feed(_cc(6, 0x7F)) == (3113, 16256)
     assert d.feed(_cc(38, 0x7F)) == (3113, 16383)
-    d.feed(_cc(99, 127))                         # NRPN aus -> Pid reset
+    d.feed(_cc(99, 127))                         # NRPN off -> pid reset
     assert d.feed(_cc(6, 1)) is None
-    assert d.feed(_cc(38, 2)) is None            # ohne Pid kein Event
+    assert d.feed(_cc(38, 2)) is None            # without pid no event
     d.feed(_cc(99, 1)); d.feed(_cc(98, 2))
     d.feed(_cc(121, 0))                          # Reset All Controllers
     assert d.feed(_cc(6, 3)) is None
@@ -58,11 +58,11 @@ def test_decoder_ignores_rpn_and_non_cc():
     assert d.feed(mido.Message("note_on", note=60, velocity=100, channel=5)) is None
     assert d.feed(_cc(101, 0)) is None           # RPN MSB
     assert d.feed(_cc(100, 0)) is None           # RPN LSB
-    assert d.feed(_cc(20, 99)) is None           # anderer CC
+    assert d.feed(_cc(20, 99)) is None           # other CC
     d.feed(_cc(99, 1)); d.feed(_cc(98, 2))
-    assert d.feed(_cc(101, 0)) is None           # RPN stoert nicht mitten im NRPN
-    assert d.feed(_cc(6, 5)) == (130, 640)       # (1<<7)|2 = 130, CC6 allein: LSB=0
-    assert d.feed(_cc(38, 6)) == (130, 646)      # CC38: MSB bleibt 5 -> (5<<7)|6
+    assert d.feed(_cc(101, 0)) is None           # RPN does not disturb in the middle of an NRPN
+    assert d.feed(_cc(6, 5)) == (130, 640)       # (1<<7)|2 = 130, CC6 alone: LSB=0
+    assert d.feed(_cc(38, 6)) == (130, 646)      # CC38: MSB stays 5 -> (5<<7)|6
 
 
 # ---- Task 2: CSV-State, pending, book_row, Log ----
@@ -87,8 +87,8 @@ def test_csv_roundtrip_appends_columns_and_bak(tmp_path):
     from bloridium.explore import NEW_COLUMNS, load_cc_list, save_cc_list
     p = _write_csv(tmp_path)
     fieldnames, rows = load_cc_list(p)
-    assert not any(c in fieldnames for c in NEW_COLUMNS)   # alte CSV: 8 Spalten
-    assert rows[0]["pid_os4"] == ""                        # fehlende neue Spalten = leer
+    assert not any(c in fieldnames for c in NEW_COLUMNS)   # old CSV: 8 columns
+    assert rows[0]["pid_os4"] == ""                        # missing new columns = empty
     save_cc_list(p, fieldnames, rows, backup=True)
     with open(p, newline="", encoding="utf-8") as f:
         new_fields = csv.DictReader(f).fieldnames
@@ -96,20 +96,20 @@ def test_csv_roundtrip_appends_columns_and_bak(tmp_path):
     bak = p.parent / (p.name + ".bak")
     assert bak.exists()
     with open(bak, newline="", encoding="utf-8") as f:
-        assert len(csv.DictReader(f).fieldnames) == 8       # Backup behaelt altes Format
+        assert len(csv.DictReader(f).fieldnames) == 8       # backup keeps the old format
     fieldnames2, rows2 = load_cc_list(p)
-    assert rows2[0]["cc"] == "0" and rows2[0]["pid"] == "966"   # alte Werte unveraendert
+    assert rows2[0]["cc"] == "0" and rows2[0]["pid"] == "966"   # old values unchanged
 
 
 def test_pending_rows_filter_and_sort(tmp_path):
     from bloridium.explore import load_cc_list, pending_rows
     _, rows = load_cc_list(_write_csv(tmp_path))
-    assert [int(r["cc"]) for r in pending_rows(rows)] == [0, 2, 22, 7]   # essential first, nutzung desc, "-" zuletzt
+    assert [int(r["cc"]) for r in pending_rows(rows)] == [0, 2, 22, 7]   # essential first, usage desc, "-" last
     assert [int(r["cc"]) for r in pending_rows(rows, essential=True)] == [0, 2]
     assert [int(r["cc"]) for r in pending_rows(rows, grep="reso")] == [2]
     assert [int(r["cc"]) for r in pending_rows(rows, only_cc="0,22")] == [0, 22]
     rows[0]["os4_verified"] = "ja"
-    assert 0 not in [int(r["cc"]) for r in pending_rows(rows)]           # verifiziert = nicht mehr pending
+    assert 0 not in [int(r["cc"]) for r in pending_rows(rows)]           # verified = no longer pending
 
 
 def test_book_row_winner_pid(tmp_path):
@@ -145,7 +145,7 @@ import json
 
 
 class _FakeIn:
-    """Eine Message-Batch pro Prompt (wie echt: Dreh erst nach Enter)."""
+    """One message batch per prompt (like real: turn the knob only after Enter)."""
 
     def __init__(self, batches):
         self._pending = [list(b) for b in batches]
@@ -196,7 +196,7 @@ def test_midi_open_input_matches_port(monkeypatch):
     monkeypatch.setattr(mido, "get_input_names", lambda: ["Launchpad Pro MK3 LPProMK3 DIN", "Other"])
     opened = {}
     monkeypatch.setattr(mido, "open_input", lambda name: opened.setdefault("name", name))
-    name, _ = midi.open_input("launchpad")   # case-insensitiver Teilstring
+    name, _ = midi.open_input("launchpad")   # case-insensitive substring
     assert name == "Launchpad Pro MK3 LPProMK3 DIN" and opened["name"] == name
 
 
@@ -217,12 +217,12 @@ def test_explore_session_books_and_logs(tmp_path, capsys, monkeypatch):
         monkeypatch, tmp_path, [], [_nrpn_seq(1024, [100, 200])], iter(["", "q"]))
     out = capsys.readouterr().out
     assert rc == 0 and fake.closed
-    assert "ABWEICHUNG" in out and "1024" in out          # rdb-Pid 966 != 1024
+    assert "DEVIATION" in out and "1024" in out          # rdb pid 966 != 1024
     from bloridium.explore import load_cc_list
     _, rows = load_cc_list(csv_p)
     r0 = next(r for r in rows if r["cc"] == "0")
     assert r0["os4_verified"] == "ja" and r0["pid_os4"] == "1024"
-    # Events pro Wert: CC6 allein (LSB=0) + CC38 -> [0, 100, 128, 200]
+    # events per value: CC6 alone (LSB=0) + CC38 -> [0, 100, 128, 200]
     assert r0["nrpn_min"] == "0" and r0["nrpn_max"] == "200" and r0["nrpn_last"] == "200"
     assert (tmp_path / "cc_list.csv.bak").exists()
     entries = [json.loads(l) for l in log_p.read_text(encoding="utf-8").strip().splitlines()]
@@ -233,7 +233,7 @@ def test_explore_session_sends_nothing(tmp_path, monkeypatch):
     import mido
 
     def _boom(*a, **k):
-        raise AssertionError("explore darf kein MIDI-Out oeffnen/senden")
+        raise AssertionError("explore must not open/send MIDI out")
 
     monkeypatch.setattr(mido, "open_output", _boom)
     rc, *_ = _run_explore(monkeypatch, tmp_path, [], [_nrpn_seq(966, [1])], iter(["", "q"]))
@@ -242,24 +242,24 @@ def test_explore_session_sends_nothing(tmp_path, monkeypatch):
 
 def test_explore_empty_capture_hints_and_stays(tmp_path, capsys, monkeypatch):
     rc, csv_p, log_p, _ = _run_explore(
-        monkeypatch, tmp_path, [], [[_cc(20, 99)]], iter(["", "q"]))   # nur CC, kein NRPN
+        monkeypatch, tmp_path, [], [[_cc(20, 99)]], iter(["", "q"]))   # only CC, no NRPN
     out = capsys.readouterr().out
     assert rc == 0
-    assert "kein NRPN" in out and "Send NRPN" in out
+    assert "no NRPN" in out and "Send NRPN" in out
     from bloridium.explore import load_cc_list
     _, rows = load_cc_list(csv_p)
-    assert all(r["os4_verified"] == "nein" for r in rows)   # nichts gebucht
+    assert all(r["os4_verified"] == "nein" for r in rows)   # nothing booked
     assert not log_p.exists()
 
 
 def test_explore_progress_counter_counts_each_booking_once(tmp_path, capsys, monkeypatch):
     rc, csv_p, log_p, _ = _run_explore(
         monkeypatch, tmp_path, [],
-        [_nrpn_seq(966, [10]), _nrpn_seq(967, [20])],   # zwei Buchungen
+        [_nrpn_seq(966, [10]), _nrpn_seq(967, [20])],   # two bookings
         iter(["", "", "q"]))
     out = capsys.readouterr().out
     assert rc == 0
-    assert "[2/4]" in out        # nach 2 Buchungen – nicht [4/4]
+    assert "[2/4]" in out        # after 2 bookings - not [4/4]
     assert "[4/4]" not in out
 
 
@@ -267,10 +267,10 @@ def test_explore_no_in_port_exit_2(tmp_path, capsys, monkeypatch):
     from bloridium import cli, midi
 
     def _raise(port):
-        raise RuntimeError("MIDI-Port nicht gefunden: 'X'")
+        raise RuntimeError("MIDI port not found: 'X'")
 
     monkeypatch.setattr(midi, "open_input", _raise)
     csv_p = _write_csv(tmp_path)
     rc = cli.main(["explore", "--csv", str(csv_p), "--log", str(tmp_path / "l.jsonl")])
     err = capsys.readouterr().err
-    assert rc == 2 and "FEHLER" in err and "MIDI-Ports IN" in err
+    assert rc == 2 and "ERROR" in err and "available MIDI ports IN" in err

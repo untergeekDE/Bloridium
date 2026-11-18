@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Scan: Auf welchem MIDI-Out-Port erreicht man welchen Synth?
+"""Scan: on which MIDI out port can you reach which synth?
 
-Pro Port: CC7/CC11 (Volume/Expression) auf Maximum, dann Note auf allen
-16 Kanaelen, alle 20 Scarlett-Eingaenge aufnehmen, All Notes Off.
+Per port: CC7/CC11 (volume/expression) to max, then a note on all
+16 channels, record all 20 Scarlett inputs, All Notes Off.
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def peak_db(data):
 def probe(port: str, base):
     out = mido.open_output(port)
     try:
-        for ch in range(16):  # Volume & Expression hoch
+        for ch in range(16):  # volume & expression up (why: otherwise a quiet patch looks dead)
             out.send(mido.Message("control_change", control=7, value=127, channel=ch))
             out.send(mido.Message("control_change", control=11, value=127, channel=ch))
         for ch in range(16):
@@ -64,7 +64,7 @@ def main() -> int:
     print("Baseline: " + "  ".join(f"In{i+1}:{base[i]:.0f}" for i in range(20)) + "\n")
     for port in PORTS:
         hot, p = probe(port, base)
-        tag = ", ".join(f"In{i} ({v:.1f} dBFS)" for i, v in hot) if hot else "kein Signal"
+        tag = ", ".join(f"In{i} ({v:.1f} dBFS)" for i, v in hot) if hot else "no signal"
         print(f"[{port}]\n  -> {tag}")
     return 0
 

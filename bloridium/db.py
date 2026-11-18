@@ -1,8 +1,8 @@
-"""SQLite-Bank fuer Bloridium – Schema v1 + CRUD-Helfer.
+"""SQLite bank for Bloridium - schema v1 + CRUD helpers.
 
-Dateien bleiben Source of Truth (dumps/, transfer/, recordings/); die DB
-indexiert und cached geparste Daten (siehe Design-Doc, Abschnitt DB-Schema).
-JSON-Spalten werden beim Schreiben serialisiert und beim Lesen dekodiert.
+Files remain the source of truth (dumps/, transfer/, recordings/); the DB
+indexes and caches parsed data (see design doc, section DB schema).
+JSON columns are serialized on write and decoded on read.
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS ab_runs (
 
 
 def connect(path) -> sqlite3.Connection:
-    """DB oeffnen/anlegen, Schema migrieren, Row-Factory auf dict setzen."""
+    """Open/create DB, migrate schema, set row factory to dict."""
     conn = sqlite3.connect(str(path))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -74,7 +74,7 @@ def connect(path) -> sqlite3.Connection:
         conn.commit()
     elif int(row["value"]) > SCHEMA_VERSION:
         raise RuntimeError(
-            f"DB-Schema v{row['value']} ist neuer als unterstuetzt (v{SCHEMA_VERSION})"
+            f"DB schema v{row['value']} is newer than supported (v{SCHEMA_VERSION})"
         )
     return conn
 
@@ -95,7 +95,7 @@ def _decode(row: dict | None, *json_keys: str) -> dict | None:
 # ---- sounds ---------------------------------------------------------------
 
 def upsert_sound(conn: sqlite3.Connection, row: dict) -> None:
-    """Sound-Zeile upserted (PK location). parsed_json: dict -> JSON."""
+    """Upsert sound row (PK location). parsed_json: dict -> JSON."""
     row = dict(row)
     if not isinstance(row.get("parsed_json"), str):
         row["parsed_json"] = json.dumps(row.get("parsed_json") or {})

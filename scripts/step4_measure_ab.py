@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Schritt 4: A/B-Klangmessung Blofeld (In3/4) vs Iridium (In5/6).
+"""Step 4: A/B sound measurement Blofeld (In3/4) vs Iridium (In5/6).
 
-Wrapper ueber bloridium.workflow (argv/Exit/Stdout unveraendert).
+Wrapper around bloridium.workflow (argv/exit/stdout unchanged).
 
-Spielt gleichzeitig eine Note auf beiden Synths (Blofeld ch5, Iridium Part 1 ch6),
-nimmt alle 20 Scarlett-Kanaele auf und vergleicht Pegel + Spektral centroid.
+Plays one note simultaneously on both synths (Blofeld ch5, Iridium Part 1 ch6),
+records all 20 Scarlett channels and compares level + spectral centroid.
 
-Aufruf:  python3 scripts/step4_measure_ab.py [--note 36] [--dur 3.0] [--label TEXT]
+Usage:  python3 scripts/step4_measure_ab.py [--note 36] [--dur 3.0] [--label TEXT]
 """
 
 from __future__ import annotations
@@ -39,13 +39,13 @@ def main() -> int:
     print(f"Blofeld  In3/4: peak {b['peak_dbfs']:6.1f} dBFS  rms {b['rms_dbfs']:6.1f}  centroid {b['centroid_hz']:8.1f} Hz")
     print(f"Iridium  In5/6: peak {i['peak_dbfs']:6.1f} dBFS  rms {i['rms_dbfs']:6.1f}  centroid {i['centroid_hz']:8.1f} Hz")
     print(f"Delta: peak {i['peak_dbfs'] - b['peak_dbfs']:+.1f} dB   centroid {i['centroid_hz'] - b['centroid_hz']:+.1f} Hz")
-    print("\nBand-Vergleich (Iridium - Blofeld in dB, log-Baender):")
+    print("\nBand comparison (Iridium - Blofeld in dB, log bands):")
     edges = report["band_edges_hz"]
     for k, d in enumerate(report["band_delta_db"]):
         bar = "#" * max(0, int(round(d)))
         print(f"  {edges[k]:7.0f}-{edges[k+1]:7.0f} Hz: {d:+6.1f} dB {bar}")
     f = report["files"]
-    print(f"gespeichert: {Path(f['report']).name.replace('_report.json', '')}_*.npy + _report.json")
+    print(f"saved: {Path(f['report']).name.replace('_report.json', '')}_*.npy + _report.json")
     return 0
 
 

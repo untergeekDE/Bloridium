@@ -1,26 +1,26 @@
 """Waldorf Quantum/Iridium .qpat – Parser + Writer.
 
-Format (autosamplerT src/export/export_qpat.py + eigene Hexdump-Analyse offizieller
-Waldorf-Files, siehe docs/FINDINGS.md):
+Format (autosamplerT src/export/export_qpat.py + own hexdump analysis of official
+Waldorf files, see docs/FINDINGS.md):
 
   Header (512 B):
     0x000  u32 LE magic = 3402932 (0x0033ECB4 -> b4 ec 33 00)
-    0x004  u32 LE preset version (14 aktuell; Geraete-Files auch 8/10)
+    0x004  u32 LE preset version (14 current; device files also 8/10)
     0x008  char[32] name
     0x028  char[32] creator/author
     0x048  char[32] description
-    0x068  char[32] category + 3x char[32] keywords (4 Slots)
+    0x068  char[32] category + 3x char[32] keywords (4 slots)
     0x0E8  u16 LE param count, u16 pad
-    0x0EC  16x Resource-Header je 12 B: u32 type, u32 offset(0), u32 length
-             (Typen 4/5/6 = USER_SAMPLE_MAP1..3; 0 = unused)
-    0x1AC  u16 layer2a, u16 layer2b, u32 layer2c  (2nd-Layer-Info)
+    0x0EC  16x resource header, 12 B each: u32 type, u32 offset(0), u32 length
+             (types 4/5/6 = USER_SAMPLE_MAP1..3; 0 = unused)
+    0x1AC  u16 layer2a, u16 layer2b, u32 layer2c  (2nd layer info)
     0x1B4  u8 instrument type (0 = Quantum/Iridium)
-    pad    auf 0x200
-  0x200  Parameter-Records, je 68 B, Anzahl = param count:
+    pad    to 0x200
+  0x200  parameter records, 68 B each, count = param count:
              float32 LE normalized value (0..1)
-             char[32]  name (z.B. "Osc1Type")
-             char[32]  display (z.B. "Kernels", "+0.000 dB")
-  danach: Sample-Maps (tab-getrennter Text, Ressourcen 4..6)
+             char[32]  name (e.g. "Osc1Type")
+             char[32]  display (e.g. "Kernels", "+0.000 dB")
+  after that: sample maps (tab-separated text, resources 4..6)
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ def _cstr(b: bytes) -> str:
 
 def parse_qpat(data: bytes) -> dict:
     if len(data) < HEADER_SIZE or struct.unpack("<I", data[0:4])[0] != MAGIC:
-        raise ValueError(f"kein .qpat (magic {data[:4].hex()})")
+        raise ValueError(f"not a .qpat (magic {data[:4].hex()})")
     version = struct.unpack("<I", data[4:8])[0]
     r = {
         "version": version,
@@ -56,7 +56,7 @@ def parse_qpat(data: bytes) -> dict:
         "param_count": struct.unpack("<H", data[0xE8:0xEA])[0],
         "resources": [],
         "params": {},   # name -> {"value": float, "display": str}
-        "_raw_fields": {},  # name -> (raw 32B name, raw 32B display) fuer byte-faithful Rebuild
+        "_raw_fields": {},  # name -> (raw 32B name, raw 32B display) for byte-faithful rebuild
         "sample_maps": [],
     }
     for i in range(16):
@@ -65,11 +65,11 @@ def parse_qpat(data: bytes) -> dict:
         r["resources"].append({"type": rtype, "offset": roff, "length": rlen})
     r["layer2"] = struct.unpack("<HHI", data[0x1AC:0x1B4])
     r["instrument"] = data[0x1B4]
-    r["_header_pad"] = data[0x1B5:HEADER_SIZE]  # Padding bis 0x200 (manchmal belegt)
-    # Parameter-Records ab 0x200
+    r["_header_pad"] = data[0x1B5:HEADER_SIZE]  # padding up to 0x200 (sometimes used)
+    # parameter records from 0x200
     pos = HEADER_SIZE
     n = r["param_count"]
-    r["_records_raw"] = []  # alle n Records roh (inkl. unbenannter) fuer byte-faithful Rebuild
+    r["_records_raw"] = []  # all n records raw (incl. unnamed) for byte-faithful rebuild
     for _ in range(n):
         if pos + RECORD_SIZE > len(data):
             break
@@ -82,16 +82,16 @@ def parse_qpat(data: bytes) -> dict:
             r["params"][name] = {"value": val, "display": disp}
             r["_raw_fields"][name] = (chunk[4:36], chunk[36:68])
         pos += RECORD_SIZE
-    # Sample-Maps (Ressourcen Typ 4..6) – als Text an den Resource-Positionen
+    # sample maps (resources type 4..6) - as text at the resource positions
     body = data[HEADER_SIZE:]
     for res in r["resources"]:
         if res["type"] in (4, 5, 6) and res["length"] > 0:
-            # offset ist relativ zum Param-Bereich? autosamplerT schreibt maps ans Ende;
-            # wir nehmen: maps liegen direkt nach den Records
+            # offset relative to the param area? autosamplerT writes maps at the end;
+            # we take: maps sit directly after the records
             pass
-    # pragmatisch: Rest nach den Records als Text dekodieren
+    # pragmatic: decode the rest after the records as text
     rest = data[pos:]
-    r["_tail"] = rest  # roher Tail (Sample-Maps als Text ODER weitere Patches bei Multi-Patch-Files)
+    r["_tail"] = rest  # raw tail (sample maps as text OR further patches in multi-patch files)
     txt = rest.decode("ascii", "replace")
     maps = [m for m in txt.split("\x00") if m.strip()]
     r["sample_maps"] = maps
@@ -110,12 +110,12 @@ def build_qpat(name: str, params: dict, creator: str = "bloridium",
                 layer2: tuple = (0, 0, 0), instrument: int = 0,
                 raw_fields: dict | None = None, records_raw: list | None = None,
                 header_pad: bytes | None = None) -> bytes:
-    """params: {name: (value_float, display_str)} oder {name: value_float}.
+    """params: {name: (value_float, display_str)} or {name: value_float}.
 
-    `tail`: roher Datei-Tail nach den Records (Sample-Maps / weitere Patches) –
-    wird 1:1 angehängt, damit parse->build byte-identisch ist. Ohne `tail` werden
-    `sample_maps` NUL-getrennt (mit Trailing-NUL) angehängt.
-    `resources`: 16 Resource-Header-Dicts (werden 1:1 geschrieben).
+    `tail`: raw file tail after the records (sample maps / further patches) -
+    appended 1:1 so that parse->build is byte-identical. Without `tail`,
+    `sample_maps` are appended NUL-separated (with trailing NUL).
+    `resources`: 16 resource header dicts (written 1:1).
     """
     sample_maps = sample_maps or []
     items = []
@@ -136,7 +136,7 @@ def build_qpat(name: str, params: dict, creator: str = "bloridium",
         out += _pad32(c)
     n_records = len(records_raw) if records_raw else len(items)
     out += struct.pack("<H", n_records) + b"\x00\x00"
-    # 16 Resource-Header
+    # 16 resource headers
     if resources is not None:
         for i in range(16):
             r = resources[i] if i < len(resources) else {"type": 0, "offset": 0, "length": 0}
@@ -153,8 +153,8 @@ def build_qpat(name: str, params: dict, creator: str = "bloridium",
         out += header_pad[: HEADER_SIZE - len(out)]
     if len(out) < HEADER_SIZE:
         out += b"\x00" * (HEADER_SIZE - len(out))
-    # Parameter-Records (rohe Records wann verfuegbar -> byte-faithful; benannte
-    # Records werden aus `params` neu gebaut, damit editierte Werte uebernommen werden)
+    # parameter records (raw records when available -> byte-faithful; named
+    # records are rebuilt from `params` so that edited values are taken over)
     raw_fields = raw_fields or {}
     if records_raw:
         for chunk in records_raw:
@@ -177,7 +177,7 @@ def build_qpat(name: str, params: dict, creator: str = "bloridium",
             else:
                 out += _pad32(k)
                 out += _pad32(disp)
-    # Tail: roh 1:1 (bevorzugt) oder Sample-Maps NUL-getrennt
+    # tail: raw 1:1 (preferred) or sample maps NUL-separated
     if tail is not None:
         out += tail
     else:

@@ -1,23 +1,23 @@
-# Blofeld Keymap-Analyse A001-A128 (Nutzungsstatistik + CC-Keymap-Vorschlag)
+# Blofeld keymap analysis A001-A128 (usage statistics + CC keymap proposal)
 
-Erstellt: 2026-11-10. Basis: alle 128 Werks-Sounds der Bank A, live per USB-MIDI
-(Port `Blofeld`, Kanal 5 / 0-basiert 4) als SNDR->SNDD gelesen und in
-`dumps/banks/A/blofeld_sndd_Axxx_<ts>.bin` gespeichert (chk_ok bei allen).
-Rohdaten: `docs/midi-maps/blofeld_cc_usage_A001-A128.csv`.
+Created: 2026-11-10. Basis: all 128 factory sounds of bank A, read live via USB-MIDI
+(port `Blofeld`, channel 5 / 0-based 4) as SNDR->SNDD and saved to
+`dumps/banks/A/blofeld_sndd_Axxx_<ts>.bin` (chk_ok on all).
+Raw data: `docs/midi-maps/blofeld_cc_usage_A001-A128.csv`.
 
-## 1. Methodik
+## 1. Methodology
 
-- **Datenbasis**: 128 SNDD-Dumps A001-A128 (jeder 392 B inkl. F0/F7, 383 B SDATA, 290 benannte Parameter laut Spec 3.1 / `bloridium/blofeld_dump.py`).
-- **Init-Referenz**: `dumps/blofeld_sndd_init_20261108_212711.bin` (chk_ok=True, Name "Init") – valider Init-Sound-Dump; wird als Default/Referenz verwendet.
-- **"Genutzt"**: Rohwert (SDATA-Byte 0..127) weicht vom Init-Wert ab. Enums werden als Rohindex verglichen (Label egal).
-- **Pro Parameter**: count (Sounds mit Abweichung), anteil = count/128 in %, min/max der abweichenden Rohwerte.
-- **Kategorien** (nach Parametertyp): Waveform (Osc N Shape), Mixer = Osc Volume (Mixer Osc N Level/Balance, Noise, RingMod), Tuning (Octave/Semitone/Detune/Bend Range/Pitch), Filter (F1/F2 + Routing), Env1 = Filter Envelope, Env2 = Amp Envelope, Env3/Env4, LFO, Mod-Matrix (Modulation+Modifier), Glide, FX (Effect 1/2), Arp, Amp (Amplifier), Unisono, dazu `Osc (FM/PWM)` (FM/PWM/Pulsewidth/Brilliance/Sync) und Meta (Category).
-- **Gewichtung** (Vorgabe): ESSENTIAL k=3 = Waveform, Mixer (Osc Volume), Tuning, Filter, Env1, Env2. Mittel k=2 = Env3, Env4, LFO, Mod-Matrix, Glide, Amp, Unisono. Rest k=1 = Osc (FM/PWM), FX, Arp, Meta.
-- **Score** = anteil (0..1) x kategorie_gewicht (0..3). Rangliste = Score absteigend.
+- **Data basis**: 128 SNDD dumps A001-A128 (each 392 B incl. F0/F7, 383 B SDATA, 290 named parameters per spec 3.1 / `bloridium/blofeld_dump.py`).
+- **Init reference**: `dumps/blofeld_sndd_init_20261108_212711.bin` (chk_ok=True, name "Init") – valid init sound dump; used as default/reference.
+- **"Used"**: raw value (SDATA byte 0..127) deviates from the init value. Enums are compared as raw index (label irrelevant).
+- **Per parameter**: count (sounds with deviation), share = count/128 in %, min/max of the deviating raw values.
+- **Categories** (by parameter type): Waveform (Osc N Shape), Mixer = Osc Volume (Mixer Osc N Level/Balance, Noise, RingMod), Tuning (Octave/Semitone/Detune/Bend Range/Pitch), Filter (F1/F2 + Routing), Env1 = Filter Envelope, Env2 = Amp Envelope, Env3/Env4, LFO, Mod-Matrix (Modulation+Modifier), Glide, FX (Effect 1/2), Arp, Amp (Amplifier), Unisono, plus `Osc (FM/PWM)` (FM/PWM/Pulsewidth/Brilliance/Sync) and Meta (Category).
+- **Weighting** (requirement): ESSENTIAL k=3 = Waveform, Mixer (Osc Volume), Tuning, Filter, Env1, Env2. Medium k=2 = Env3, Env4, LFO, Mod-Matrix, Glide, Amp, Unisono. Rest k=1 = Osc (FM/PWM), FX, Arp, Meta.
+- **Score** = share (0..1) x category_weight (0..3). Ranking = score descending.
 
-## 2. Kategorie-Uebersicht
+## 2. Category overview
 
-| Kategorie | Gewicht | #Params | Params genutzt (count>0) | mittl. Anteil % |
+| Category | Weight | #Params | Params used (count>0) | mean share % |
 |---|---|---|---|---|
 | Env1 | 3 | 8 | 8 | 46.4 |
 | Env2 | 3 | 8 | 8 | 43.6 |
@@ -37,9 +37,9 @@ Rohdaten: `docs/midi-maps/blofeld_cc_usage_A001-A128.csv`.
 | Meta | 1 | 1 | 1 | 93.0 |
 | Osc (FM/PWM) | 1 | 25 | 24 | 22.7 |
 
-## 3. Nutzungs-Tabelle pro Parameter (alle 290, sortiert nach Score)
+## 3. Usage table per parameter (all 290, sorted by score)
 
-| # | Parameter | Kategorie | Gewicht | count | Anteil % | min-max (raw) | Score |
+| # | Parameter | Category | Weight | count | Share % | min-max (raw) | Score |
 |---|---|---|---|---|---|---|---|
 | 1 | Filter 1 Cutoff | Filter | 3 | 120 | 93.8 | 0-114 | 2.812 |
 | 2 | Osc 2 Shape | Waveform | 3 | 117 | 91.4 | 1-71 | 2.742 |
@@ -332,180 +332,180 @@ Rohdaten: `docs/midi-maps/blofeld_cc_usage_A001-A128.csv`.
 | 289 | Arpeggiator Ptn Length | Arp | 1 | 1 | 0.8 | 5-5 | 0.008 |
 | 290 | Osc 3 Limit WT | Osc (FM/PWM) | 1 | 0 | 0.0 | - | 0.000 |
 
-## 4. Rangliste Top 30
+## 4. Ranking top 30
 
-| Rang | Parameter | Kategorie | Gewicht | Anteil % | Score | ESSENTIAL |
+| Rank | Parameter | Category | Weight | Share % | Score | ESSENTIAL |
 |---|---|---|---|---|---|---|
-| 1 | Filter 1 Cutoff | Filter | 3 | 93.8 | 2.812 | **ja** |
-| 2 | Osc 2 Shape | Waveform | 3 | 91.4 | 2.742 | **ja** |
-| 3 | Osc 3 Shape | Waveform | 3 | 84.4 | 2.531 | **ja** |
-| 4 | Filter Envelope Decay | Env1 | 3 | 82.8 | 2.484 | **ja** |
-| 5 | Filter 1 Resonance | Filter | 3 | 78.9 | 2.367 | **ja** |
-| 6 | Filter 2 Cutoff | Filter | 3 | 78.1 | 2.344 | **ja** |
-| 7 | Filter 2 Type | Filter | 3 | 78.1 | 2.344 | **ja** |
-| 8 | Amplifier Envelope Release | Env2 | 3 | 76.6 | 2.297 | **ja** |
-| 9 | Filter Envelope Release | Env1 | 3 | 75.8 | 2.273 | **ja** |
-| 10 | Filter 1 Env Amount | Filter | 3 | 71.9 | 2.156 | **ja** |
-| 11 | Osc 1 Shape | Waveform | 3 | 68.0 | 2.039 | **ja** |
-| 12 | Amplifier Envelope Decay | Env2 | 3 | 67.2 | 2.016 | **ja** |
-| 13 | Filter 1 Keytrack | Filter | 3 | 60.2 | 1.805 | **ja** |
-| 14 | Filter 2 Resonance | Filter | 3 | 58.6 | 1.758 | **ja** |
-| 15 | Filter Envelope Sustain | Env1 | 3 | 58.6 | 1.758 | **ja** |
-| 16 | Amplifier Envelope Sustain | Env2 | 3 | 57.8 | 1.734 | **ja** |
-| 17 | Filter 1 Drive | Filter | 3 | 56.2 | 1.688 | **ja** |
-| 18 | Modulation 2 Source | Mod-Matrix | 2 | 82.8 | 1.656 | nein |
-| 19 | Modulation 1 Amount | Mod-Matrix | 2 | 82.0 | 1.641 | nein |
-| 20 | Osc 2 Detune | Tuning | 3 | 54.7 | 1.641 | **ja** |
-| 21 | Modulation 2 Destination | Mod-Matrix | 2 | 79.7 | 1.594 | nein |
-| 22 | Filter 1 Type | Filter | 3 | 53.1 | 1.594 | **ja** |
-| 23 | Osc 2 Octave | Tuning | 3 | 53.1 | 1.594 | **ja** |
-| 24 | Osc 1 Octave | Tuning | 3 | 52.3 | 1.570 | **ja** |
-| 25 | Mixer Osc 2 Level | Mixer | 3 | 51.6 | 1.547 | **ja** |
-| 26 | Amplifier Envelope Attack | Env2 | 3 | 50.8 | 1.523 | **ja** |
-| 27 | Filter 2 Keytrack | Filter | 3 | 50.8 | 1.523 | **ja** |
-| 28 | Osc 3 Octave | Tuning | 3 | 50.8 | 1.523 | **ja** |
-| 29 | Modulation 2 Amount | Mod-Matrix | 2 | 75.8 | 1.516 | nein |
-| 30 | Modulation 3 Source | Mod-Matrix | 2 | 75.8 | 1.516 | nein |
+| 1 | Filter 1 Cutoff | Filter | 3 | 93.8 | 2.812 | **yes** |
+| 2 | Osc 2 Shape | Waveform | 3 | 91.4 | 2.742 | **yes** |
+| 3 | Osc 3 Shape | Waveform | 3 | 84.4 | 2.531 | **yes** |
+| 4 | Filter Envelope Decay | Env1 | 3 | 82.8 | 2.484 | **yes** |
+| 5 | Filter 1 Resonance | Filter | 3 | 78.9 | 2.367 | **yes** |
+| 6 | Filter 2 Cutoff | Filter | 3 | 78.1 | 2.344 | **yes** |
+| 7 | Filter 2 Type | Filter | 3 | 78.1 | 2.344 | **yes** |
+| 8 | Amplifier Envelope Release | Env2 | 3 | 76.6 | 2.297 | **yes** |
+| 9 | Filter Envelope Release | Env1 | 3 | 75.8 | 2.273 | **yes** |
+| 10 | Filter 1 Env Amount | Filter | 3 | 71.9 | 2.156 | **yes** |
+| 11 | Osc 1 Shape | Waveform | 3 | 68.0 | 2.039 | **yes** |
+| 12 | Amplifier Envelope Decay | Env2 | 3 | 67.2 | 2.016 | **yes** |
+| 13 | Filter 1 Keytrack | Filter | 3 | 60.2 | 1.805 | **yes** |
+| 14 | Filter 2 Resonance | Filter | 3 | 58.6 | 1.758 | **yes** |
+| 15 | Filter Envelope Sustain | Env1 | 3 | 58.6 | 1.758 | **yes** |
+| 16 | Amplifier Envelope Sustain | Env2 | 3 | 57.8 | 1.734 | **yes** |
+| 17 | Filter 1 Drive | Filter | 3 | 56.2 | 1.688 | **yes** |
+| 18 | Modulation 2 Source | Mod-Matrix | 2 | 82.8 | 1.656 | no |
+| 19 | Modulation 1 Amount | Mod-Matrix | 2 | 82.0 | 1.641 | no |
+| 20 | Osc 2 Detune | Tuning | 3 | 54.7 | 1.641 | **yes** |
+| 21 | Modulation 2 Destination | Mod-Matrix | 2 | 79.7 | 1.594 | no |
+| 22 | Filter 1 Type | Filter | 3 | 53.1 | 1.594 | **yes** |
+| 23 | Osc 2 Octave | Tuning | 3 | 53.1 | 1.594 | **yes** |
+| 24 | Osc 1 Octave | Tuning | 3 | 52.3 | 1.570 | **yes** |
+| 25 | Mixer Osc 2 Level | Mixer | 3 | 51.6 | 1.547 | **yes** |
+| 26 | Amplifier Envelope Attack | Env2 | 3 | 50.8 | 1.523 | **yes** |
+| 27 | Filter 2 Keytrack | Filter | 3 | 50.8 | 1.523 | **yes** |
+| 28 | Osc 3 Octave | Tuning | 3 | 50.8 | 1.523 | **yes** |
+| 29 | Modulation 2 Amount | Mod-Matrix | 2 | 75.8 | 1.516 | no |
+| 30 | Modulation 3 Source | Mod-Matrix | 2 | 75.8 | 1.516 | no |
 
 **Top 10 essential**: Filter 1 Cutoff (94%), Osc 2 Shape (91%), Osc 3 Shape (84%), Filter Envelope Decay (83%), Filter 1 Resonance (79%), Filter 2 Cutoff (78%), Filter 2 Type (78%), Amplifier Envelope Release (77%), Filter Envelope Release (76%), Filter 1 Env Amount (72%)
 
-## 5. Hapax-Keymap filtern (Iridium-L1-Def -> Blofeld)
+## 5. Filter Hapax keymap (Iridium L1 def -> Blofeld)
 
-Vorlage: `docs/midi-maps/iridium_hapax_L1.def.txt` ([CC]-Sektion). Eintraege, die es auf dem
-Blofeld **nicht** gibt (Iridium-spezifische Module/Parameter), werden gestrichen:
-kein Compressor, kein Digi Former, kein Komplex-Modul, kein Partial-Osc (PT), keine WT-Stepped-
-Option, keine LFO/Free-Env-Amounts (nur in der Mod-Matrix), kein Ringmod-Paar-Routing, und
-statt getrennter Delay/Reverb/Chorus/Phaser/Flanger/Drive-CC-Bloecke nur **FX1/FX2**
-(Typ + Mix CC93/94 + 14 Parameter pro Slot, letztere nur per SysEx).
+Template: `docs/midi-maps/iridium_hapax_L1.def.txt` ([CC] section). Entries that do
+**not** exist on the Blofeld (Iridium-specific modules/parameters) are removed:
+no compressor, no Digi Former, no Complex module, no Partial-Osc (PT), no WT-Stepped
+option, no LFO/Free-Env amounts (only in the mod matrix), no ringmod pair routing, and
+instead of separate Delay/Reverb/Chorus/Phaser/Flanger/Drive CC blocks only **FX1/FX2**
+(type + mix CC93/94 + 14 parameters per slot, the latter only via SysEx).
 
-| CC | Iridium-Parameter | Blofeld-Aequivalent | verdict | Anteil % | Begruendung |
+| CC | Iridium parameter | Blofeld equivalent | verdict | Share % | Reason |
 |---|---|---|---|---|---|
-| 0 | Filter1 Cutoff | Filter 1 Cutoff | uebernehmen | 93.75 |  |
-| 2 | Filter1 Reso | Filter 1 Resonance | uebernehmen | 78.90625 |  |
-| 3 | Filter1 Attack | Filter Envelope Attack | uebernehmen | 48.4375 | Iridium Filter1-ADSR = Blofeld Filter Envelope (Env1) |
-| 4 | Filter1 Decay | Filter Envelope Decay | uebernehmen | 82.8125 |  |
-| 5 | Filter1 Sustain | Filter Envelope Sustain | uebernehmen | 58.59375 |  |
-| 6 | Filter1 Release | Filter Envelope Release | uebernehmen | 75.78125 |  |
-| 7 | Filter1 Amount | Filter 1 Env Amount | uebernehmen | 71.875 |  |
-| 8 | Filter1 Velo Amount | Filter 1 Env Velocity | uebernehmen | 38.28125 |  |
-| 9 | Filter2 Cutoff | Filter 2 Cutoff | uebernehmen | 78.125 |  |
-| 10 | Filter2 Reso | Filter 2 Resonance | uebernehmen | 58.59375 |  |
-| 11 | Filter2 Attack | Filter 2 Env -> Filter Envelope (gemeinsam) | uebernehmen | - | Blofeld hat EINE Filter-Envelope fuer F1+F2 |
-| 12 | Filter2 Decay | Filter Envelope Decay | uebernehmen | 82.8125 | gemeinsame Filter-Envelope |
-| 13 | Filter2 Sustain | Filter Envelope Sustain | uebernehmen | 58.59375 | gemeinsame Filter-Envelope |
-| 14 | Filter2 Release | Filter Envelope Release | uebernehmen | 75.78125 | gemeinsame Filter-Envelope |
-| 15 | Filter2 Amount | Filter 2 Env Amount | uebernehmen | 47.65625 |  |
-| 16 | Filter2 Velo Amount | Filter 2 Env Velocity | uebernehmen | 28.125 |  |
-| 17 | Amp Velo Amount | Amplifier Velocity | uebernehmen | 70.3125 |  |
-| 18 | Amp Attack | Amplifier Envelope Attack | uebernehmen | 50.78125 | Iridium Amp-ADSR = Blofeld Amp Envelope (Env2) |
-| 19 | Amp Decay | Amplifier Envelope Decay | uebernehmen | 67.1875 |  |
-| 20 | Amp Sustain | Amplifier Envelope Sustain | uebernehmen | 57.8125 |  |
-| 21 | Amp Release | Amplifier Envelope Release | uebernehmen | 76.5625 |  |
-| 22 | Delay Dry Wet | Effect 1/2 Mix | weglassen | - | Blofeld: nur FX1/FX2 (Typ+Mix+14 Params), kein eigener Delay-CC-Block |
-| 23 | Delay Feedback | - | weglassen | - | keine Einzel-CCs; nur per SysEx (Effect N Parameter) |
-| 24 | Delay Time L | - | weglassen | - | s.o. |
-| 25 | Delay Time R | - | weglassen | - | s.o. |
-| 26 | Delay Sync L | - | weglassen | - | s.o. |
-| 27 | Delay Sync R | - | weglassen | - | s.o. |
-| 28 | Reverb Gain | - | weglassen | - | Blofeld FX-Typ Reverb ohne Einzel-CCs |
-| 29 | Reverb Color | - | weglassen | - | s.o. |
-| 30 | Reverb Time | - | weglassen | - | s.o. |
-| 31 | Reverb Mod Depth | - | weglassen | - | s.o. |
-| 32 | Osc1 Fine Pitch | Osc 1 Detune | uebernehmen | 45.3125 |  |
-| 33 | Osc1 Vol | Mixer Osc 1 Level | uebernehmen | 35.15625 |  |
-| 34 | Osc1 Pan | Filter 1 Pan | teilweise | 36.71875 | Blofeld hat kein Osc-Pan; naechstes: Filter-N-Pan (CC77/88) |
-| 35 | Osc1 WT Position | Osc 1 Pulsewidth | teilweise | 62.5 | Blofeld PW/Wave = Wavetable-Position |
-| 36 | Osc1 WT Spectrum | Osc 1 Brilliance | teilweise | 13.28125 | Naeherung; kein 1:1 |
-| 37 | Osc1 WT Table | Osc 1 Shape | teilweise | 67.96875 | Wavetable-Auswahl laeuft ueber Blofeld Shape (Wavetable-Shapes) |
-| 38 | Osc1 WT Stepped | - | weglassen | - | kein Stepped-Modus auf Blofeld |
-| 39 | Osc1 WF Shape | Osc 1 Shape | uebernehmen | 67.96875 |  |
-| 40 | Osc1 WF Desity | - | weglassen | - | kein Density-Parameter auf Blofeld |
-| 41 | Osc1 WF Spread | - | weglassen | - | kein Spread-Parameter auf Blofeld |
-| 42 | Osc1 WF PW | Osc 1 Pulsewidth | uebernehmen | 62.5 |  |
-| 43 | Osc1 WF Sync | Osc 2 Sync to O3 | teilweise | 14.84375 | Blofeld: nur Osc2-Sync-zu-Osc3 (CC49), kein Sync pro Osc |
-| 44 | Osc1 PT Position | - | weglassen | - | kein Partial/ additive Osc auf Blofeld |
-| 45 | Osc1 PT Travel | - | weglassen | - | s.o. |
-| 46 | Osc2 Fine Pitch | Osc 2 Detune | uebernehmen | 54.6875 |  |
-| 47 | Osc2 Vol | Mixer Osc 2 Level | uebernehmen | 51.5625 |  |
-| 48 | Osc2 Pan | Filter 2 Pan | teilweise | 32.03125 | s.o. |
-| 49 | Osc2 WT Position | Osc 2 Pulsewidth | teilweise | 56.25 | s.o. |
-| 50 | Osc2 WT Spectrum | Osc 2 Brilliance | teilweise | 11.71875 | s.o. |
-| 51 | Osc2 WT Table | Osc 2 Shape | teilweise | 91.40625 | s.o. |
-| 52 | Osc2 WT Stepped | - | weglassen | - | s.o. |
-| 53 | Osc2 WF Shape | Osc 2 Shape | uebernehmen | 91.40625 |  |
-| 54 | Osc2 WF Desity | - | weglassen | - | s.o. |
-| 55 | Osc2 WF Spread | - | weglassen | - | s.o. |
-| 56 | Osc2 WF PW | Osc 2 Pulsewidth | uebernehmen | 56.25 |  |
-| 57 | Osc2 WF Sync | Osc 2 Sync to O3 | teilweise | 14.84375 | s.o. |
-| 58 | Osc2 PT Position | - | weglassen | - | s.o. |
-| 59 | Osc2 PT Travel | - | weglassen | - | s.o. |
-| 60 | Osc3 Fine Pitch | Osc 3 Detune | uebernehmen | 46.09375 |  |
-| 61 | Osc3 Vol | Mixer Osc 3 Level | uebernehmen | 49.21875 |  |
-| 62 | Osc3 Pan | - | weglassen | - | kein Osc3-Pan auf Blofeld |
-| 63 | Osc3 WT Position | Osc 3 Pulsewidth | teilweise | 44.53125 | s.o. |
-| 64 | Osc3 WT Spectrum | Osc 3 Brilliance | teilweise | 7.8125 | s.o. |
-| 65 | Osc3 WT Table | Osc 3 Shape | teilweise | 84.375 | s.o. (Osc3 nur Shapes 0..4) |
-| 66 | Osc3 WT Stepped | - | weglassen | - | s.o. |
-| 67 | Osc3 WF Shape | Osc 3 Shape | uebernehmen | 84.375 |  |
-| 68 | Osc3 WF Desity | - | weglassen | - | s.o. |
-| 69 | Osc3 WF Spread | - | weglassen | - | s.o. |
-| 70 | Osc3 WF PW | Osc 3 Pulsewidth | uebernehmen | 44.53125 |  |
-| 71 | Osc3 WF Sync | - | weglassen | - | s.o. |
-| 72 | Osc3 PT Position | - | weglassen | - | s.o. |
-| 73 | Osc3 PT Travel | - | weglassen | - | s.o. |
-| 74 | Ringmod Osc1 To Osc2 | - | weglassen | - | Blofeld: nur RingMod Level/Balance im Mixer (CC54/55), kein Paar-Routing |
-| 75 | Ringmod Osc1 To Osc3 | - | weglassen | - | s.o. |
-| 76 | Digi Former Amount | - | weglassen | - | kein Digi-Former-Modul auf Blofeld |
-| 77 | Digi Former Color | - | weglassen | - | s.o. |
-| 78 | Digi Former Pan | - | weglassen | - | s.o. |
-| 79 | Digi Former Level | - | weglassen | - | s.o. |
-| 80 | Lfo1 Speed | LFO 1 Speed | uebernehmen | 75.0 |  |
-| 81 | Lfo1 Amount | - | weglassen | - | Blofeld: LFO-Amount nur in Mod-Matrix-Slots (Modulation N Amount) |
-| 82 | Lfo2 Speed | LFO 2 Speed | uebernehmen | 63.28125 |  |
-| 83 | Lfo2 Amount | - | weglassen | - | s.o. |
-| 84 | Lfo3 Speed | LFO 3 Speed | uebernehmen | 54.6875 |  |
-| 85 | Lfo3 Amount | - | weglassen | - | s.o. |
-| 86 | Komplex Speed | - | weglassen | - | kein Komplex-Modul auf Blofeld |
-| 87 | Komplex Amount | - | weglassen | - | s.o. |
-| 88 | Komplex Entropy | - | weglassen | - | s.o. |
-| 89 | Glide Rate | Glide Rate | uebernehmen | 33.59375 | CC5 |
-| 90 | Glide On Off | Glide | uebernehmen | 20.3125 | CC65 (SDATA 53) |
-| 91 | Unisono Count | Allocation/Unisono | uebernehmen | 39.0625 | kein CC, nur SysEx |
-| 92 | Unisono Detune | Unisono Detune | uebernehmen | 51.5625 | kein CC, nur SysEx |
-| 93 | Chorus Dry Wet | - | weglassen | - | Blofeld FX1/FX2 Typ=Chorus, nur Mix per CC93/94 |
-| 94 | Chorus Speed | - | weglassen | - | nur per SysEx (Effect N Parameter) |
-| 95 | Chorus Feedback | - | weglassen | - | s.o. |
-| 96 | Phaser Dry Wet | - | weglassen | - | s.o. |
-| 97 | Phaser Depth | - | weglassen | - | s.o. |
-| 98 | Phaser Feedback | - | weglassen | - | s.o. |
-| 99 | Flanger Dry Wet | - | weglassen | - | s.o. |
-| 100 | Flanger Speed | - | weglassen | - | s.o. |
-| 101 | Flanger Feedback | - | weglassen | - | s.o. |
-| 102 | Drive Amount | Filter 1 Drive | teilweise | 56.25 | Blofeld Drive sitzt in den Filtern (CC71/82) + Drive Curve; kein globaler Drive |
-| 103 | Drive Dry Wet | - | weglassen | - | s.o. |
-| 104 | Drive Gain | - | weglassen | - | s.o. |
-| 105 | Free Env1 Attack | Envelope 3 Attack | uebernehmen | 28.90625 | CC107 |
-| 106 | Free Env1 Decay | Envelope 3 Decay | uebernehmen | 42.1875 |  |
-| 107 | Free Env1 Sustain | Envelope 3 Sustain | uebernehmen | 45.3125 |  |
-| 108 | Free Env1 Release | Envelope 3 Release | uebernehmen | 21.09375 |  |
-| 109 | Free Env1 Amount | - | weglassen | - | Blofeld Env3-Amount nur in Mod-Matrix |
-| 110 | Free Env1 Velo Amount | - | weglassen | - | s.o. |
-| 111 | Free Env2 Attack | Envelope 4 Attack | uebernehmen | 25.78125 | CC113 |
-| 112 | Free Env2 Decay | Envelope 4 Decay | uebernehmen | 30.46875 |  |
-| 113 | Free Env2 Sustain | Envelope 4 Sustain | uebernehmen | 30.46875 |  |
-| 114 | Free Env2 Release | Envelope 4 Release | uebernehmen | 17.1875 |  |
-| 115 | Free Env2 Amount | - | weglassen | - | s.o. |
-| 116 | Free Env2 Velo Amount | - | weglassen | - | s.o. |
+| 0 | Filter1 Cutoff | Filter 1 Cutoff | take over | 93.75 |  |
+| 2 | Filter1 Reso | Filter 1 Resonance | take over | 78.90625 |  |
+| 3 | Filter1 Attack | Filter Envelope Attack | take over | 48.4375 | Iridium Filter1-ADSR = Blofeld Filter Envelope (Env1) |
+| 4 | Filter1 Decay | Filter Envelope Decay | take over | 82.8125 |  |
+| 5 | Filter1 Sustain | Filter Envelope Sustain | take over | 58.59375 |  |
+| 6 | Filter1 Release | Filter Envelope Release | take over | 75.78125 |  |
+| 7 | Filter1 Amount | Filter 1 Env Amount | take over | 71.875 |  |
+| 8 | Filter1 Velo Amount | Filter 1 Env Velocity | take over | 38.28125 |  |
+| 9 | Filter2 Cutoff | Filter 2 Cutoff | take over | 78.125 |  |
+| 10 | Filter2 Reso | Filter 2 Resonance | take over | 58.59375 |  |
+| 11 | Filter2 Attack | Filter 2 Env -> Filter Envelope (gemeinsam) | take over | - | Blofeld hat EINE Filter-Envelope fuer F1+F2 |
+| 12 | Filter2 Decay | Filter Envelope Decay | take over | 82.8125 | gemeinsame Filter-Envelope |
+| 13 | Filter2 Sustain | Filter Envelope Sustain | take over | 58.59375 | gemeinsame Filter-Envelope |
+| 14 | Filter2 Release | Filter Envelope Release | take over | 75.78125 | gemeinsame Filter-Envelope |
+| 15 | Filter2 Amount | Filter 2 Env Amount | take over | 47.65625 |  |
+| 16 | Filter2 Velo Amount | Filter 2 Env Velocity | take over | 28.125 |  |
+| 17 | Amp Velo Amount | Amplifier Velocity | take over | 70.3125 |  |
+| 18 | Amp Attack | Amplifier Envelope Attack | take over | 50.78125 | Iridium Amp-ADSR = Blofeld Amp Envelope (Env2) |
+| 19 | Amp Decay | Amplifier Envelope Decay | take over | 67.1875 |  |
+| 20 | Amp Sustain | Amplifier Envelope Sustain | take over | 57.8125 |  |
+| 21 | Amp Release | Amplifier Envelope Release | take over | 76.5625 |  |
+| 22 | Delay Dry Wet | Effect 1/2 Mix | drop | - | Blofeld: nur FX1/FX2 (Typ+Mix+14 Params), kein eigener Delay-CC-Block |
+| 23 | Delay Feedback | - | drop | - | keine Einzel-CCs; nur per SysEx (Effect N Parameter) |
+| 24 | Delay Time L | - | drop | - | s.o. |
+| 25 | Delay Time R | - | drop | - | s.o. |
+| 26 | Delay Sync L | - | drop | - | s.o. |
+| 27 | Delay Sync R | - | drop | - | s.o. |
+| 28 | Reverb Gain | - | drop | - | Blofeld FX-Typ Reverb ohne Einzel-CCs |
+| 29 | Reverb Color | - | drop | - | s.o. |
+| 30 | Reverb Time | - | drop | - | s.o. |
+| 31 | Reverb Mod Depth | - | drop | - | s.o. |
+| 32 | Osc1 Fine Pitch | Osc 1 Detune | take over | 45.3125 |  |
+| 33 | Osc1 Vol | Mixer Osc 1 Level | take over | 35.15625 |  |
+| 34 | Osc1 Pan | Filter 1 Pan | partial | 36.71875 | Blofeld hat kein Osc-Pan; naechstes: Filter-N-Pan (CC77/88) |
+| 35 | Osc1 WT Position | Osc 1 Pulsewidth | partial | 62.5 | Blofeld PW/Wave = Wavetable-Position |
+| 36 | Osc1 WT Spectrum | Osc 1 Brilliance | partial | 13.28125 | Naeherung; kein 1:1 |
+| 37 | Osc1 WT Table | Osc 1 Shape | partial | 67.96875 | Wavetable-Auswahl laeuft ueber Blofeld Shape (Wavetable-Shapes) |
+| 38 | Osc1 WT Stepped | - | drop | - | kein Stepped-Modus auf Blofeld |
+| 39 | Osc1 WF Shape | Osc 1 Shape | take over | 67.96875 |  |
+| 40 | Osc1 WF Desity | - | drop | - | kein Density-Parameter auf Blofeld |
+| 41 | Osc1 WF Spread | - | drop | - | kein Spread-Parameter auf Blofeld |
+| 42 | Osc1 WF PW | Osc 1 Pulsewidth | take over | 62.5 |  |
+| 43 | Osc1 WF Sync | Osc 2 Sync to O3 | partial | 14.84375 | Blofeld: nur Osc2-Sync-zu-Osc3 (CC49), kein Sync pro Osc |
+| 44 | Osc1 PT Position | - | drop | - | kein Partial/ additive Osc auf Blofeld |
+| 45 | Osc1 PT Travel | - | drop | - | s.o. |
+| 46 | Osc2 Fine Pitch | Osc 2 Detune | take over | 54.6875 |  |
+| 47 | Osc2 Vol | Mixer Osc 2 Level | take over | 51.5625 |  |
+| 48 | Osc2 Pan | Filter 2 Pan | partial | 32.03125 | s.o. |
+| 49 | Osc2 WT Position | Osc 2 Pulsewidth | partial | 56.25 | s.o. |
+| 50 | Osc2 WT Spectrum | Osc 2 Brilliance | partial | 11.71875 | s.o. |
+| 51 | Osc2 WT Table | Osc 2 Shape | partial | 91.40625 | s.o. |
+| 52 | Osc2 WT Stepped | - | drop | - | s.o. |
+| 53 | Osc2 WF Shape | Osc 2 Shape | take over | 91.40625 |  |
+| 54 | Osc2 WF Desity | - | drop | - | s.o. |
+| 55 | Osc2 WF Spread | - | drop | - | s.o. |
+| 56 | Osc2 WF PW | Osc 2 Pulsewidth | take over | 56.25 |  |
+| 57 | Osc2 WF Sync | Osc 2 Sync to O3 | partial | 14.84375 | s.o. |
+| 58 | Osc2 PT Position | - | drop | - | s.o. |
+| 59 | Osc2 PT Travel | - | drop | - | s.o. |
+| 60 | Osc3 Fine Pitch | Osc 3 Detune | take over | 46.09375 |  |
+| 61 | Osc3 Vol | Mixer Osc 3 Level | take over | 49.21875 |  |
+| 62 | Osc3 Pan | - | drop | - | kein Osc3-Pan auf Blofeld |
+| 63 | Osc3 WT Position | Osc 3 Pulsewidth | partial | 44.53125 | s.o. |
+| 64 | Osc3 WT Spectrum | Osc 3 Brilliance | partial | 7.8125 | s.o. |
+| 65 | Osc3 WT Table | Osc 3 Shape | partial | 84.375 | s.o. (Osc3 nur Shapes 0..4) |
+| 66 | Osc3 WT Stepped | - | drop | - | s.o. |
+| 67 | Osc3 WF Shape | Osc 3 Shape | take over | 84.375 |  |
+| 68 | Osc3 WF Desity | - | drop | - | s.o. |
+| 69 | Osc3 WF Spread | - | drop | - | s.o. |
+| 70 | Osc3 WF PW | Osc 3 Pulsewidth | take over | 44.53125 |  |
+| 71 | Osc3 WF Sync | - | drop | - | s.o. |
+| 72 | Osc3 PT Position | - | drop | - | s.o. |
+| 73 | Osc3 PT Travel | - | drop | - | s.o. |
+| 74 | Ringmod Osc1 To Osc2 | - | drop | - | Blofeld: nur RingMod Level/Balance im Mixer (CC54/55), kein Paar-Routing |
+| 75 | Ringmod Osc1 To Osc3 | - | drop | - | s.o. |
+| 76 | Digi Former Amount | - | drop | - | kein Digi-Former-Modul auf Blofeld |
+| 77 | Digi Former Color | - | drop | - | s.o. |
+| 78 | Digi Former Pan | - | drop | - | s.o. |
+| 79 | Digi Former Level | - | drop | - | s.o. |
+| 80 | Lfo1 Speed | LFO 1 Speed | take over | 75.0 |  |
+| 81 | Lfo1 Amount | - | drop | - | Blofeld: LFO-Amount nur in Mod-Matrix-Slots (Modulation N Amount) |
+| 82 | Lfo2 Speed | LFO 2 Speed | take over | 63.28125 |  |
+| 83 | Lfo2 Amount | - | drop | - | s.o. |
+| 84 | Lfo3 Speed | LFO 3 Speed | take over | 54.6875 |  |
+| 85 | Lfo3 Amount | - | drop | - | s.o. |
+| 86 | Komplex Speed | - | drop | - | kein Komplex-Modul auf Blofeld |
+| 87 | Komplex Amount | - | drop | - | s.o. |
+| 88 | Komplex Entropy | - | drop | - | s.o. |
+| 89 | Glide Rate | Glide Rate | take over | 33.59375 | CC5 |
+| 90 | Glide On Off | Glide | take over | 20.3125 | CC65 (SDATA 53) |
+| 91 | Unisono Count | Allocation/Unisono | take over | 39.0625 | kein CC, nur SysEx |
+| 92 | Unisono Detune | Unisono Detune | take over | 51.5625 | kein CC, nur SysEx |
+| 93 | Chorus Dry Wet | - | drop | - | Blofeld FX1/FX2 Typ=Chorus, nur Mix per CC93/94 |
+| 94 | Chorus Speed | - | drop | - | nur per SysEx (Effect N Parameter) |
+| 95 | Chorus Feedback | - | drop | - | s.o. |
+| 96 | Phaser Dry Wet | - | drop | - | s.o. |
+| 97 | Phaser Depth | - | drop | - | s.o. |
+| 98 | Phaser Feedback | - | drop | - | s.o. |
+| 99 | Flanger Dry Wet | - | drop | - | s.o. |
+| 100 | Flanger Speed | - | drop | - | s.o. |
+| 101 | Flanger Feedback | - | drop | - | s.o. |
+| 102 | Drive Amount | Filter 1 Drive | partial | 56.25 | Blofeld Drive sitzt in den Filtern (CC71/82) + Drive Curve; kein globaler Drive |
+| 103 | Drive Dry Wet | - | drop | - | s.o. |
+| 104 | Drive Gain | - | drop | - | s.o. |
+| 105 | Free Env1 Attack | Envelope 3 Attack | take over | 28.90625 | CC107 |
+| 106 | Free Env1 Decay | Envelope 3 Decay | take over | 42.1875 |  |
+| 107 | Free Env1 Sustain | Envelope 3 Sustain | take over | 45.3125 |  |
+| 108 | Free Env1 Release | Envelope 3 Release | take over | 21.09375 |  |
+| 109 | Free Env1 Amount | - | drop | - | Blofeld Env3-Amount nur in Mod-Matrix |
+| 110 | Free Env1 Velo Amount | - | drop | - | s.o. |
+| 111 | Free Env2 Attack | Envelope 4 Attack | take over | 25.78125 | CC113 |
+| 112 | Free Env2 Decay | Envelope 4 Decay | take over | 30.46875 |  |
+| 113 | Free Env2 Sustain | Envelope 4 Sustain | take over | 30.46875 |  |
+| 114 | Free Env2 Release | Envelope 4 Release | take over | 17.1875 |  |
+| 115 | Free Env2 Amount | - | drop | - | s.o. |
+| 116 | Free Env2 Velo Amount | - | drop | - | s.o. |
 
-**Bilanz**: 116 Hapax-CCs: 48 uebernommen, 14 teilweise, 54 weglassen (nicht auf Blofeld).
+**Balance**: 116 Hapax CCs: 48 taken over, 14 partial, 54 dropped (not on the Blofeld).
 
-## 6. Vorgeschlagene MIDI-CC-Keymap fuer den Blofeld
+## 6. Proposed MIDI CC keymap for the Blofeld
 
-CC-Nummern aus `docs/midi-maps/blofeld_midi_guide.csv` (offizielle Waldorf-CC-Liste).
-Beachtet: CC0/CC32 = Bank select, CC5 = Glide rate, CC7 = Channel volume, CC65 = Glide active,
-CC64/66 = Pedale, CC120-123 = Controller-Reset/ANO. ESSENTIAL = markiert.
+CC numbers from `docs/midi-maps/blofeld_midi_guide.csv` (official Waldorf CC list).
+Noted: CC0/CC32 = bank select, CC5 = glide rate, CC7 = channel volume, CC65 = glide active,
+CC64/66 = pedals, CC120-123 = controller reset/ANO. ESSENTIAL = marked.
 
-| CC | Guide-Parameter | SNDD-Parameter | Kategorie | Anteil % | Gewicht | Score | ESSENTIAL |
+| CC | Guide parameter | SNDD parameter | Category | Share % | Weight | Score | ESSENTIAL |
 |---|---|---|---|---|---|---|---|
 | 0 | Bank select MSB | - | - | - | - | - |  |
 | 1 | Mod wheel | - | - | - | - | - |  |
@@ -624,9 +624,9 @@ CC64/66 = Pedale, CC120-123 = Controller-Reset/ANO. ESSENTIAL = markiert.
 | 122 | Local control on/off | - | - | - | - | - |  |
 | 123 | All notes off | - | - | - | - | - |  |
 
-### Keymap-Kern (essential, nach Nutzungsanteil)
+### Keymap core (essential, by usage share)
 
-| CC | Parameter | Anteil % | Score |
+| CC | Parameter | Share % | Score |
 |---|---|---|---|
 | 69 | Filter 1 Cutoff | 93.8 | 2.812 |
 | 39 | Osc 2 Shape | 91.4 | 2.742 |
@@ -688,16 +688,16 @@ CC64/66 = Pedale, CC120-123 = Controller-Reset/ANO. ESSENTIAL = markiert.
 | 28 | Osc 1 Semitone | 8.6 | 0.258 |
 | 87 | Filter 2 FM Amount | 6.2 | 0.188 |
 
-## 7. Offene Punkte
+## 7. Open points
 
-- CCs ohne SNDD-Gegenpart (Mod wheel CC1, Breath CC2, Foot CC4, Pan CC10, Pedale CC64/66,
-  Bank select CC0/32, CC120-123) steuern System/Mod-Matrix-Quellen, nicht Sound-Parameter –
-  in einer Keymap ggf. als Mod-Sources belegen.
-- Viele Blofeld-Parameter haben **keinen CC** (Mod-Matrix 16 Slots, Modifier, FX-Parameter,
-  Arp-Pattern, Unisono, Env-Modes, Filter Drive Curve...) – nur per SysEx (SNDP) oder Panel.
-- Enums (Shape/Type/Mode) werden per CC als Rohindex 0..127 gesendet; Keymap sollte die
- Werterange des Guide (z.B. Shape CC31 nur 0..5 laut Guide, SysEx erlaubt 0..74) respektieren.
-- Init-Referenz ist der gespeicherte Init-Dump; falls einzelne Werks-Sounds exakt Init sind,
-  zaehlen sie als 'nicht genutzt' (korrekt).
-- Keine Dumps wurden wegen chk-Fehler uebersprungen.
+- CCs without an SNDD counterpart (mod wheel CC1, breath CC2, foot CC4, pan CC10, pedals CC64/66,
+  bank select CC0/32, CC120-123) control system/mod-matrix sources, not sound parameters –
+  in a keymap assign them as mod sources if needed.
+- Many Blofeld parameters have **no CC** (mod matrix 16 slots, modifier, FX parameters,
+  arp pattern, unisono, env modes, filter drive curve...) – only via SysEx (SNDP) or the panel.
+- Enums (shape/type/mode) are sent via CC as raw index 0..127; the keymap should respect the
+  value range of the guide (e.g. shape CC31 only 0..5 per the guide, SysEx allows 0..74).
+- The init reference is the stored init dump; if individual factory sounds are exactly init,
+  they count as 'not used' (correct).
+- No dumps were skipped because of chk errors.
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Schritt 2b: Iridium-SysEx probieren (read-only Requests, harmlos).
+"""Step 2b: try Iridium SysEx (read-only requests, harmless).
 
-1. Universal Device Inquiry auf beiden USB-Endpunkten (MIDI 2.0 + Synth)
-2. Waldorf-Style Requests F0 3E <model> 00 <cmd> F7 mit Model-ID-Sweep
-   (Blofeld nutzt Model 0x13; Iridium/Quantum vermutlich eigene ID)
+1. Universal Device Inquiry on both USB endpoints (MIDI 2.0 + Synth)
+2. vendor-specific device SysEx requests F0 3E <model> 00 <cmd> F7 with model-ID sweep
+   (Blofeld uses model 0x13; Iridium/Quantum presumably their own ID)
    Commands: 0x00 (Sound Request), 0x01 (Multi), 0x04 (Global)
 
-Empfangene SysEx-Antworten werden geloggt.
-Aufruf:  python3 scripts/step2_probe_iridium_sysex.py
+Received SysEx replies are logged.
+Usage:  python3 scripts/step2_probe_iridium_sysex.py
 """
 
 from __future__ import annotations
@@ -67,25 +67,25 @@ def show(msgs, tag):
 
 def main() -> int:
     for port in PORTS:
-        print(f"\n=== Endpunkt: {port} ===")
+        print(f"\n=== Endpoint: {port} ===")
         out, inp, out_name, in_name = open_pair(port)
         print(f"  Out: {out_name}   In: {in_name or '(none)'}")
         try:
             # 1) Device Inquiry
             out.send(mido.Message("sysex", data=[0x7E, 0x7F, 0x06, 0x01]))
             msgs = drain(inp, 1.5)
-            print(f"  Device Inquiry -> {len(msgs)} Antwort(en)")
+            print(f"  Device Inquiry -> {len(msgs)} replies")
             show(msgs, "inquiry")
 
-            # 2) Model-ID-Sweep mit Waldorf-Requests
+            # 2) Model-ID sweep with vendor-specific device SysEx requests
             for model in range(0x00, 0x20):
                 for cname, cmd in CMDS.items():
                     out.send(mido.Message("sysex", data=waldorf.build_sysex(model, cmd)))
                     msgs = drain(inp, 0.25)
                     if msgs:
-                        print(f"  model=0x{model:02X} cmd={cname} -> {len(msgs)} Antwort(en)")
+                        print(f"  model=0x{model:02X} cmd={cname} -> {len(msgs)} replies")
                         show(msgs, f"m{model:02X}/{cname}")
-            print("  Sweep fertig.")
+            print("  Sweep done.")
         finally:
             out.close()
             if inp:

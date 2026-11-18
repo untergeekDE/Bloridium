@@ -1,4 +1,4 @@
-"""Tests fuer die Bloridium-Web-App (webapp/): Pipeline, Matching, Flask-Routen."""
+"""Tests for the Bloridium web app (webapp/): pipeline, matching, Flask routes."""
 
 import io
 import json
@@ -44,9 +44,9 @@ def test_split_sysex_messages():
 
 def test_parse_upload_bank(core, sample_sdata):
     syx = b"".join(_sndd_bytes(0, i, sample_sdata) for i in range(3))
-    syx += bytes([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7])  # Fremd-Nachricht (Identity)
+    syx += bytes([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7])  # foreign message (identity)
     bad = bytearray(_sndd_bytes(0, 9, sample_sdata))
-    bad[-2] ^= 0x01  # Checksumme kaputt
+    bad[-2] ^= 0x01  # checksum broken
     res = convert.parse_upload("bank-a.syx", syx + bytes(bad))
     assert len(res["sounds"]) == 3
     assert res["skipped"] == 1
@@ -84,7 +84,7 @@ def test_process_upload_zip(core, sample_sdata, tmp_path):
         assert all("features" in s and "params" in s["features"] for s in rep["sounds"])
         assert all("score" in s and "penalties" in s for s in rep["sounds"])
         assert "v0.2" in zf.read("MANIFEST.md").decode()
-    # report.json auf Platte identisch zum ZIP-Inhalt
+    # report.json on disk identical to the ZIP content
     on_disk = json.loads((tmp_path / report["token"] / "report.json").read_text())
     assert on_disk["token"] == report["token"]
 
@@ -95,7 +95,7 @@ def test_process_upload_deterministic(sample_sdata, tmp_path):
     r2 = convert.process_upload("a.syx", syx, tmp_path)
     s1 = [(s["location"], s["score"], s["penalties"]) for s in r1["sounds"]]
     s2 = [(s["location"], s["score"], s["penalties"]) for s in r2["sounds"]]
-    assert s1 == s2  # gleiche Eingabe -> gleiche Scores (deterministisch)
+    assert s1 == s2  # same input -> same scores (deterministic)
 
 
 def test_estimate_match_range_and_determinism(core, sample_sdata):
@@ -110,15 +110,15 @@ def test_estimate_match_range_and_determinism(core, sample_sdata):
 
 def test_estimate_prefers_exact_over_approx(core, sample_sdata):
     base = core.blofeld_dump.parse_sndd(_sndd_bytes(0, 0, sample_sdata))
-    # Osc1 Shape -> Saw (Basis-Wellenform, exakt)
+    # Osc1 Shape -> Saw (base waveform, exact)
     saw = bytearray(sample_sdata)
     saw[8] = 2  # SHAPES[2] = "Saw"
     parsed_saw = core.blofeld_dump.parse_sndd(_sndd_bytes(0, 0, bytes(saw)))
-    # Osc1 Shape -> Wavetable ohne Bridge (SHAPES[5] = "Alt 1")
+    # Osc1 Shape -> Wavetable without bridge (SHAPES[5] = "Alt 1")
     wt = bytearray(sample_sdata)
     wt[8] = 5
     parsed_wt = core.blofeld_dump.parse_sndd(_sndd_bytes(0, 0, bytes(wt)))
-    # Arp aus vs. Arp an (Index 311)
+    # Arp off vs. Arp on (index 311)
     arp = bytearray(sample_sdata)
     arp[311] = 1
     parsed_arp = core.blofeld_dump.parse_sndd(_sndd_bytes(0, 0, bytes(arp)))
@@ -143,12 +143,12 @@ def test_flask_routes(core, sample_sdata, tmp_path, monkeypatch):
     assert client.get("/health").get_data(as_text=True).strip() == "ok"
     r = client.get("/")
     assert r.status_code == 200 and b"upload" in r.data
-    # Layout wie webpage.pdf + Versionierung + Hintergrundbild
+    # layout like webpage.pdf + versioning + background image
     assert b"Bloridium Tool v0.3" in r.data
     assert b"Convert Blofeld Sound Banks for the Iridium" in r.data
-    assert b"crude approximation" in r.data                      # NOTE-Box aus dem PDF
-    assert b"github.com/untergeekDE/Bloridium" in r.data          # Footer aus dem PDF
-    assert b"/static/bloridium-scaled.jpg" in r.data              # Hintergrund im CSS
+    assert b"crude approximation" in r.data                      # NOTE box from the PDF
+    assert b"github.com/untergeekDE/Bloridium" in r.data          # footer from the PDF
+    assert b"/static/bloridium-scaled.jpg" in r.data              # background in the CSS
     r = client.get("/static/bloridium-scaled.jpg")
     assert r.status_code == 200 and r.mimetype == "image/jpeg"
 

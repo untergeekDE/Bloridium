@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Monitor: loggt MIDI-Input auf allen Ports + Audio-Pegel aller 20 Eingaenge."""
+"""Monitor: logs MIDI input on all ports + audio level of all 20 inputs."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def main():
                         ", ".join(f"In{i}:{p:.1f}dBFS" for i, p in hot) + "\n")
             f.flush()
             time.sleep(max(0, 0.5 - (time.time() - t0)))
-        f.write(f"=== Monitor Ende {time.strftime('%H:%M:%S')} ===\n")
+        f.write(f"=== Monitor End {time.strftime('%H:%M:%S')} ===\n")
 
 
 if __name__ == "__main__":

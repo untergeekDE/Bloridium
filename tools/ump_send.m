@@ -1,6 +1,6 @@
-// ump_send: Sendet UMP/MIDI-Pakete an einen CoreMIDI-Destination-Port.
-// Aufruf: ump_send <destName> <hexPacket> [hexPacket...]
-//   z.B.: ump_send "MIDI 2.0" "40 90 3C 00 FF FF 00 00"
+// ump_send: sends UMP/MIDI packets to a CoreMIDI destination port.
+// Usage: ump_send <destName> <hexPacket> [hexPacket...]
+//   e.g.: ump_send "MIDI 2.0" "40 90 3C 00 FF FF 00 00"
 #import <CoreMIDI/CoreMIDI.h>
 #import <CoreFoundation/CoreFoundation.h>
 #import <Foundation/Foundation.h>
@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
         if (name) CFRelease(name);
     }
     if (!dest) {
-        fprintf(stderr, "destination nicht gefunden: %s\n", argv[1]);
+        fprintf(stderr, "destination not found: %s\n", argv[1]);
         return 2;
     }
 
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     err |= MIDIOutputPortCreate(client, CFSTR("out"), &port);
     if (err) { fprintf(stderr, "client/port error %d\n", (int)err); return 3; }
 
-    // Pakete parsen
+    // parse packets
     ByteCount listSize = sizeof(MIDIPacketList) + (npackets - 1) * sizeof(MIDIPacket);
     MIDIPacketList *pktlist = (MIDIPacketList *)calloc(1, listSize);
     MIDIPacketListInit(pktlist);

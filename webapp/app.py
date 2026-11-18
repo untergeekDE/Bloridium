@@ -1,14 +1,14 @@
-"""Bloridium Web-App – Blofeld-Dump hochladen, konvertieren, ZIP + Match-Score.
+"""Bloridium web app – upload Blofeld dump, convert, ZIP + match score.
 
-Layout wie webpage.pdf: Titel "Bloridium Tool v<conversion>", Upload-Formular
-(Select File / Convert), NOTE-Box, Footer mit untergeek.de / GitHub.
-Hintergrund: webapp/static/bloridium-scaled.jpg (Foto Iridium + Blofeld).
+Layout like webpage.pdf: title "Bloridium Tool v<conversion>", upload form
+(Select File / Convert), NOTE box, footer with untergeek.de / GitHub.
+Background: webapp/static/bloridium-scaled.jpg (photo Iridium + Blofeld).
 
-Lokal:   python3 webapp/app.py            ( dann http://localhost:8000 )
-Podman:  gunicorn -b 0.0.0.0:8000 app:app  (siehe webapp/Containerfile)
+Local:   python3 webapp/app.py            ( then http://localhost:8000 )
+Podman:  gunicorn -b 0.0.0.0:8000 app:app  (see webapp/Containerfile)
 
-Env: DATA_DIR (Default ./data), DATA_TTL_HOURS (Default 24), PORT (Default 8000),
-     BLORIDIUM_CORE_DIR / BLORIDIUM_TEMPLATE (siehe convert.py)
+Env: DATA_DIR (default ./data), DATA_TTL_HOURS (default 24), PORT (default 8000),
+     BLORIDIUM_CORE_DIR / BLORIDIUM_TEMPLATE (see convert.py)
 """
 
 from __future__ import annotations

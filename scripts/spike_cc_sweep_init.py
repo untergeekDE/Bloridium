@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CC-Sweep mit Init auf beiden Geraeten: Filter/Mod-CCs, je 0/64/127, simultan messen."""
+"""CC sweep with init on both devices: filter/mod CCs, each 0/64/127, measured simultaneously."""
 import json, sys, time
 from pathlib import Path
 sys.path.insert(0, "/Users/jan/Code/Bloridium")
@@ -24,14 +24,14 @@ def rec(dur=1.0):
         d = audio.record(duration=dur, channels=None)
         if d.size: return d
         time.sleep(1.0)
-    raise RuntimeError("leer")
+    raise RuntimeError("empty")
 
 blo = midi.connect("blofeld")
 irr = midi.connect("iridium")
 for s in (blo, irr):
     for ch in range(16):
         s.control_change(123, 0, channel=ch)
-irr.control_change(7, 127, channel=5)  # Sicherheit: Iridium Output an
+irr.control_change(7, 127, channel=5)  # safety: Iridium output on
 time.sleep(0.5)
 
 report = {"note": NOTE, "blofeld": "Init (A66)", "iridium": "Init (00000, v15)", "sweeps": []}
@@ -62,7 +62,7 @@ for label, bcc, icc, values in SWEEPS:
         print(f"{label:36s} v={v:3d} | BLO peak {b['peak_dbfs']:6.1f} cent {b['centroid_hz']:7.1f} | IRR peak {i['peak_dbfs']:6.1f} cent {i['centroid_hz']:7.1f}")
         time.sleep(0.2)
     report["sweeps"].append({"label": label, "blo_cc": bcc, "irr_cc": icc, "rows": rows})
-    # neutral zuruecksetzen
+    # reset to neutral
     if bcc: blo.control_change(bcc, 127 if bcc in (69,) else 64)
     irr.control_change(icc, 127 if icc == 9 else (64 if icc in (2, 5, 1, 17) else 127), channel=5)
 

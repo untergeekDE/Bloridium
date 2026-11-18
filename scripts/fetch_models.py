@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""fetch_models.py – Phase-B-Modelle laden (idempotent, startet keinen Server).
+"""fetch_models.py – download Phase-B models (idempotent, starts no server).
 
-- CLAP-GGUF (Q8_0) nach models/ via huggingface_hub (skip wenn vorhanden)
-- `ollama pull <modell>` (Default lfm3-omni:2b; ollama serve muss separat laufen)
-- optional `--pip-clap-cpp`: pip install clap-cpp (Python-Binding fuers Embedding)
+- CLAP-GGUF (Q8_0) to models/ via huggingface_hub (skip if present)
+- `ollama pull <model>` (default lfm3-omni:2b; ollama serve must run separately)
+- optional `--pip-clap-cpp`: pip install clap-cpp (Python binding for the embedding)
 
-Aufruf:  python3 scripts/fetch_models.py [--models-dir D] [--ollama-model M]
+Usage:  python3 scripts/fetch_models.py [--models-dir D] [--ollama-model M]
          [--skip-ollama] [--pip-clap-cpp]
-Exit: 0 ok, 1 bei Fehler.
+Exit: 0 ok, 1 on error.
 """
 
 from __future__ import annotations
@@ -49,26 +49,26 @@ def main(argv=None) -> int:
     ok = True
 
     if gguf.exists():
-        print(f"GGUF vorhanden (skip): {gguf}")
+        print(f"GGUF present (skip): {gguf}")
     else:
         try:
             p = _hf_download(models_dir)
-            print(f"GGUF geladen: {p}")
+            print(f"GGUF downloaded: {p}")
         except Exception as e:
-            print(f"FEHLER GGUF-Download: {e}", file=sys.stderr)
+            print(f"ERROR GGUF download: {e}", file=sys.stderr)
             ok = False
 
     if not args.skip_ollama:
         if _run(["ollama", "pull", args.ollama_model]) != 0:
-            print("FEHLER ollama pull", file=sys.stderr)
+            print("ERROR ollama pull", file=sys.stderr)
             ok = False
 
     if args.pip_clap_cpp:
         if _run([sys.executable, "-m", "pip", "install", "clap-cpp"]) != 0:
-            print("FEHLER pip install clap-cpp", file=sys.stderr)
+            print("ERROR pip install clap-cpp", file=sys.stderr)
             ok = False
 
-    print("OK" if ok else "FEHLER")
+    print("OK" if ok else "ERROR")
     return 0 if ok else 1
 
 

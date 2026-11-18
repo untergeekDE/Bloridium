@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""derive_corrections.py – CC-Sweep-Report -> konkrete qpat-Korrekturen.
+"""derive_corrections.py – CC-sweep report -> concrete qpat corrections.
 
-Liest einen Report von sim_cc_sweep.py (recordings/cc_sweep_*.json) und das
- passende transfer/upload-*.qpat, ordnet jedem CC den qpat-Parameter zu
- (Namens-Bridge ueber Normalisierung + Aliase) und leitet daraus ab:
+Reads a report from sim_cc_sweep.py (recordings/cc_sweep_*.json) and the
+ matching transfer/upload-*.qpat, maps each CC to a qpat parameter
+ (name bridge via normalization + aliases) and derives:
 
-   best_cc   = CC-Wert mit bestem Score
-   norm*     = best_cc / 127          (Guide: 0-based, 0..127 -> 0..1)
-   current   = aktueller Wert aus dem qpat (norm)
-   correction = norm* - current       (Delta fürs qpat-Rebuild)
+   best_cc   = CC value with the best score
+   norm*     = best_cc / 127          (guide: 0-based, 0..127 -> 0..1)
+   current   = current value from the qpat (normalized)
+   correction = norm* - current       (delta for the qpat rebuild)
 
-Aufruf:
+Usage:
   python3 scripts/derive_corrections.py recordings/cc_sweep_A008_72_<ts>.json \
       --qpat "transfer/upload/A008_Easy_Piano_HS.qpat" [--threshold 0.5] [--md docs/CC-KORREKTUREN.md]
 """
@@ -29,7 +29,7 @@ from bloridium import qpat
 
 REPO = Path(__file__).resolve().parent.parent
 
-# Guide-Name -> qpat-Name Aliase (nach Normalisierung, s. u.)
+# guide name -> qpat name aliases (applied after normalization, see below)
 ALIASES = {
     "filter1cutoff": "filter1cutoff",
     "ampattack": "ampenvattack",
@@ -61,7 +61,7 @@ def norm_name(s: str) -> str:
 
 
 def build_bridge(qpat_params: dict) -> dict[str, str]:
-    """normalisierter Guide-Name -> qpat-Paramname."""
+    """Normalized guide name -> qpat parameter name."""
     qn = {norm_name(k): k for k in qpat_params}
     bridge = {}
     for g in list(ALIASES):
@@ -76,7 +76,7 @@ def find_qpat_param(guide_name: str, qpat_params: dict, qn: dict) -> str | None:
         n = ALIASES[n]
     if n in qn:
         return qn[n]
-    # eindeutiger Substring
+    # unique substring match (fallback when there is no exact normalized hit)
     hits = [k for k in qn if n in k or k in n]
     if len(hits) == 1:
         return qn[hits[0]]
@@ -88,7 +88,7 @@ def main(argv=None) -> int:
     ap.add_argument("report", help="cc_sweep_*.json von sim_cc_sweep.py")
     ap.add_argument("--qpat", required=True, help="transfer/upload/<LOC>_*.qpat")
     ap.add_argument("--threshold", type=float, default=0.5,
-                    help="nur CCs mit delta >= threshold (Punkte) uebernehmen")
+                    help="only adopt CCs with delta >= threshold (points)")
     ap.add_argument("--md", default=None, help="Markdown-Output (Default: docs/CC-KORREKTUREN_<loc>.md)")
     args = ap.parse_args(argv)
 
@@ -127,12 +127,12 @@ def main(argv=None) -> int:
 
     md_path = Path(args.md) if args.md else REPO / "docs" / f"CC-KORREKTUREN_{loc}.md"
     lines = [
-        f"# CC-Korrekturen {loc} (note {report.get('note')}, Bank 6 PC {report.get('irr_pc')})",
+        f"# CC corrections {loc} (note {report.get('note')}, Bank 6 PC {report.get('irr_pc')})",
         "",
-        f"Quelle: `{args.report}` + qpat `{args.qpat}`; Baseline-Score **{base}**.",
-        "norm = CC/127 (Guide 0-based); correction = norm* - current(qpat).",
+        f"Source: `{args.report}` + qpat `{args.qpat}`; baseline score **{base}**.",
+        "norm = CC/127 (guide 0-based); correction = norm* - current(qpat).",
         "",
-        "| CC | Guide-Param | qpat-Param | best CC | Score | Δ vs base | current | norm* | correction |",
+        "| CC | Guide param | qpat param | best CC | Score | delta vs base | current | norm* | correction |",
         "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in rows:
@@ -140,7 +140,7 @@ def main(argv=None) -> int:
             f"| {r['cc']} | {r['param']} | {r['qpat_param']} | {r['best_cc']} | {r['best_score']} "
             f"| {r['delta']:+.2f} | {r['current']} | {r['norm_star']} | {r['correction']} |")
     md_path.write_text("\n".join(lines) + "\n")
-    print(f"\nMarkdown: {md_path} ({len(rows)} Korrekturen >= {args.threshold})")
+    print(f"\nMarkdown: {md_path} ({len(rows)} corrections >= {args.threshold})")
     return 0
 
 

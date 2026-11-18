@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Schritt 2b-2: Iridium-SysEx-Probe, erweitert (read-only).
+"""Step 2b-2: extended Iridium SysEx probe (read-only).
 
-Varianten pro Endpunkt:
-  A) Waldorf-Style mit Location: F0 3E <model> <dev> 00 BB NN F7   (BB NN = 7F 00)
-  B) ohne Location:               F0 3E <model> <dev> 00 F7
-  C) SNDQ-Inquiry:                F0 3E <model> <dev> 30 F7
-  D) via echtem UMP (tools/ump_send) auf dem MIDI-2.0-Endpunkt: Variante B als UMP SysEx7
-Model-Sweep 0x00..0x3F, dev in {0x00, 0x7F}.
+Variants per endpoint (all vendor-specific device SysEx):
+  A) with location:  F0 3E <model> <dev> 00 BB NN F7   (BB NN = 7F 00)
+  B) without location:  F0 3E <model> <dev> 00 F7
+  C) SNDQ inquiry:  F0 3E <model> <dev> 30 F7
+  D) via real UMP (tools/ump_send) on the MIDI 2.0 endpoint: variant B as UMP SysEx7
+Model sweep 0x00..0x3F, dev in {0x00, 0x7F}.
 
-Aufruf:  python3 scripts/step2_probe_iridium_sysex2.py
+Usage:  python3 scripts/step2_probe_iridium_sysex2.py
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ PORTS = [
     "Iridium Keyboard (MIDI 2.0) MIDI 2.0",
     "Iridium Keyboard (MIDI 2.0) Synth",
 ]
-# CoreMIDI-Endpunktnamen (ohne Geraetepraefix, so wie midi2.list_destinations sie sieht)
+# CoreMIDI endpoint names (without device prefix, as midi2.list_destinations sees them)
 UMP_DEST = {
     "Iridium Keyboard (MIDI 2.0) MIDI 2.0": "MIDI 2.0",
     "Iridium Keyboard (MIDI 2.0) Synth": "Synth",
@@ -78,7 +78,8 @@ def probe_port(port: str, use_ump: bool = False):
                 }
                 for vname, data in variants.items():
                     if use_ump:
-                        # SysEx7 als UMP: komplett in einem 128-Bit-Paket wenn <= 14 Datenbytes
+                        # SysEx7 as UMP: complete in one 128-bit packet if <= 14 data bytes
+                        # (why: a complete message must fit one packet, no fragmentation here)
                         full = [0xF0] + data + [0xF7]
                         if len(full) <= 14:
                             # mt=3 (SysEx7), 128-bit, status=0 (complete)
@@ -94,7 +95,7 @@ def probe_port(port: str, use_ump: bool = False):
                             r = subprocess.run([UMP_TOOL, UMP_DEST[port], " ".join(f"{x:02X}" for x in pkt)],
                                                capture_output=True, text=True)
                             if r.returncode != 0:
-                                print("ump_send Fehler:", r.stderr[:200])
+                                print("ump_send error:", r.stderr[:200])
                                 return
                         else:
                             continue
@@ -102,9 +103,9 @@ def probe_port(port: str, use_ump: bool = False):
                         out.send(mido.Message("sysex", data=data))
                     msgs = drain(inp, 0.15)
                     if msgs:
-                        print(f"  model=0x{model:02X} dev=0x{dev:02X} {vname}: {len(msgs)} Antwort(en)")
+                        print(f"  model=0x{model:02X} dev=0x{dev:02X} {vname}: {len(msgs)} replies")
                         show(msgs, f"m{model:02X}/d{dev:02X}/{vname}")
-        print("  Sweep fertig.")
+        print("  Sweep done.")
     finally:
         out.close()
         if inp:

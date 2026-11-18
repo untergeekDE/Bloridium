@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Schritt 3: Einen Blofeld-Sound auf den Iridium uebertragen + A/B-Klangmessung.
+"""Step 3: transfer one Blofeld sound to the Iridium + A/B sound measurement.
 
-Ablauf:
-  1. Blofeld-SNDD lesen (Location, z.B. A043) und parsen
-  2. Parameter per docs/MAPPING.md auf Iridium-CCs mappen (bloridium/mapping.py)
-  3. CCs an den Iridium senden (Part-Kanaele, default 6-9)
-  4. Gleichzeitig Note auf beiden Synths spielen (Blofeld ch5, Iridium ch6),
-     alle 20 Scarlett-Kanaele aufnehmen, In3/4 (Blofeld) vs In5/6 (Iridium) vergleichen
+Flow:
+  1. read Blofeld SNDD (location, e.g. A043) and parse it
+  2. map parameters to Iridium CCs per docs/MAPPING.md (bloridium/mapping.py)
+  3. send CCs to the Iridium (part channels, default 6-9)
+  4. simultaneously play a note on both synths (Blofeld ch5, Iridium ch6),
+     record all 20 Scarlett channels, compare In3/4 (Blofeld) vs In5/6 (Iridium)
 
-Aufruf:  python3 scripts/step3_transfer_sound.py [A043] [--channels 6] [--note 60]
+Usage:  python3 scripts/step3_transfer_sound.py [A043] [--channels 6] [--note 60]
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ def read_blofeld(location: str) -> dict:
                 p = waldorf.parse_sysex(m.data)
                 if p.get("cmd") == 0x10:
                     return bd.parse_sndd(bytes([0xF0] + list(m.data) + [0xF7]))
-        raise RuntimeError("kein SNDD empfangen")
+        raise RuntimeError("no SNDD received")
     finally:
         synth.close()
 
@@ -61,7 +61,7 @@ def main() -> int:
     loc = args[0] if args else "A043"
     note = 60
     dur = 3.0
-    part_channels = [5, 6, 7, 8]  # 0-basiert: MIDI 6-9
+    part_channels = [5, 6, 7, 8]  # 0-based: MIDI 6-9
     for i, a in enumerate(sys.argv):
         if a == "--note":
             note = int(sys.argv[i + 1])
@@ -72,32 +72,32 @@ def main() -> int:
 
     REC.mkdir(exist_ok=True)
 
-    # 1+2: Blofeld-Dump lesen + mappen
+    # 1+2: read Blofeld dump + map
     parsed = read_blofeld(loc)
     msgs, unmapped = mapping.blofeld_to_iridium(parsed)
-    print(f"Blofeld-Sound: {parsed['name']!r} ({loc})  -> {len(msgs)} Iridium-CCs, {len(unmapped)} unmapped")
+    print(f"Blofeld sound: {parsed['name']!r} ({loc})  -> {len(msgs)} Iridium CCs, {len(unmapped)} unmapped")
 
-    # 3+4: beide Synths verbinden, CCs senden, dann gleichzeitig aufnehmen
+    # 3+4: connect both synths, send CCs, then record simultaneously
     with midi.connect("blofeld") as blo, midi.connect("iridium") as irr:
-        # Ruhezustand
+        # quiet state
         for s in (blo, irr):
             for ch in range(16):
                 s.control_change(123, 0, channel=ch)
         time.sleep(0.5)
 
-        print(f"Sende {len(msgs)} CCs an Iridium (Kanaele 0-basiert {part_channels})...")
+        print(f"Sending {len(msgs)} CCs to the Iridium (channels 0-based {part_channels})...")
         for ir_name, cc, val, bf, note_txt in msgs:
             for ch in part_channels:
                 irr.control_change(cc, val, channel=ch)
             time.sleep(0.005)
         time.sleep(0.5)
 
-        # gleichzeitig aufnehmen waehrend beide spielen
+        # record simultaneously while both play
         blo.note_on(note=note, velocity=100)
         irr.note_on(note=note, velocity=100, channel=part_channels[0])
         try:
             time.sleep(0.3)
-            data = audio.record(duration=dur, channels=None)  # alle 20 Kanaele
+            data = audio.record(duration=dur, channels=None)  # all 20 channels
         finally:
             blo.note_off(note=note)
             irr.note_off(note=note, channel=part_channels[0])
@@ -105,14 +105,14 @@ def main() -> int:
                 blo.control_change(123, 0, channel=ch)
                 irr.control_change(123, 0, channel=ch)
 
-    # record(channels=None) liefert (20, samples)
+    # record(channels=None) returns (20, samples)
     b_ch = audio.CHANNELS["blofeld"]   # (2,3)
     i_ch = audio.CHANNELS["iridium"]   # (4,5)
     blo_x = data[b_ch, :]      # (2, samples)
     irr_x = data[i_ch, :]
 
     mb, mi = audio.measure(blo_x), audio.measure(irr_x)
-    print("\n=== A/B-Messung (Note %d, %.1fs) ===" % (note, dur))
+    print("\n=== A/B measurement (note %d, %.1fs) ===" % (note, dur))
     print(f"Blofeld  In3/4: peak {np.max(mb['peak_dbfs']):6.1f} dBFS, rms {np.max(mb['rms_dbfs']):6.1f} dBFS, centroid {spectral_centroid(blo_x):8.1f} Hz")
     print(f"Iridium  In5/6: peak {np.max(mi['peak_dbfs']):6.1f} dBFS, rms {np.max(mi['rms_dbfs']):6.1f} dBFS, centroid {spectral_centroid(irr_x):8.1f} Hz")
     print(f"Delta peak: {np.max(mi['peak_dbfs']) - np.max(mb['peak_dbfs']):+.1f} dB, centroid: {spectral_centroid(irr_x) - spectral_centroid(blo_x):+.1f} Hz")
@@ -120,7 +120,7 @@ def main() -> int:
     ts = time.strftime("%Y%m%d_%H%M%S")
     np.save(REC / f"ab_{loc}_{ts}_blofeld.npy", blo_x)
     np.save(REC / f"ab_{loc}_{ts}_iridium.npy", irr_x)
-    print(f"\nAufnahmen gespeichert: recordings/ab_{loc}_{ts}_*.npy")
+    print(f"\nRecordings saved: recordings/ab_{loc}_{ts}_*.npy")
     print(f"Unmapped ({len(unmapped)}): {unmapped[:15]} ...")
     return 0
 

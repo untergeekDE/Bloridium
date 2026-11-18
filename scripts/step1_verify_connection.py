@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Schritt 1: Verbindung zu beiden Synthesizern herstellen + Sound messen.
+"""Step 1: connect to both synthesizers + measure sound.
 
-Wrapper ueber bloridium.workflow.check_connection (argv/Exit/Stdout unveraendert).
+Wrapper around bloridium.workflow.check_connection (argv/exit/stdout unchanged).
 
-Testet pro Synthesizer (Blofeld, Iridium):
-  1. MIDI-Verbindung: Port oeffnen, Universal Device Inquiry senden, mitlesen
-  2. Sound-Messung: Note spielen und Pegel am Scarlett 18i8 messen
-     (Blofeld: Eingaenge 3/4, Iridium: Eingaenge 5/6)
+Tests per synthesizer (Blofeld, Iridium):
+  1. MIDI connection: open port, send Universal Device Inquiry, listen along
+  2. Sound measurement: play a note and measure the level on the Scarlett 18i8
+     (Blofeld: inputs 3/4, Iridium: inputs 5/6)
 
-Aufruf:  python3 scripts/step1_verify_connection.py
+Usage:  python3 scripts/step1_verify_connection.py
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from bloridium import waldorf
 
 NOTE = 60          # C4
 VELOCITY = 100
-DURATION = 2.0     # Aufnahme-Dauer in s
+DURATION = 2.0     # recording duration in s
 PEAK_THRESHOLD_DB = -60.0
 
 
@@ -34,51 +34,51 @@ def fmt_db(v: float) -> str:
 def describe_sysex(d: list) -> str:
     if len(d) >= 6 and d[0] == 0x7E and d[2] == 0x06 and d[3] == 0x02:
         manuf = d[4:7]
-        return f"Identity Reply (Hersteller-ID {manuf[0]:02X} {manuf[1]:02X} {manuf[2]:02X}, Familie {d[7] if len(d) > 7 else '?'} ...)"
+        return f"Identity Reply (manufacturer ID {manuf[0]:02X} {manuf[1]:02X} {manuf[2]:02X}, family {d[7] if len(d) > 7 else '?'} ...)"
     return f"SysEx {bytes([0xF0, *d, 0xF7]).hex(' ')}"
 
 
 DEVICE_DESC = {
-    (2, 3): "Eingänge 3/4 (Kanäle c2/c3)",
-    (4, 5): "Eingänge 5/6 (Kanäle c4/c5)",
+    (2, 3): "Inputs 3/4 (channels c2/c3)",
+    (4, 5): "Inputs 5/6 (channels c4/c5)",
 }
 
 
 def main() -> int:
     res = workflow.check_connection(do_audio=True, note=NOTE, velocity=VELOCITY, duration=DURATION)
-    print("Verfügbare MIDI-Ports:")
+    print("Available MIDI ports:")
     for p in res["ports"]["out"]:
         print(f"  OUT: {p}")
     for p in res["ports"]["in"]:
         print(f"  IN : {p}")
-    print(f"\nAudio-Device: {audio.DEVICE} ({audio.SAMPLERATE} Hz, 20 Eingänge)")
+    print(f"\nAudio-Device: {audio.DEVICE} ({audio.SAMPLERATE} Hz, 20 inputs)")
 
     results = {}
     for name, e in res["synths"].items():
         print(f"\n=== {name.upper()} ===")
         print(f"  MIDI Out : {e['out_port']}")
-        print(f"  MIDI In  : {e['in_port'] or '(kein Rückkanal)'}")
+        print(f"  MIDI In  : {e['in_port'] or '(no return channel)'}")
         print(f"  Audio In : Scarlett 18i8 {DEVICE_DESC[tuple(audio.CHANNELS[name])]}")
-        print(f"  MIDI-Kanal (0-basiert): {e['channel']} (Kanal {e['channel'] + 1})")
+        print(f"  MIDI channel (0-based): {e['channel']} (channel {e['channel'] + 1})")
         for d in e["sysex"]:
             print(f"  MIDI <- {describe_sysex(d)}")
         if not e["sysex"] and not e["other"]:
-            print("  MIDI <- keine Antwort (Rückkanal evtl. nicht verdrahtet – prüfe per Audio)")
+            print("  MIDI <- no reply (return channel maybe not wired - check via audio)")
         elif e["other"]:
-            print(f"  MIDI <- {len(e['other'])} Nachricht(en): {e['other'][:5]}")
-        print(f"  Audio: {e['samples']} Samples @ {audio.SAMPLERATE} Hz aufgenommen")
+            print(f"  MIDI <- {len(e['other'])} message(s): {e['other'][:5]}")
+        print(f"  Audio: {e['samples']} samples @ {audio.SAMPLERATE} Hz recorded")
         channels = audio.CHANNELS[name]
         labels = ["L", "R"] if len(channels) == 2 else [f"c{channels[0]}"]
         for i, lab in enumerate(labels):
-            print(f"    Kanal {lab}: RMS {fmt_db(e['rms_dbfs'][i])}, Peak {fmt_db(e['peak_dbfs_list'][i])}")
+            print(f"    Channel {lab}: RMS {fmt_db(e['rms_dbfs'][i])}, Peak {fmt_db(e['peak_dbfs_list'][i])}")
         ok = e["ok"]
-        print(f"  Ergebnis Sound-Messung: {'OK – Ton gemessen' if ok else 'KEIN TON gemessen!'}")
+        print(f"  Sound measurement result: {'OK – tone measured' if ok else 'NO TONE measured!'}")
         results[name] = ok
 
-    print("\n=== Zusammenfassung ===")
+    print("\n=== Summary ===")
     all_ok = True
     for name, ok in results.items():
-        print(f"  {name:9s}: {'VERBUNDEN, Sound messbar' if ok else 'PROBLEM'}")
+        print(f"  {name:9s}: {'CONNECTED, sound measurable' if ok else 'PROBLEM'}")
         all_ok &= ok
     return 0 if all_ok else 1
 

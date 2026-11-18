@@ -1,77 +1,76 @@
-# Design: optischer Spektrogramm-Vergleich (Side-by-Side-PNG) pro A/B-Paar
+# Design: optical spectrogram comparison (side-by-side PNG) per A/B pair
 
-Datum: 2026-11-18 · Status: zur Umsetzung freigegeben („bau das ein“, Benutzer 2026-11-18)
+Date: 2026-11-18 · Status: approved for implementation ("build it in", user 2026-11-18)
 
 ## Intent & Why
 
-`sim_embed.render_spec_png` rendert das Log-Spektrogramm schon als PNG – bisher nur als
-`images`-Fallback für ollama. Der **optische Vergleich** der Spektrogramme von A und B
-(Blofeld vs Iridium) fehlt: nach einem Checkpoint-Lauf (108 Paare) will der Mensch die
-Spektrogramme nebeneinander sehen (A | B | Δ in dB), nicht nur Scores. Befunde aus
-PHASEB-EVAL (band_dtw lokalisiert 211–302 Hz etc.) zeigen: das Auge sieht Frequenzbänder,
-die der Score mittelt.
+`sim_embed.render_spec_png` already renders the log spectrogram as a PNG – so far only as
+an `images` fallback for ollama. The **optical comparison** of the spectrograms of A and B
+(Blofeld vs Iridium) is missing: after a checkpoint run (108 pairs) the human wants to see the
+spectrograms side by side (A | B | Δ in dB), not only scores. Findings from
+PHASEB-EVAL (band_dtw localizes 211-302 Hz etc.) show: the eye sees frequency bands
+that the score averages away.
 
 ## Goals / Non-goals
 
 - Goals:
-  - `sim_embed.render_spec_pair_png(x_a, x_b, sr, path, db_span=20.0) -> Path`: ein PNG,
-    horizontal **A | B | Δ** (2 px Separator), A/B als Graustufen mit **gemeinsamem**
-    lo/hi (sonst täuscht die Normierung), Δ = spec_b − spec_a in dB als divergierende
-    Farbskala (blau = B leiser … rot = B lauter, ±`db_span` dB geclippt, 0 = mittelgrau).
-    Basis: `sim.features(...)["log_spec"]` (n_bands × n_frames, dB), x = Zeit, y = Band.
-  - `score_pair_embed(..., spec_png_dir=None)`: rendert das Paar-PNG auf den
-    **pegel-normalisierten** Signalen (`xe_blo`/`xe_irr` – sonst ist Δ nur Gain!),
-    Dateiname aus meta (`spec_<blofeld>_n<note>_w<wheel>.png`, Fallback `spec_pair.png`),
-    `result["spec_png"] = str(path)` → landet automatisch im JSONL-Log.
-    Render-Fehler killt die Messung nicht (Degrade: `spec_png=None` + `backend_error`
-    um "spec_png: …" ergänzt; `strict=True` → raise).
-  - CLI: `scripts/sim_checkpoint.py` bekommt `--spec-png-dir` (Default
-    `recordings/spec/` – AN, das ist der Wunsch) und `--no-spec-png`;
-    `scripts/sim_compare.py` bekommt `--spec-png-dir` (Default None = opt-in, beide
-    Modi `--npy`/`--live`). `print_result` druckt den PNG-Pfad, wenn gesetzt.
-- Non-goals: kein Video/Overlay im PNG, keine Achsenbeschriftung (PIL-only, kompakt),
-  kein Upload an ein Modell (das bleibt der bestehende spec-Fallback), kein eigenes
-  Delta-"Score".
-- Anti-goals: Kern bleibt numpy+PIL (kein matplotlib im Produktivpfad); PNG-Render
-  darf bestehende Log-/Score-Pfade nicht verändern (nur zusätzliches Feld `spec_png`).
+  - `sim_embed.render_spec_pair_png(x_a, x_b, sr, path, db_span=20.0) -> Path`: one PNG,
+    horizontal **A | B | Δ** (2 px separator), A/B as grayscale with a **shared**
+    lo/hi (otherwise the normalization deceives), Δ = spec_b − spec_a in dB as a diverging
+    color scale (blue = B quieter … red = B louder, ±`db_span` dB clipped, 0 = mid gray).
+    Basis: `sim.features(...)["log_spec"]` (n_bands × n_frames, dB), x = time, y = band.
+  - `score_pair_embed(..., spec_png_dir=None)`: renders the pair PNG on the
+    **level-normalized** signals (`xe_blo`/`xe_irr` – otherwise Δ is only gain!),
+    file name from meta (`spec_<blofeld>_n<note>_w<wheel>.png`, fallback `spec_pair.png`),
+    `result["spec_png"] = str(path)` → lands automatically in the JSONL log.
+    A render error does not kill the measurement (degrade: `spec_png=None` + `backend_error`
+    extended by "spec_png: …"; `strict=True` → raise).
+  - CLI: `scripts/sim_checkpoint.py` gets `--spec-png-dir` (default
+    `recordings/spec/` – ON, that's the wish) and `--no-spec-png`;
+    `scripts/sim_compare.py` gets `--spec-png-dir` (default None = opt-in, both
+    modes `--npy`/`--live`). `print_result` prints the PNG path when set.
+- Non-goals: no video/overlay in the PNG, no axis labels (PIL-only, compact),
+  no upload to a model (that stays the existing spec fallback), no own delta "score".
+- Anti-goals: the core stays numpy+PIL (no matplotlib in the production path); the PNG render
+  must not change the existing log/score paths (only the additional field `spec_png`).
 
 ## Constraints
 
-- Python 3.10, numpy + PIL (wie `render_spec_png`); kein neues Dependency.
-- Unterschiedliche Aufnahmelängen: kürzeres log_spec wird rechts mit seinem eigenen
-  min-Wert gepadet (max n_frames) – analog zu `sim.compare`.
-- Tests offline (keine Modelle, kein MIDI): synthetische Sinus-Signale.
-- Deutsche Doku/Commits; Tests: `python3 -m pytest tests/ -q`.
+- Python 3.10, numpy + PIL (like `render_spec_png`); no new dependency.
+- Different recording lengths: the shorter log_spec is padded on the right with its own
+  min value (max n_frames) – analogous to `sim.compare`.
+- Tests offline (no models, no MIDI): synthetic sine signals.
+- German docs/commits; tests: `python3 -m pytest tests/ -q`.
 
 ## Approaches
 
-- **A (gewählt):** Rendern im zentralen `score_pair_embed` (einzige Stelle, die alle
-  Entrypoints – `sim compare`, `sim_checkpoint`, `ab` – speist) mit opt-in
-  `spec_png_dir`; Dateiname aus meta. Vorteil: ein JSONL-Eintrag trägt Score + PNG-Pfad.
-- **B (abgelehnt):** nur in den Skripten rendern – dann fehlt der Pfad im Log und
-  `bloridium sim compare`/`ab` bekämen es nicht.
+- **A (chosen):** render in the central `score_pair_embed` (the only place that feeds all
+  entrypoints – `sim compare`, `sim_checkpoint`, `ab`) with opt-in
+  `spec_png_dir`; file name from meta. Advantage: one JSONL entry carries score + PNG path.
+- **B (rejected):** render only in the scripts – then the path would be missing in the log and
+  `bloridium sim compare`/`ab` would not get it.
 
-## Design-Details
+## Design details
 
 - `render_spec_pair_png`: `fa = sim.features(x_a, sr)`, `fb = sim.features(x_b, sr)`;
-  pad auf `n = max(frames)`; grau = `(spec - lo)/(hi - lo)*255` mit `lo/hi` über beide;
-  delta_db = clip(spec_b − spec_a, −db_span, +db_span)/db_span in [−1,1]; LUT: negativ →
-  blau (0,0,255)→grau(128), positiv → grau→rot(255,0,0), 0 → (128,128,128);
-  `np.stack([...], axis=-1)` uint8; concat horizontal mit 2 px weiß (255) Separator;
-  `Image.fromarray(img.transpose(1,0,2))` (Breite = Zeit wie `render_spec_png`).
-- Dateiname: aus meta `blofeld`/`note`/`wheel_pct`/`mode` sanitized
-  (`spec_{blofeld}_n{note}_w{wheel}.png`), sonst `spec_pair.png`; Kollision bei
-  gleichem meta im selben Lauf → Suffix `_2`, `_3`, …
-- `score_pair_embed`: Parameter `spec_png_dir=None` (keyword-only); rendert mit
-  `xe_blo`/`xe_irr`; try/except wie andere Backends.
+  pad to `n = max(frames)`; gray = `(spec - lo)/(hi - lo)*255` with lo/hi over both;
+  delta_db = clip(spec_b − spec_a, −db_span, +db_span)/db_span in [−1,1]; LUT: negative →
+  blue (0,0,255)→gray(128), positive → gray→red(255,0,0), 0 → (128,128,128);
+  `np.stack([...], axis=-1)` uint8; concat horizontally with a 2 px white (255) separator;
+  `Image.fromarray(img.transpose(1,0,2))` (width = time like `render_spec_png`).
+- File name: from meta `blofeld`/`note`/`wheel_pct`/`mode` sanitized
+  (`spec_{blofeld}_n{note}_w{wheel}.png`), else `spec_pair.png`; a collision with
+  the same meta in the same run → suffix `_2`, `_3`, …
+- `score_pair_embed`: parameter `spec_png_dir=None` (keyword-only); renders with
+  `xe_blo`/`xe_irr`; try/except like the other backends.
 
 ## Tests (TDD)
 
-- `tests/test_sim_embed.py`: `test_render_spec_pair_png` (valides PNG, Breite =
-  3·n_frames + 2·2, Höhe = n_bands; 220 vs 221 Hz → Delta-Panel variiert; gleiches
-  Signal → Delta-Panel konstant); `test_score_pair_embed_spec_png` (mit dir: Datei da,
-  `result["spec_png"]` gesetzt, Log-Eintrag enthält es; ohne dir: `None`, keine Datei;
-  zu kurzes Signal → ValueError von features wird gefangen, `spec_png=None`,
-  `backend_error` enthält "spec_png", score ok).
-- `tests/test_sim_checkpoint.py`: Checkpoint mit `--spec-png-dir tmp` → 12 PNGs +
-  Log-Zeilen enthalten `spec_png`.
+- `tests/test_sim_embed.py`: `test_render_spec_pair_png` (valid PNG, width =
+  3·n_frames + 2·2, height = n_bands; 220 vs 221 Hz → the delta panel varies; the same
+  signal → the delta panel constant); `test_score_pair_embed_spec_png` (with dir: the file is there,
+  `result["spec_png"]` set, the log entry contains it; without dir: `None`, no file;
+  too short a signal → the ValueError from features is caught, `spec_png=None`,
+  `backend_error` contains "spec_png", score ok).
+- `tests/test_sim_checkpoint.py`: checkpoint with `--spec-png-dir tmp` → 12 PNGs +
+  the log lines contain `spec_png`.

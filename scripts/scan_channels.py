@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Scan: Auf welchem MIDI-Kanal empfangt welches Gerat?
+"""Scan: on which MIDI channel does which device receive?
 
-Pro Port wird Kanal fur Kanal (0..15) eine Note gespielt, alle 20 Scarlett-
-Eingaenge aufgenommen und gegen die Baseline gehalten.
+Per port, one note is played channel by channel (0..15), all 20 Scarlett
+inputs are recorded and compared against the baseline.
 """
 
 from __future__ import annotations
@@ -59,11 +59,11 @@ def main() -> int:
                 hot = [(i + 1, peaks[i]) for i in range(20) if peaks[i] - base[i] > 20 and peaks[i] > -90]
                 if hot:
                     found.append((ch + 1, hot))
-                    print(f"  Kanal {ch+1:2d}: " + ", ".join(f"In{i} ({p:.1f} dBFS)" for i, p in hot))
+                    print(f"  Channel {ch+1:2d}: " + ", ".join(f"In{i} ({p:.1f} dBFS)" for i, p in hot))
         finally:
             out.close()
         if not found:
-            print("  kein Kanal mit Signal")
+            print("  no channel with signal")
         print()
     return 0
 

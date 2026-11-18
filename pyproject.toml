@@ -5,13 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bloridium"
 version = "0.1.0"
-description = "Utilities zum Uebertragen von Synth-Programmen vom Waldorf Blofeld auf den Waldorf Iridium"
+description = "Utilities for transferring synth programs from the Waldorf Blofeld to the Waldorf Iridium"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "mido>=1.3",
     "python-rtmidi>=1.5",
     "numpy>=1.26",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

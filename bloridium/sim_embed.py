@@ -1,9 +1,9 @@
-"""Phase B: modellbasierter Sound-Vergleich (Embedding-Score + LLM-Urteil).
+"""Phase B: model-based sound comparison (embedding score + LLM verdict).
 
-Kern bleibt numpy-only; Modelle laufen extern:
-- ClapBackend  – CLAP-GGUF (clap.cpp) -> 512-d Audio-Embedding, Cosine = embed_score
-- OllamaBackend – ollama Omni-Audio-Modell -> JSON-Urteil {score, summary, differences}
-score_pair_embed() kombiniert Phase A (sim.features/sim.compare) mit Embedding (+LLM).
+The core stays numpy-only; models run externally:
+- ClapBackend  - CLAP GGUF (clap.cpp) -> 512-d audio embedding, cosine = embed_score
+- OllamaBackend - ollama omni audio model -> JSON verdict {score, summary, differences}
+score_pair_embed() combines phase A (sim.features/sim.compare) with embedding (+LLM).
 
 Spec: docs/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md
 """
@@ -31,14 +31,14 @@ DEFAULT_MODELS_DIR = REPO / "models"
 CLAP_GGUF_NAME = "larger_clap_music_and_speech-q8_0.gguf"
 DEFAULT_OLLAMA_MODEL = "lfm3-omni:2b"
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
-CLAP_SR = 48000  # clap.cpp resampelt selbst auf 48 kHz; wir liefern 48 kHz
+CLAP_SR = 48000  # clap.cpp resamples to 48 kHz itself; we deliver 48 kHz
 
 
 def write_wav(x: np.ndarray, sr: int, path: Path) -> None:
-    """Mono-WAV (PCM16) via stdlib wave – float32 in [-1,1] -> int16, geclippt."""
+    """Mono WAV (PCM16) via stdlib wave - float32 in [-1,1] -> int16, clipped."""
     x = np.asarray(x, dtype=np.float64).ravel()
     x = np.clip(x, -1.0, 1.0)
-    # erst float-seitig clippen, dann konvertieren (astype(int16) overflowt sonst!)
+    # clip on the float side first, then convert (astype(int16) would overflow!)
     pcm = np.clip(np.round(x * 32768.0), -32768, 32767).astype(np.int16)
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -50,10 +50,10 @@ def write_wav(x: np.ndarray, sr: int, path: Path) -> None:
 
 
 def render_spec_png(x: np.ndarray, sr: int, path: Path) -> None:
-    """Log-Spektrogramm (sim.features) als Graustufen-PNG – Achsen: x=Zeit, y=Band.
+    """Log spectrogram (sim.features) as grayscale PNG - axes: x=time, y=band.
 
-    Wird als `images`-Fallback an ollama geschickt, wenn das Server-Audio-Feld
-    nicht akzeptiert wird. Wirft ValueError bei zu kurzem Signal (wie sim.features).
+    Sent to ollama as `images` fallback when the server audio field is not
+    accepted. Raises ValueError on too-short signal (like sim.features).
     """
     from PIL import Image
 
@@ -64,18 +64,19 @@ def render_spec_png(x: np.ndarray, sr: int, path: Path) -> None:
         img = np.zeros(spec.shape, dtype=np.uint8)
     else:
         img = ((spec - lo) / (hi - lo) * 255.0).astype(np.uint8)
-    Image.fromarray(img.T, mode="L").save(str(path))  # transponiert: Breite = Zeit
+    Image.fromarray(img.T, mode="L").save(str(path))  # transposed: width = time
 
 
 def render_spec_pair_png(x_a: np.ndarray, x_b: np.ndarray, sr: int, path: Path,
                          db_span: float = 20.0) -> Path:
-    """Side-by-Side-Spektrogramm-Vergleich A | B | Delta als RGB-PNG.
+    """Side-by-side spectrogram comparison A | B | delta as RGB PNG.
 
-    A/B als Graustufen mit GEMEINSAMEM lo/hi ueber beide Spektrogramme (sonst taeuscht
-    die Einzel-Normierung); rechtes Panel: Delta = spec_b - spec_a in dB, divergierende
-    Skala blau (B leiser) -> mittelgrau (0) -> rot (B lauter), geclippt auf +/-db_span.
-    Unterschiedliche Laengen: kuerzeres spec wird rechts mit eigenem min gepadet.
-    x = Zeit, y = Frequenzband (log, wie sim.features). Wirft ValueError bei < 0.2 s.
+    A/B as grayscale with a COMMON lo/hi over both spectrograms (otherwise the
+    individual normalization is misleading); right panel: delta = spec_b - spec_a
+    in dB, diverging scale blue (B quieter) -> mid gray (0) -> red (B louder),
+    clipped to +/-db_span. Different lengths: the shorter spec is padded on the
+    right with its own min. x = time, y = frequency band (log, like sim.features).
+    Raises ValueError below 0.2 s.
     """
     from PIL import Image
 
@@ -92,7 +93,7 @@ def render_spec_pair_png(x_a: np.ndarray, x_b: np.ndarray, sr: int, path: Path,
         hi = lo + 1e-9
     ga = ((sa - lo) / (hi - lo) * 255.0).astype(np.uint8)
     gb = ((sb - lo) / (hi - lo) * 255.0).astype(np.uint8)
-    # divergierende LUT: idx 0 = blau (-db_span), 128 = grau (0), 255 = rot (+db_span)
+    # diverging LUT: idx 0 = blue (-db_span), 128 = gray (0), 255 = red (+db_span)
     lut = np.zeros((256, 3), dtype=np.uint8)
     for i in range(256):
         t = (i - 128) / 128.0
@@ -107,13 +108,13 @@ def render_spec_pair_png(x_a: np.ndarray, x_b: np.ndarray, sr: int, path: Path,
         [np.stack([ga] * 3, axis=-1), sep, np.stack([gb] * 3, axis=-1), sep, gd], axis=1)
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(img, mode="RGB").save(str(path))  # (bands, width, 3) -> Breite = Zeit
+    Image.fromarray(img, mode="RGB").save(str(path))  # (bands, width, 3) -> width = time
     return path
 
 
 def _spec_png_name(meta: dict, spec_png_dir) -> Path:
-    """Dateiname aus meta: spec_<blofeld>_n<note>_w<wheel>.png (Fallback spec_pair.png),
-    bei Kollision Suffix _2, _3, ..."""
+    """File name from meta: spec_<blofeld>_n<note>_w<wheel>.png (fallback spec_pair.png),
+    on collision suffix _2, _3, ..."""
     d = Path(spec_png_dir)
     d.mkdir(parents=True, exist_ok=True)
     parts = []
@@ -135,7 +136,7 @@ def _spec_png_name(meta: dict, spec_png_dir) -> Path:
 
 
 def embed_compare(ea: np.ndarray, eb: np.ndarray) -> dict:
-    """Cosine zweier Embeddings -> {embed_cos, embed_score 0-100} (linear geclippt)."""
+    """Cosine of two embeddings -> {embed_cos, embed_score 0-100} (linearly clipped)."""
     ea = np.asarray(ea, dtype=np.float64).ravel()
     eb = np.asarray(eb, dtype=np.float64).ravel()
     na, nb = float(np.linalg.norm(ea)), float(np.linalg.norm(eb))
@@ -144,7 +145,7 @@ def embed_compare(ea: np.ndarray, eb: np.ndarray) -> dict:
 
 
 def _resample_linear(x: np.ndarray, sr: int, target: int = CLAP_SR) -> np.ndarray:
-    """Lineares Resampling (numpy) auf `target` Hz; bei sr==target identity."""
+    """Linear resampling (numpy) to `target` Hz; identity if sr==target."""
     if sr == target or x.size == 0:
         return np.asarray(x, dtype=np.float64)
     n = max(1, int(round(x.size * target / sr)))
@@ -152,17 +153,17 @@ def _resample_linear(x: np.ndarray, sr: int, target: int = CLAP_SR) -> np.ndarra
 
 
 class ClapBackend:
-    """CLAP-Audio-Embeddings aus GGUF – pip-Binding `clap_cpp` zuerst, sonst
-    clap.cpp-Binary (`clap embedding --model M --audio WAV`) via subprocess.
+    """CLAP audio embeddings from GGUF - pip binding `clap_cpp` first, else
+    clap.cpp binary (`clap embedding --model M --audio WAV`) via subprocess.
 
-    Input-Konvention (Spec): ganze Aufnahme, mono; Resampling auf 48 kHz hier,
-    das 10-s-Fenster/Padding uebernimmt das Backend (repeat-pad).
+    Input convention (spec): the whole recording, mono; resampling to 48 kHz happens
+    here, the 10 s window/padding is handled by the backend (repeat-pad).
     """
 
     def __init__(self, model_path: str | Path):
         self.model_path = Path(model_path)
         if not self.model_path.exists():
-            raise FileNotFoundError(f"CLAP-GGUF fehlt: {self.model_path} "
+            raise FileNotFoundError(f"CLAP GGUF missing: {self.model_path} "
                                     f"(fetch_models.py)")
         self._clap = None
         self._binary = None
@@ -174,14 +175,14 @@ class ClapBackend:
         except ImportError:
             self._binary = shutil.which("clap")
             if self._binary is None:
-                raise RuntimeError("CLAP-Backend fehlt: weder clap_cpp (pip) noch "
-                                   "clap-Binary im PATH")
+                raise RuntimeError("CLAP backend missing: neither clap_cpp (pip) nor "
+                                   "clap binary in PATH")
 
     def embed(self, x: np.ndarray, sr: int) -> np.ndarray:
-        """Audio -> L2-normalisierter Embedding-Vektor (512, float32)."""
+        """Audio -> L2-normalized embedding vector (512, float32)."""
         x = np.asarray(x, dtype=np.float64)
         if x.ndim > 1:
-            x = x.mean(axis=0)  # Stereo -> mono
+            x = x.mean(axis=0)  # stereo -> mono
         x = _resample_linear(x.ravel(), sr, CLAP_SR)
         try:
             if self._clap is not None:
@@ -192,14 +193,14 @@ class ClapBackend:
         except RuntimeError:
             raise
         except Exception as e:
-            raise RuntimeError(f"CLAP-Embedding fehlgeschlagen: {e}") from e
+            raise RuntimeError(f"CLAP embedding failed: {e}") from e
         n = float(np.linalg.norm(vec))
         if n > 0:
             vec = (vec / n).astype(np.float32)
         return vec
 
     def _embed_binary(self, x: np.ndarray) -> np.ndarray:
-        """Fallback: WAV in tmp schreiben, `clap embedding` als subprocess."""
+        """Fallback: write WAV to tmp, run `clap embedding` as subprocess."""
         with tempfile.TemporaryDirectory() as td:
             wav = Path(td) / "in.wav"
             write_wav(x, CLAP_SR, wav)
@@ -212,19 +213,19 @@ class ClapBackend:
 
 
 DEFAULT_JUDGE_PROMPT = (
-    "Du bekommst zwei kurze Audio-Clips: A ist das Vorbild (Blofeld), B der "
-    "uebertragene Sound (Waldorf Iridium). Bewerte, wie aehnlich B an A klingt. "
-    "Antworte AUSSCHLIESSLICH mit einem JSON-Objekt im Format "
+    "You get two short audio clips: A is the reference (Blofeld), B the "
+    "transferred sound (Waldorf Iridium). Rate how similar B sounds to A. "
+    "Answer EXCLUSIVELY with a JSON object in the format "
     '{"score": 0-100, "summary": "...", "differences": ["...", ...]} '
-    " Dabei ist 100 = nicht unterscheidbar, 0 = voellig verschiedener Klang. "
-    "differences listet die auffaelligsten klanglichen Unterschiede von B zu A auf."
+    "Where 100 = indistinguishable, 0 = completely different sound. "
+    "differences lists the most noticeable tonal differences of B vs A."
 )
 
 
 class OllamaBackend:
-    """LLM-Urteil ueber ollama (/api/chat). Modus: Audio direkt (`audio`-Feld),
-    Fallback bei 4xx: Spektrogramm-PNGs (`images`-Feld). Server muss laufen
-    (Menubar-App / systemd); fetch_models.py pullt nur das Modell.
+    """LLM verdict via ollama (/api/chat). Mode: audio directly (`audio` field),
+    fallback on 4xx: spectrogram PNGs (`images` field). Server must be running
+    (menubar app / systemd); fetch_models.py only pulls the model.
     """
 
     def __init__(self, model: str = DEFAULT_OLLAMA_MODEL, host: str = DEFAULT_OLLAMA_HOST):
@@ -232,7 +233,7 @@ class OllamaBackend:
         self.host = host.rstrip("/")
 
     def available(self) -> bool:
-        """True wenn der Server antwortet UND das Modell gepullt ist."""
+        """True if the server responds AND the model is pulled."""
         try:
             r = requests.get(f"{self.host}/api/tags", timeout=5)
             if r.status_code != 200:
@@ -245,19 +246,19 @@ class OllamaBackend:
     def judge(self, x_a: np.ndarray, x_b: np.ndarray, sr: int,
               prompt: str = DEFAULT_JUDGE_PROMPT,
               peak_a: float | None = None, peak_b: float | None = None) -> dict:
-        """Vergleicht zwei Clips -> {score, summary, differences, mode, model}.
+        """Compares two clips -> {score, summary, differences, mode, model}.
 
-        peak_a/peak_b (dBFS): wenn gesetzt, landen die Pegel im Prompt — ein deutlich
-        leiseres B darf nicht als 'aehnlich' durchgehen (Kalibrierung)."""
+        peak_a/peak_b (dBFS): if set, the levels go into the prompt - a significantly
+        quieter B must not pass as 'similar' (calibration)."""
         if peak_a is not None and peak_b is not None:
-            prompt = (prompt + f"\nGemessene Pegel: A {peak_a:.1f} dBFS, B {peak_b:.1f} dBFS. "
-                      "Ist B deutlich leiser als A (>12 dB), ist das ein massiver Unterschied — "
-                      "senke score entsprechend (nahezu unhoerbares B = sehr niedriger score).")
+            prompt = (prompt + f"\nMeasured levels: A {peak_a:.1f} dBFS, B {peak_b:.1f} dBFS. "
+                      "If B is significantly quieter than A (>12 dB), that is a massive "
+                      "difference - lower the score accordingly (nearly inaudible B = very low score).")
         try:
             return self._chat(x_a, x_b, sr, prompt, mode="audio")
         except _HttpError as e:
             if not (400 <= e.status < 500):
-                raise RuntimeError(f"ollama-Urteil fehlgeschlagen: {e}") from e
+                raise RuntimeError(f"ollama judgement failed: {e}") from e
             return self._chat(x_a, x_b, sr, prompt, mode="spec")
 
     def _chat(self, x_a, x_b, sr, prompt, mode) -> dict:
@@ -280,7 +281,7 @@ class OllamaBackend:
             content = r.json()["message"]["content"]
         obj = _extract_json(content)
         if obj is None:
-            raise RuntimeError(f"ollama-Antwort ohne JSON: {content[:120]!r}")
+            raise RuntimeError(f"ollama response without JSON: {content[:120]!r}")
         score = int(np.clip(int(obj.get("score", 0)), 0, 100))
         diffs = obj.get("differences", [])
         if not isinstance(diffs, list):
@@ -301,10 +302,10 @@ class _HttpError(Exception):
 
 
 def _extract_json(text: str) -> dict | None:
-    """Erstes balanciertes {...}-Objekt im Text finden und parsen.
+    """Find and parse the first balanced {...} object in the text.
 
-    LLM schreibt gern Prosa/Code-Fences drumherum, und Prosa nach dem JSON mit
-    eigener Klammer brach den frueheren Greedy-Regex-Match -> balancierter Scan.
+    The LLM likes to write prose/code fences around it, and prose after the JSON
+    with its own brace broke the earlier greedy regex match -> balanced scan.
     """
     text = re.sub(r"```(?:json)?", "", text)
     start = text.find("{")
@@ -327,11 +328,11 @@ def _extract_json(text: str) -> dict | None:
     return None
 
 
-PROMPT_ID = "judge-v2-pegel"  # v2: Pegel im Prompt + Deckel bei >24 dB Unterschied
+PROMPT_ID = "judge-v2-level"  # v2: level in prompt + cap at >24 dB difference
 
-# --- D1-Profil (d1-omni via System One /v1/systemone) als Erklaer-Schicht ---
-# Spike 2026-11-15 (scripts/spike_d1_profile_eval.py): als Score schwach (Spearman
-# +0.13 vs Benutzer), als noul-Profil matchen die Flags die Benutzer-Bemerkungen.
+# --- D1 profile (d1-omni via System One /v1/systemone) as explanation layer ---
+# Spike 2026-11-15 (scripts/spike_d1_profile_eval.py): weak as a score (Spearman
+# +0.13 vs user), as a noul profile the flags match the user's remarks.
 DEFAULT_D1_MODEL = "d1-omni:2b"
 
 D1_PROFILE_CRITERIA = [
@@ -372,10 +373,10 @@ D1_PROFILE_STATE = ("Spectrograms of two short synthesizer notes, both normalize
 
 
 class D1ProfileBackend:
-    """d1-omni (System One /v1/systemone) als Differenz-Profiler.
+    """d1-omni (System One /v1/systemone) as difference profiler.
 
-    Spektrogramm-PNGs von A und B als `images`, 8 Fragen (1 score + 7 noul) in einem
-    Forward Pass -> {score 0-100, probs, flags (p>=0.5 ueber D1_DIFF_QUESTIONS),
+    Spectrogram PNGs of A and B as `images`, 8 questions (1 score + 7 noul) in one
+    forward pass -> {score 0-100, probs, flags (p>=0.5 over D1_DIFF_QUESTIONS),
     diff_count, same_overall 0-100}.
     """
 
@@ -424,30 +425,30 @@ class D1ProfileBackend:
 
 
 def build_profile_backend(want: bool, model: str = DEFAULT_D1_MODEL):
-    """D1ProfileBackend oder None (bei want=False oder fehlendem Modell, mit WARNUNG)."""
+    """D1ProfileBackend or None (if want=False or model missing, with WARNING)."""
     if not want:
         return None
     b = D1ProfileBackend(model)
     if b.available():
         return b
-    print(f"WARNUNG: d1-Profil nicht verfuegbar (Modell {model} fehlt) – deaktiviert",
+    print(f"WARNING: d1 profile not available (model {model} missing) - deactivated",
           file=sys.stderr)
     return None
 
 
 def peak_dbfs(x) -> float:
-    """Peak-Pegel in dBFS (Guard gegen Stille)."""
+    """Peak level in dBFS (guard against silence)."""
     x = np.asarray(x, dtype=np.float64).ravel()
     m = float(np.max(np.abs(x))) if x.size else 0.0
     return 20.0 * float(np.log10(m + 1e-12))
 
 
 class BackendError(RuntimeError):
-    """strict=True und Backend fehlt/kaputt (unterscheidbar von Hardware-Fehlern)."""
+    """strict=True and backend missing/broken (distinguishable from hardware errors)."""
 
 
 def build_backends(models_dir, want_embed: bool, want_llm: bool):
-    """(ClapBackend|None, OllamaBackend|None); fehlt etwas -> WARNUNG auf stderr + None."""
+    """(ClapBackend|None, OllamaBackend|None); if something is missing -> WARNING on stderr + None."""
     clap = None
     if want_embed:
         gguf = Path(models_dir) / CLAP_GGUF_NAME
@@ -455,9 +456,9 @@ def build_backends(models_dir, want_embed: bool, want_llm: bool):
             try:
                 clap = ClapBackend(gguf)
             except Exception as e:
-                print(f"WARNUNG clap: {e}", file=sys.stderr)
+                print(f"WARNING clap: {e}", file=sys.stderr)
         else:
-            print(f"WARNUNG: {gguf} fehlt (scripts/fetch_models.py) – embed deaktiviert",
+            print(f"WARNING: {gguf} missing (scripts/fetch_models.py) - embed deactivated",
                   file=sys.stderr)
     ollama = None
     if want_llm:
@@ -465,13 +466,13 @@ def build_backends(models_dir, want_embed: bool, want_llm: bool):
         if o.available():
             ollama = o
         else:
-            print("WARNUNG: ollama nicht verfuegbar (Server/Modell) – llm deaktiviert",
+            print("WARNING: ollama not available (server/model) - llm deactivated",
                   file=sys.stderr)
     return clap, ollama
 
 
 def print_result(r: dict, a_name: str, b_name: str) -> None:
-    """Einheitliche Ausgabe fuer Skripte und CLI."""
+    """Uniform output for scripts and CLI."""
     print(f"Score {a_name} vs {b_name}: {r['score']} ({r['verdict']})  "
           f"spec_cos={r.get('spec_cos')} env_dtw={r.get('env_dtw')}")
     if r.get("embed_score") is not None:
@@ -501,12 +502,12 @@ def print_result(r: dict, a_name: str, b_name: str) -> None:
             hz = (f"{edges[i]:.0f}-{edges[i + 1]:.0f}Hz" if i + 1 < len(edges)
                   else f">={edges[i]:.0f}Hz")
             parts.append(f"{hz}:{bd[i]:.2f}")
-        print("Top-Band-DTW zeitl. (0-1, wo in Frequenz): " + ", ".join(parts))
+        print("Top band DTW over time (0-1, where in frequency): " + ", ".join(parts))
 
 
 def _fehler_result(error: str) -> dict:
-    """Stabiles Fehler-Schema: Backend-Keys immer vorhanden (null), nie fehlend."""
-    return {"score": None, "verdict": "fehler", "error": error,
+    """Stable error schema: backend keys always present (null), never missing."""
+    return {"score": None, "verdict": "error", "error": error,
             "spec_cos": None, "env_dtw": None, "band_delta_db": None,
             "embed_cos": None, "embed_score": None, "combined": None,
             "llm": None, "backend_error": None, "peak_dbfs": None, "profile": None,
@@ -521,14 +522,14 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
                      norm_pegel: bool = False,
                      profile_backend: "D1ProfileBackend | None" = None,
                       spec_png_dir=None) -> dict:
-    """Phase A + Embedding (+LLM) in einem Ergebnisdict; log_path=None -> kein Log.
+    """Phase A + embedding (+LLM) in one result dict; log_path=None -> no log.
 
-    Degrade-Regel: Backend fehlt/kaputt -> Felder null + backend_error, weiterrechnen;
-    strict=True -> RuntimeError. combined = 0.5*score + 0.5*embed_score (ohne Embedding:
-    combined = score). Genau ein JSONL-Eintrag pro Aufruf (wenn log_path gesetzt).
+    Degrade rule: backend missing/broken -> fields null + backend_error, keep going;
+    strict=True -> RuntimeError. combined = 0.5*score + 0.5*embed_score (without
+    embedding: combined = score). Exactly one JSONL entry per call (if log_path set).
 
-    norm_pegel=True: embed/LLM bekommen auf Peak 0.5 (-6 dBFS) angeglichene Kopien
-    (Phase A bleibt auf Roh-Signal, ist pegel-invariant; peak_dbfs im Log bleibt roh).
+    norm_pegel=True: embed/LLM get copies level-matched to peak 0.5 (-6 dBFS)
+    (phase A stays on the raw signal, it is level-invariant; peak_dbfs in the log stays raw).
     """
     peak_a = peak_dbfs(x_blo)
     peak_b = peak_dbfs(x_irr)
@@ -551,12 +552,12 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
             sim.log_run(result, meta, log_path)
         return result
     if float(fa["env_rms"].max()) < 1e-4 or float(fb["env_rms"].max()) < 1e-4:
-        result = _fehler_result("stille Aufnahme (env_rms max < 1e-4)")
+        result = _fehler_result("silent recording (env_rms max < 1e-4)")
         if log_path:
             sim.log_run(result, meta, log_path)
         return result
 
-    base = sim.compare(fa, fb)  # Phase A direkt (kein sim.score_pair -> kein Doppel-Log)
+    base = sim.compare(fa, fb)  # phase A directly (no sim.score_pair -> no double log)
     result = dict(base)
     result.update({"error": None, "embed_cos": None, "embed_score": None,
                    "combined": None, "llm": None, "backend_error": None,
@@ -573,7 +574,7 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
             if strict:
                 raise BackendError(errors[-1]) from e
     else:
-        errors.append("clap: nicht konfiguriert (kein GGUF/Modell)")
+        errors.append("clap: not configured (no GGUF/model)")
         if strict:
             raise BackendError(errors[-1])
 
@@ -587,7 +588,7 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
             try:
                 result["llm"] = ollama.judge(xe_blo, xe_irr, sr, prompt=judge_prompt,
                                              peak_a=pn_a, peak_b=pn_b)
-                # Harter Deckel: B >24 dB leiser als A -> LLM-Score kapppen (unhörbar != aehnlich)
+                # hard cap: B >24 dB quieter than A -> cap LLM score (inaudible != similar)
                 if pn_b < pn_a - 24.0:
                     result["llm"]["score"] = min(result["llm"]["score"], 30)
                     result["llm"]["level_penalty"] = True
@@ -596,7 +597,7 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
                 if strict:
                     raise BackendError(errors[-1]) from e
         else:
-            errors.append("ollama: nicht verfuegbar (Server/Modell fehlt)")
+            errors.append("ollama: not available (server/model missing)")
             if strict:
                 raise BackendError(errors[-1])
     result["peak_dbfs"] = {"a": round(peak_a, 2), "b": round(peak_b, 2)}
@@ -610,13 +611,13 @@ def score_pair_embed(x_blo, x_irr, sr: int = 48000, meta: dict | None = None,
                 if strict:
                     raise BackendError(errors[-1]) from e
         else:
-            errors.append("d1_profile: nicht verfuegbar (Modell fehlt)")
+            errors.append("d1_profile: not available (model missing)")
             if strict:
                 raise BackendError(errors[-1])
 
     if spec_png_dir is not None:
-        # optischer Spektrogramm-Vergleich auf den pegel-normalisierten Signalen
-        # (xe_*: sonst zeigt das Delta-Panel nur den Gain-Unterschied)
+        # visual spectrogram comparison on the level-normalized signals
+        # (xe_*: otherwise the delta panel only shows the gain difference)
         try:
             path = _spec_png_name(meta, spec_png_dir)
             render_spec_pair_png(xe_blo, xe_irr, sr, path)

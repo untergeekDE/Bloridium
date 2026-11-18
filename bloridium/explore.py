@@ -1,10 +1,10 @@
-"""OS4-Pid-Exploration am Iridium: NRPN-Mitschnitt dekodieren + in die CC-Liste buchen.
+"""OS4 pid exploration on the Iridium: decode NRPN captures + book them into the CC list.
 
-Rein lesend – dieses Modul sendet kein MIDI. NRPN-Format (Mitschnitt
+Read-only - this module sends no MIDI. NRPN format (capture
 recordings/midi_monitor_20261109_090256.log, ch6 = Part 1):
-  CC99 = Pid-MSB, CC98 = Pid-LSB, CC6 = Wert-MSB, CC38 = Wert-LSB (14-bit).
-  CC99/CC98 = 127 -> NRPN aus (Reset); CC121 (Reset All Controllers) resetet alles;
-  CC101/100 (RPN) werden ignoriert.
+  CC99 = pid MSB, CC98 = pid LSB, CC6 = value MSB, CC38 = value LSB (14-bit).
+  CC99/CC98 = 127 -> NRPN off (reset); CC121 (Reset All Controllers) resets everything;
+  CC101/100 (RPN) are ignored.
 """
 
 from __future__ import annotations
@@ -17,18 +17,18 @@ from pathlib import Path
 # (pid, value14)
 NrpnEvent = tuple[int, int]
 
-# iridium_os4_cc_list.csv: neue Spalten werden an die bestehenden 8 angehängt
+# iridium_os4_cc_list.csv: new columns are appended to the existing 8
 NEW_COLUMNS = ["pid_os4", "nrpn_min", "nrpn_max", "nrpn_last", "explore_ts", "explore_msgs"]
 
 
 class NrpnDecoder:
-    """State-Machine ueber control_change-Messages eines gewaehlten Kanals.
+    """State machine over control_change messages of one selected channel.
 
-    feed(msg) -> NrpnEvent, sobald Pid (CC99+CC98) gesetzt ist und ein Daten-Byte
-    kommt. CC6 (Data MSB) allein ist ein Event mit LSB=0 (beobachtet 2026-11-09:
-    Iridium sendet bei Wert 0 nur '06 00' ohne '26'); CC38 nutzt den letzten MSB.
-    Der Pid bleibt gesetzt – ein Dreh am selben Parameter liefert weitere Events
-    ohne neues CC99/98.
+    feed(msg) -> NrpnEvent once the pid (CC99+CC98) is set and a data byte
+    arrives. CC6 (data MSB) alone is an event with LSB=0 (observed 2026-11-09:
+    the Iridium sends only '06 00' at value 0, without '26'); CC38 reuses the
+    last MSB. The pid stays set - turning the same parameter yields further
+    events without new CC99/98.
     """
 
     def __init__(self) -> None:
@@ -47,23 +47,23 @@ class NrpnDecoder:
         if msg.type != "control_change":
             return None
         c, v = msg.control, msg.value
-        if c == 99:                      # NRPN MSB (127 = NRPN aus); neuer Pid braucht neues Data
+        if c == 99:                      # NRPN MSB (127 = NRPN off); a new pid needs new data
             self._msb = None if v == 127 else v
             self._data_seen = False
-        elif c == 98:                    # NRPN LSB (127 = NRPN aus)
+        elif c == 98:                    # NRPN LSB (127 = NRPN off)
             self._lsb = None if v == 127 else v
             self._data_seen = False
-        elif c == 6:                     # Data MSB allein: LSB implizit 0
+        elif c == 6:                     # data MSB alone: LSB implicitly 0
             self._dmsb = v
             self._dlsb = 0
             self._data_seen = True
-        elif c == 38:                    # Data LSB: MSB bleibt letzter Stand
+        elif c == 38:                    # data LSB: MSB stays at last value
             self._dlsb = v
             self._data_seen = True
         elif c == 121:                   # Reset All Controllers
             self._reset_all()
             return None
-        else:                            # inkl. CC101/100 (RPN): ignorieren
+        else:                            # incl. CC101/100 (RPN): ignore
             return None
         if self._msb is not None and self._lsb is not None and self._data_seen:
             self._data_seen = False
@@ -76,7 +76,7 @@ class NrpnDecoder:
 
 
 def load_cc_list(path) -> tuple[list[str], list[dict]]:
-    """CSV -> (fieldnames, rows); fehlende NEW_COLUMNS werden als "" ergaenzt."""
+    """CSV -> (fieldnames, rows); missing NEW_COLUMNS are added as ""."""
     with open(path, newline="", encoding="utf-8") as f:
         r = csv.DictReader(f)
         fieldnames = list(r.fieldnames or [])
@@ -88,9 +88,9 @@ def load_cc_list(path) -> tuple[list[str], list[dict]]:
 
 
 def save_cc_list(path, fieldnames: list[str], rows: list[dict], backup: bool = False) -> None:
-    """CSV schreiben; NEW_COLUMNS werden an fieldnames angehaengt.
+    """Write CSV; NEW_COLUMNS are appended to fieldnames.
 
-    backup=True legt vor dem Schreiben <path>.bak mit dem alten Dateiinhalt an.
+    backup=True creates <path>.bak with the old file content before writing.
     """
     p = Path(path)
     if backup and p.exists():
@@ -107,13 +107,13 @@ def _nutzung_pct(row: dict) -> float:
     try:
         return float(row.get("nutzung_pct") or "")
     except ValueError:
-        return -1.0  # "-" oder leer = niedrigste Prioritaet
+        return -1.0  # "-" or empty = lowest priority
 
 
 def pending_rows(rows: list[dict], essential: bool = False, grep: str | None = None,
                  only_cc: str | None = None) -> list[dict]:
-    """Noch nicht verifizierte Zeilen (os4_verified == "nein"), sortiert:
-    essential=yes zuerst, dann nutzung_pct absteigend, dann cc aufsteigend."""
+    """Not yet verified rows (os4_verified == "nein"), sorted:
+    essential=yes first, then nutzung_pct descending, then cc ascending."""
     out = [r for r in rows if (r.get("os4_verified") or "").strip().lower() == "nein"]
     if essential:
         out = [r for r in out if (r.get("essential") or "").strip().lower() == "yes"]
@@ -131,10 +131,10 @@ def pending_rows(rows: list[dict], essential: bool = False, grep: str | None = N
 
 
 def book_row(row: dict, events: list[NrpnEvent], ts: str) -> dict:
-    """Events eines Fangs in die Zeile buchen; liefert den JSONL-Log-Entry.
+    """Book the events of one capture into the row; returns the JSONL log entry.
 
-    Gewinner-Pid = haeufigster Pid; nrpn_min/max/last und explore_msgs beziehen
-    sich nur auf die Events des Gewinners. abweichung = pid_os4 != rdb-Pid.
+    Winning pid = most frequent pid; nrpn_min/max/last and explore_msgs refer
+    only to the winner's events. abweichung = pid_os4 != rdb pid.
     """
     counts = Counter(pid for pid, _ in events)
     pid_os4, _ = counts.most_common(1)[0]
@@ -167,7 +167,7 @@ def book_row(row: dict, events: list[NrpnEvent], ts: str) -> dict:
 
 
 def append_log(log_path, entry: dict) -> None:
-    """Eine JSON-Zeile an den Explore-Log anhaengen."""
+    """Append one JSON line to the explore log."""
     p = Path(log_path)
     p.parent.mkdir(parents=True, exist_ok=True)
     with open(p, "a", encoding="utf-8") as f:

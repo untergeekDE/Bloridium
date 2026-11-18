@@ -1,16 +1,16 @@
-"""Blofeld SNDD (Sound Dump) Parser/Builder – offizielle Spec: Blofeld_sysex_v1_04.pdf.
+"""Blofeld SNDD (Sound Dump) Parser/Builder - official spec: Blofeld_sysex_v1_04.pdf.
 
 Message:  F0 3E 13 DEV 10 BB NN <SDATA 383 B> CHK F7
-  SDATA  : Parameter-Indizes 0..382 (siehe Spec 3.1)
-  CHK    : Summe aller SDATA-Bytes, auf 7 Bit maskiert (Status/IDs nicht mitgerechnet)
+  SDATA  : parameter indices 0..382 (see Spec 3.1)
+  CHK    : sum of all SDATA bytes, masked to 7 bit (status/IDs not included)
 
-SNDP (Parameter Change): F0 3E 13 DEV 20 LL HH PP XX F7  (HH PP = Parameterindex 0..382)
-SNDR (Request):          F0 3E 13 DEV 00 BB NN F7        (BB NN = Location, z.B. 7F 00 = Edit Buffer)
+SNDP (Parameter Change): F0 3E 13 DEV 20 LL HH PP XX F7  (HH PP = parameter index 0..382)
+SNDR (Request):          F0 3E 13 DEV 00 BB NN F7        (BB NN = location, e.g. 7F 00 = edit buffer)
 """
 
 from __future__ import annotations
 
-# ---- Wertetabellen (Spec 4.x / 5.x) ----------------------------------------
+# ---- value tables (Spec 4.x / 5.x) ----------------------------------------
 
 SHAPES = ["off", "Pulse", "Saw", "Triangle", "Sine", "Alt 1", "Alt 2", "Resonant",
           "Resonant2", "MalletSyn", "Sqr-Sweep", "Bellish", "Pul-Sweep", "Saw-Sweep",
@@ -77,7 +77,7 @@ CTRL_SEND = ["off", "Ctrl", "SysEx", "Ctrl+SysEx"]
 FX_TYPES = ["Bypass", "Chorus", "Flanger", "Phaser", "Overdrive", "Triple FX",
             "Delay", "Clk.Delay", "Reverb"]
 
-# LFO-Clocks (4.6): Index-Paare -> Name
+# LFO clocks (4.6): index pairs -> name
 LFO_CLOCKS = {}
 _lfo_bars = ["1280", "1152", "1024", "896", "768", "640", "576", "512", "448", "384",
              "320", "288", "256", "224", "192", "160", "144", "128", "112", "96", "80",
@@ -89,8 +89,8 @@ for _i, _b in enumerate(_lfo_bars):
     LFO_CLOCKS[2 * _i] = f"{_b} bars"
     LFO_CLOCKS[2 * _i + 1] = f"{_b} bars"
 
-# ---- SDATA-Tabelle (Spec 3.1): index -> (name, value_table) ------------------
-# value_table: None = Rohwert, sonst Name der Tabelle oben
+# ---- SDATA table (Spec 3.1): index -> (name, value_table) -------------------
+# value_table: None = raw value, otherwise name of the table above
 SDATA = {}
 
 def _add(idx, name, table=None):
@@ -111,9 +111,9 @@ for _o in range(3):
             _t = MOD_SOURCES
         elif _n == "Shape":
             _t = SHAPES
-        _add(_o * 16 + 1 + _k, f"Osc {_o + 1} {_n}", _t)  # Spec: Index 0 reserved, ab 1 Octave
-# Korrekturen laut Spec: Osc3 Shape nur 0..4; Indizes 12,13,15 reserved -> SDATA oben
-# hat 12/13/15 als reserved markiert (None) – passt.
+        _add(_o * 16 + 1 + _k, f"Osc {_o + 1} {_n}", _t)  # Spec: index 0 reserved, from 1 Octave
+# Corrections per spec: Osc3 Shape only 0..4; indices 12,13,15 reserved -> SDATA above
+# marks 12/13/15 as reserved (None) - matches.
 _add(49, "Osc 2 Sync to O3")
 _add(50, "Osc Pitch Source", MOD_SOURCES)
 _add(51, "Osc Pitch Amount")
@@ -162,7 +162,7 @@ for _f in (1, 2):
         _add(_b + _p, f"Effect {_f} Parameter {_p - 1}")
 # LFOs 160..194
 for _l in (1, 2, 3):
-    _b = [160, 172, 184][_l - 1]  # LFO-Bloecke laut Spec
+    _b = [160, 172, 184][_l - 1]  # LFO blocks per spec
     _add(_b, f"LFO {_l} Shape", LFO_SHAPES)
     _add(_b + 1, f"LFO {_l} Speed", LFO_CLOCKS)
     _add(_b + 3, f"LFO {_l} Sync")
@@ -189,7 +189,7 @@ for _m in range(1, 5):
     _add(_b + 1, f"Modifier {_m} Source B", MOD_SOURCES)
     _add(_b + 2, f"Modifier {_m} Operation", MODIFIER_OPS)
     _add(_b + 3, f"Modifier {_m} Constant")
-# Modulation 261..308 (16 Slots à 3)
+# Modulation 261..308 (16 slots of 3)
 for _m in range(1, 17):
     _b = 261 + (_m - 1) * 3
     _add(_b, f"Modulation {_m} Source", MOD_SOURCES)
@@ -215,25 +215,25 @@ for _s in range(1, 17):
 # Name 363..378 (16 ASCII), Category 379
 _add(379, "Category", CATEGORIES)
 
-SDATA_SIZE = 383  # Indizes 0..382
+SDATA_SIZE = 383  # indices 0..382
 
 
 def checksum(sdata: bytes) -> int:
-    """CHK = Summe der SDATA-Bytes & 0x7F (Spec: Status/IDs nicht mitgerechnet)."""
+    """CHK = sum of the SDATA bytes & 0x7F (spec: status/IDs not included)."""
     return sum(sdata) & 0x7F
 
 
 def build_sndd(sdata: bytes, bb: int = 0x7F, nn: int = 0x00, device: int = 0) -> list[int]:
-    """Komplette SNDD-SysEx-Datenbytes fuer mido (ohne F0/F7)."""
-    assert len(sdata) == SDATA_SIZE, f"SDATA muss {SDATA_SIZE} Bytes haben, hat {len(sdata)}"
+    """Complete SNDD SysEx data bytes for mido (without F0/F7)."""
+    assert len(sdata) == SDATA_SIZE, f"SDATA must be {SDATA_SIZE} bytes, got {len(sdata)}"
     body = [0x3E, 0x13, device & 0x7F, 0x10, bb & 0x7F, nn & 0x7F] + [b & 0x7F for b in sdata]
     return body + [checksum(sdata)]
 
 
 def parse_sndd(data: bytes) -> dict:
-    """Komplette SysEx-Nachricht (mit F0/F7) oder mido-Daten (ohne F0/F7) parsen.
+    """Parse a complete SysEx message (with F0/F7) or mido data (without F0/F7).
 
-    Rückgabe: {"bb", "nn", "sdata", "chk", "chk_ok", "params": {name: value-or-label}}
+    Returns: {"bb", "nn", "sdata", "chk", "chk_ok", "params": {name: value-or-label}}
     """
     d = list(data)
     if d and d[0] == 0xF0:
@@ -242,7 +242,7 @@ def parse_sndd(data: bytes) -> dict:
         d = d[:-1]
     # d = [3E, 13, DEV, 10, BB, NN, SDATA..., CHK]
     if len(d) < 8 or d[0] != 0x3E or d[1] != 0x13 or d[3] != 0x10:
-        raise ValueError(f"keine SNDD-Nachricht: {bytes(d[:8]).hex(' ')}")
+        raise ValueError(f"not an SNDD message: {bytes(d[:8]).hex(' ')}")
     bb, nn = d[4], d[5]
     sdata = bytes(d[6:-1])
     chk = d[-1]
@@ -251,7 +251,7 @@ def parse_sndd(data: bytes) -> dict:
         if idx >= len(sdata):
             break
         v = sdata[idx]
-        if idx in range(363, 379):  # Name-Chars
+        if idx in range(363, 379):  # name chars
             continue
         if table is not None and v < len(table):
             params[name] = table[v]
@@ -263,11 +263,11 @@ def parse_sndd(data: bytes) -> dict:
 
 
 def build_sndp(param_index: int, value: int, ll: int = 0x00, device: int = 0) -> list[int]:
-    """SNDP (Sound Parameter Change): F0 3E 13 DEV 20 LL HH PP XX F7 (ohne F0/F7)."""
+    """SNDP (Sound Parameter Change): F0 3E 13 DEV 20 LL HH PP XX F7 (without F0/F7)."""
     hh, pp = (param_index >> 7) & 0x7F, param_index & 0x7F
     return [0x3E, 0x13, device & 0x7F, 0x20, ll & 0x7F, hh, pp, value & 0x7F]
 
 
 def build_sndr(bb: int = 0x7F, nn: int = 0x00, device: int = 0) -> list[int]:
-    """SNDR (Sound Request): F0 3E 13 DEV 00 BB NN F7 (ohne F0/F7; Checksum weglassen)."""
+    """SNDR (Sound Request): F0 3E 13 DEV 00 BB NN F7 (without F0/F7; omit checksum)."""
     return [0x3E, 0x13, device & 0x7F, 0x00, bb & 0x7F, nn & 0x7F]

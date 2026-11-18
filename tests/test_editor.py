@@ -1,4 +1,4 @@
-"""Task 4: qpat editor – Roundtrip ueber alle export-001-Presets, set/save/.bak, diff, list."""
+"""Task 4: qpat editor - roundtrip over all export-001 presets, set/save/.bak, diff, list."""
 
 import shutil
 from pathlib import Path
@@ -10,7 +10,7 @@ from bloridium import qpat
 EXPORT_001 = sorted((qpat.Path(__file__).resolve().parent.parent / "dumps" / "export-001").glob("*.qpat"))
 TEMPLATE = qpat.Path(__file__).resolve().parent.parent / "docs" / "refs" / "qpat" / "template_waveform.qpat"
 
-assert len(EXPORT_001) == 41, f"erwarte 41 export-001-Presets, gefunden: {len(EXPORT_001)}"
+assert len(EXPORT_001) == 41, f"expected 41 export-001 presets, found: {len(EXPORT_001)}"
 
 
 def _params_tuples(parsed):
@@ -33,7 +33,7 @@ def test_qpat_roundtrip_params_identical(path):
 
 @pytest.mark.parametrize("path", EXPORT_001, ids=lambda p: p.name)
 def test_qpat_roundtrip_byte_faithful(path):
-    """C1: parse->build muss die Datei byte-identisch reproduzieren (inkl. Tail/Multi-Patch)."""
+    """C1: parse->build must reproduce the file byte-identically (incl. tail/multi-patch)."""
     parsed = qpat.load(path)
     rebuilt = qpat.build_qpat(
         parsed["name"], _params_tuples(parsed), creator=parsed["creator"],
@@ -47,12 +47,12 @@ def test_qpat_roundtrip_byte_faithful(path):
 
 
 def test_set_param_unknown_key_raises():
-    """I5: Tippfehler im Key darf nicht stillschweigend einen neuen Param anlegen."""
+    """I5: a typo in the key must not silently create a new param."""
     from bloridium import editor
 
     parsed = qpat.load(TEMPLATE)
     with pytest.raises(KeyError):
-        editor.set_param(parsed, "Osc1Typ", 0.5)  # Tippfehler
+        editor.set_param(parsed, "Osc1Typ", 0.5)  # typo
 
 
 def test_set_param_clamps_and_save_writes_bak(tmp_path):
@@ -64,13 +64,13 @@ def test_set_param_clamps_and_save_writes_bak(tmp_path):
     old_val, _old_disp = editor.show_param(parsed, "Osc1Type")
 
     editor.set_param(parsed, "Osc1Type", 1.0, display="Waveform")
-    editor.set_param(parsed, "Filter1CutOff", 5.0)  # clamp auf 1.0
+    editor.set_param(parsed, "Filter1CutOff", 5.0)  # clamp to 1.0
     out = editor.save(parsed, target)
 
     assert out == target
     assert Path(str(target) + ".bak").exists()
     bak = qpat.load(str(target) + ".bak")
-    assert bak["params"]["Osc1Type"]["value"] == old_val  # Backup = alter Stand
+    assert bak["params"]["Osc1Type"]["value"] == old_val  # backup = old state
     reloaded = qpat.load(target)
     assert reloaded["params"]["Osc1Type"]["value"] == 1.0
     assert reloaded["params"]["Osc1Type"]["display"] == "Waveform"
@@ -91,7 +91,7 @@ def test_diff_params_finds_only_changes(tmp_path):
     a = qpat.load(TEMPLATE)
     b = qpat.load(TEMPLATE)
     old, _ = editor.show_param(b, "Osc1Type")
-    new = 0.0 if old == 1.0 else 1.0  # Zielwert != alter Wert (Template ist evtl. schon 1.0)
+    new = 0.0 if old == 1.0 else 1.0  # target value != old value (template may already be 1.0)
     editor.set_param(b, "Osc1Type", new, display="Waveform")
     diff = editor.diff_params(a, b)
     keys = [d[0] for d in diff]

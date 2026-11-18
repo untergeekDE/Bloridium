@@ -1,231 +1,230 @@
-# Analyse 2026-11-15: Was muss an der qpat-Sound-Umwandlung noch gefixt werden?
+# Analysis 2026-11-15: what still has to be fixed in the qpat sound conversion?
 
-Subagent-Analyse (nur read-only/offline: Dumps, qpats, Logs, Referenzen; kein MIDI, keine Code-Aenderung).
-Methode: systematic-debugging (Phase 1 Root Cause + Phase 2 Pattern) — jede Aussage unten ist gegen
-Roh-Dump (`bloridium bank show <LOC>` / `dumps/blofeld_sndd_<LOC>_*.bin`), generiertes qpat
-(`qpat info transfer/upload/*.qpat` + direkter Vergleich override vs. qpat-Wert), `qpat_map.py`,
-eigene OS4-Exporte (`dumps/export-001`, v14) und Iridium-Handbuch (`docs/manual-text/iridium_os3.txt`)
-abgesichert. Alle 9 generierten qpats sind **qpat v14** (`workflow.py:138`: "Zielgeraet OS4 erwartet v14").
+Subagent analysis (read-only/offline only: dumps, qpats, logs, references; no MIDI, no code change).
+Method: systematic-debugging (Phase 1 root cause + Phase 2 pattern) — every statement below is backed by
+raw dump (`bloridium bank show <LOC>` / `dumps/blofeld_sndd_<LOC>_*.bin`), generated qpat
+(`qpat info transfer/upload/*.qpat` + direct comparison override vs. qpat value), `qpat_map.py`,
+own OS4 exports (`dumps/export-001`, v14) and the Iridium manual (`docs/manual-text/iridium_os3.txt`).
+All 9 generated qpats are **qpat v14** (`workflow.py:138`: "target device OS4 expects v14").
 
-## Evidenz-Basis (Live-A/B 2026-11-14, Set 6 PC108-116, Note 72, mode=manual_panel)
+## Evidence base (live A/B 2026-11-14, Set 6 PC108-116, note 72, mode=manual_panel)
 
-| Preset | User 0-100 | User-Bemerkung (Kern) | Phase A | combined | Peak A/B dBFS | Routing |
+| Preset | User 0-100 | User comment (core) | Phase A | combined | Peak A/B dBFS | Routing |
 |---|---|---|---|---|---|---|
-| A001 JMX jun | 70 | Leiser, Filter zu weit geschlossen, LFO1-Filter zu stark | 92.86 | 84.22 | -19.4 / **-47.9** | seriell |
-| A008 Easy Piano | **45** | Kaum hörbar, vermutl. 1 Oktave tiefer, stark abgefiltert | 95.20 | 82.28 | -25.6 / **-64.8** | seriell |
-| A010 Wurly | 80 | Hohe Lagen anderer Charakter (hohle square wave) | 97.00 | 87.61 | -44.2 / -42.8 | parallel |
-| A019 Tines | 90 | Reagiert nicht auf Aftertouch | 95.05 | 91.41 | -29.4 / -45.5 | parallel |
-| A022 ModWheelOrg | 95 | Mittl. Oberton am Blofeld lauter | 94.74 | 89.18 | -15.5 / -29.2 | seriell |
-| A039 A Elektro | 90 | Viel leiser; Delay beim Blofeld | 96.07 | 86.64 | -37.9 / -55.3 | seriell |
-| A043 SH Power | 75 | Blofeld voller; Iridium stark AT-Bending (Channel->Poly AT) | 95.02 | 86.70 | -19.3 / -35.6 | parallel |
-| A071 Windowed SYNC2FM | 70 | **Kein Sync beim Iridium** | 94.38 | 90.54 | -23.2 / -40.6 | seriell |
-| A073 Chord Hose | 85 | Unterschiedliche Effekte, Blofeld schneidender | 96.63 | 88.82 | -27.0 / -53.9 | seriell |
+| A001 JMX jun | 70 | Quieter, filter closed too far, LFO1 filter too strong | 92.86 | 84.22 | -19.4 / **-47.9** | serial |
+| A008 Easy Piano | **45** | Barely audible, presumably 1 octave lower, heavily filtered | 95.20 | 82.28 | -25.6 / **-64.8** | serial |
+| A010 Wurly | 80 | High registers different character (hollow square wave) | 97.00 | 87.61 | -44.2 / -42.8 | parallel |
+| A019 Tines | 90 | Does not react to aftertouch | 95.05 | 91.41 | -29.4 / -45.5 | parallel |
+| A022 ModWheelOrg | 95 | Mid harmonic louder on the Blofeld | 94.74 | 89.18 | -15.5 / -29.2 | serial |
+| A039 A Elektro | 90 | Much quieter; delay on the Blofeld | 96.07 | 86.64 | -37.9 / -55.3 | serial |
+| A043 SH Power | 75 | Blofeld fuller; Iridium strong AT bending (Channel->Poly AT) | 95.02 | 86.70 | -19.3 / -35.6 | parallel |
+| A071 Windowed SYNC2FM | 70 | **No sync on the Iridium** | 94.38 | 90.54 | -23.2 / -40.6 | serial |
+| A073 Chord Hose | 85 | Different effects, Blofeld more cutting | 96.63 | 88.82 | -27.0 / -53.9 | serial |
 
-Quellen: `recordings/phaseb_ratings_raw.json`, `recordings/sim_log.jsonl` (ts 20261114_175046-180616,
+Sources: `recordings/phaseb_ratings_raw.json`, `recordings/sim_log.jsonl` (ts 20261114_175046-180616,
 `norm_pegel=true`), `docs/PHASEB-EVAL-2026-11-14.md`, `transfer/upload/MANIFEST.md`.
-Zusatz-Evidenz: d1-omni:2b-Profil `darker` 9/9 (2b) bzw. 7/9 (600m), `octave_lower` nur A008 grenzwertig
-(p=0.50) — deckt sich mit "Filter zu / abgefiltert" bei allen, Octave-Verdacht A008 nur schwach.
+Additional evidence: d1-omni:2b profile `darker` 9/9 (2b) resp. 7/9 (600m), `octave_lower` only A008 borderline
+(p=0.50) — matches "filter closed / filtered" on all, octave suspicion A008 only weak.
 
-**Muster (Phase 2):** Alle 6 seriellen Patches (A001 A008 A022 A039 A071 A073) haben Iridium-Peaks
-15-40 dB unter dem Blofeld (bis -64.8 dBFS) und alle seriellen User-Texte beschweren sich ueber
-"zu/leiser/abgefiltert" — das ist kein Zufall, sondern ein systematischer Defekt im seriellen Pfad
-(siehe P0-1). Die parallelen Patches (A010 A019 A043) haben normale Pegel und ihre Beschwerden
-betreffen Matrix/FX-Detail (Sync, AT, FM, Drive) — siehe P0-2/P1.
+**Pattern (Phase 2):** all 6 serial patches (A001 A008 A022 A039 A071 A073) have Iridium peaks
+15-40 dB below the Blofeld (down to -64.8 dBFS) and all serial user texts complain about
+"too/much quieter/filtered" — that's no coincidence, but a systematic defect in the serial path
+(see P0-1). The parallel patches (A010 A019 A043) have normal levels and their complaints
+concern matrix/FX detail (sync, AT, FM, drive) — see P0-2/P1.
 
 ---
 
-## P0 — serielle Patches zu dunkel/zu leise (alle 6 seriellen Presets)
+## P0 — serial patches too dark/too quiet (all 6 serial presets)
 
-### P0-1 MatrixDst-Enum-Werte sind v8-Werte in v14-Dateien: "DF Amount"=71 statt **95**, "Filter2 Cutoff"=103 statt **104**
-- **Betroffen:** A001, A008, A022, A039, A071, A073 (seriell) — der extra Slot `Filter1 Env -> DF Amount`
-  (qpat_map.py:461-466) landet mit `MatrixDst = 71.0` (qpat_map.py:89, Kommentar "v14-Wert aus qpat_params_v8.md")
-  auf einem **v14-falschen Ziel**; ebenso "Filter2 Cutoff"=103 (qpat_map.py:85).
-- **Evidenz:** Eigene OS4-Exporte (v14, `dumps/export-001`): pro Slot auswertung zeigt in v14 konsistent
-  `DF Amount = 95.0` (Slots 2/4/5/9), `Filter1 Cutoff = 100`, `Filter1 Reso = 101`, `Filter2 Cutoff = 104`,
-  `Filter2 Reso = 105`; 71/103 kommen in v14 **gar nicht vor** (in v8-Factories dagegen: 71=DF Amount n=234,
-  103=Filter2 Cutoff). Die gebauten qpats sind v14 (`qpat info`: Version 14) — im Geraet ist dst 71/103 ein
-  anderes Ziel (WT/RS-/Filter-Pan-Bereich). Damit macht der Slot, der den DigiFormer per Filter-Env oeffnen
-  soll (HANDOVER-2026-11-14: "sonst bleibt der Former statisch zu ... -66 dBFS"), **gar nichts** →
-  serielle Kette bleibt F1-cutoff + statischer, evtl. sehr geschlossener Former → genau die beobachteten
-  -40 bis -64.8 dBFS Peaks und "Filter zu weit geschlossen" (A001), "kaum zu hoehren" (A008),
-  "viel leiser" (A039), d1 `darker` 9/9.
-- **Root Cause:** `bloridium/qpat_map.py:89` (`"DF Amount": 71.0`) und `:85` (`"Filter2 Cutoff": 103.0`) —
-  v8-Enum in v14-Output (Mischung: Filter12Type wurde 2026-11-14 auf v14 korrigiert, MATRIX_DST nicht).
-- **Fix:** MATRIX_DST fuer v14: `"DF Amount": 95.0`, `"DF Color": 96.0` (v14: 96='DF Color'), `"Filter2 Cutoff": 104.0`,
-  `"Filter2 Reso": 105.0` (Rest 100/101/113/114/123/144/1-11/18/39/46/67/74/76 bereits v14-konform).
-  Aenderung betrifft alle 9 qpats (Seriell-Slot + F2-Mod-Slots).
-- **Test:** `tests/test_qpat_map.py` — neuer Test: fuer A001 `MatrixDst{df_slot} == 95.0`; Regression:
-  assert alle in v14-Exporten belegten dst-Werte gegen eine hartkodierte v14-Tabelle; bestehender Test
-  `test_mod_matrix_slots_mapped` (asserted 100/101/103/105...) muss auf 104 angepasst werden.
-  Device-Check: ein serieller Patch (A001) laden, Matrix-Slot mit dst 95 am Panel als "DF Amount" angezeigt?
+### P0-1 MatrixDst enum values are v8 values in v14 files: "DF Amount"=71 instead of **95**, "Filter2 Cutoff"=103 instead of **104**
+- **Affected:** A001, A008, A022, A039, A071, A073 (serial) — the extra slot `Filter1 Env -> DF Amount`
+  (qpat_map.py:461-466) lands with `MatrixDst = 71.0` (qpat_map.py:89, comment "v14 value from qpat_params_v8.md")
+  on a **v14-wrong destination**; likewise "Filter2 Cutoff"=103 (qpat_map.py:85).
+- **Evidence:** own OS4 exports (v14, `dumps/export-001`): per slot evaluation shows in v14 consistently
+  `DF Amount = 95.0` (slots 2/4/5/9), `Filter1 Cutoff = 100`, `Filter1 Reso = 101`, `Filter2 Cutoff = 104`,
+  `Filter2 Reso = 105`; 71/103 do NOT occur in v14 at all (in v8 factories: 71=DF Amount n=234,
+  103=Filter2 Cutoff). The built qpats are v14 (`qpat info`: version 14) — on the device dst 71/103 is
+  a different destination (WT/RS-/filter-pan range). So the slot that is supposed to open the DigiFormer via the filter env
+  (HANDOVER-2026-11-14: "otherwise the Former stays statically closed ... -66 dBFS"), **does nothing** →
+  the serial chain stays F1-cutoff + static, possibly very closed Former → exactly the observed
+  -40 to -64.8 dBFS peaks and "filter closed too far" (A001), "barely audible" (A008),
+  "much quieter" (A039), d1 `darker` 9/9.
+- **Root cause:** `bloridium/qpat_map.py:89` (`"DF Amount": 71.0`) and `:85` (`"Filter2 Cutoff": 103.0`) —
+  v8 enum in v14 output (mix-up: Filter12Type was corrected to v14 on 2026-11-14, MATRIX_DST was not).
+- **Fix:** MATRIX_DST for v14: `"DF Amount": 95.0`, `"DF Color": 96.0` (v14: 96='DF Color'), `"Filter2 Cutoff": 104.0`,
+  `"Filter2 Reso": 105.0` (rest 100/101/113/114/123/144/1-11/18/39/46/67/74/76 already v14-conform).
+  The change affects all 9 qpats (serial slot + F2 mod slots).
+- **Test:** `tests/test_qpat_map.py` — new test: for A001 `MatrixDst{df_slot} == 95.0`; regression:
+  assert all dst values present in v14 exports against a hardcoded v14 table; existing test
+  `test_mod_matrix_slots_mapped` (asserted 100/101/103/105...) must be adjusted to 104.
+  Device check: load one serial patch (A001), is the matrix slot with dst 95 shown as "DF Amount" on the panel?
 
-### P0-2 Aftertouch: globales `AfterTouchDoPoly` bleibt auf Template-Default 1.0 (Poly AT) → Channel AT wirkt nicht / falsch
-- **Betroffen:** A019 ("reagiert nicht auf Aftertouch", user=90), A043 ("stark Aftertouch-Bending; Problem
+### P0-2 Aftertouch: global `AfterTouchDoPoly` stays on template default 1.0 (Poly AT) → Channel AT doesn't work / works wrong
+- **Affected:** A019 ("does not react to aftertouch", user=90), A043 ("strong aftertouch bending; problem
   Channel AT (Blofeld) -> Poly AT (Iridium)", user=75).
-- **Evidenz:** qpat_map.py setzt `AfterTouchDoPoly` nie. Template **und alle eigenen v14-Exporte** haben
-  `AfterTouchDoPoly = 1.0 'Poly AT'`. Iridium-Handbuch (os3.txt:5387): global waehlbar Mono AT / Poly AT;
-  Appendix (os3.txt:7660): Matrix-Source "After Touch" = **"Polyphonic Keyboard Pressure Data"**.
-  Blofeld "Pressure" ist Channel Aftertouch → mit DoPoly=1 reagiert die Matrix nicht auf Channel AT.
-  A043 hat zusaetzlich 2 AT-Slots (M1 LFO2*Press→Pitch amt 84, M2 Pressure→O2 Pitch amt 43 →
-  MatrixSrc 16.0, qpat_map.py:80), die bei Poly AT pro Note biegen ("starkes Bending").
-- **Root Cause:** `qpat_map.py` — fehlt komplett (kein `setp("AfterTouchDoPoly", ...)`); `MATRIX_SRC`
-  "After Touch": 16.0 (Zeile 80) — in v14-Exporten tauchen 16 **und** 17 mit Display 'After Touch' auf
-  (16=channel?, 17=poly? — am Geraet klaeren).
-- **Fix:** in `blofeld_to_qpat_params` fuer alle Patches `setp("AfterTouchDoPoly", 0.0, "Mono AT")`
-  (Blofeld sendet Channel AT), MatrixSrc AT vorerst 16.0 lassen; am Geraet mit Channel AT gegen 17 testen.
-- **Test:** neuer Test: `ov["AfterTouchDoPoly"][0] == 0.0` fuer alle 9 Dumps; Device-Check: A043 laden,
-  Channel AT senden → Pitch biegt nur ueber M2 (amt 43→0.417), nicht doppelt.
+- **Evidence:** qpat_map.py never sets `AfterTouchDoPoly`. Template **and all own v14 exports** have
+  `AfterTouchDoPoly = 1.0 'Poly AT'`. Iridium manual (os3.txt:5387): globally selectable Mono AT / Poly AT;
+  appendix (os3.txt:7660): matrix source "After Touch" = **"Polyphonic Keyboard Pressure Data"**.
+  Blofeld "Pressure" is Channel Aftertouch → with DoPoly=1 the matrix does not react to Channel AT.
+  A043 additionally has 2 AT slots (M1 LFO2*Press→Pitch amt 84, M2 Pressure→O2 Pitch amt 43 →
+  MatrixSrc 16.0, qpat_map.py:80), which bend per note under Poly AT ("strong bending").
+- **Root cause:** `qpat_map.py` — missing completely (no `setp("AfterTouchDoPoly", ...)`); `MATRIX_SRC`
+  "After Touch": 16.0 (line 80) — in v14 exports 16 **and** 17 appear with display 'After Touch'
+  (16=channel?, 17=poly? — clarify on the device).
+- **Fix:** in `blofeld_to_qpat_params` for all patches `setp("AfterTouchDoPoly", 0.0, "Mono AT")`
+  (Blofeld sends Channel AT), leave MatrixSrc AT at 16.0 for now; on the device test Channel AT against 17.
+- **Test:** new test: `ov["AfterTouchDoPoly"][0] == 0.0` for all 9 dumps; device check: load A043,
+  send Channel AT → pitch bends only via M2 (amt 43→0.417), not doubled.
 
 ---
 
-## P1 — konkrete Feature-Luecken mit User-Evidenz
+## P1 — concrete feature gaps with user evidence
 
-### P1-1 Hard Sync wird nicht uebersetzt: "Osc 2 Sync to O3" landet in `unmapped`
-> **Deprioritized 2026-11-15 (User):** Windowed-Sync-Sounds (A071, Sound 215) nutzen eine
-> experimentelle, Blofeld-spezifische Technik -> niedrige Prioritaet, nach P2.
-- **Betroffen:** A071 Windowed SYNC2FM (user=70: **"Kein Sync beim Iridium"**), A008 (raw `Osc 2 Sync to O3 = 1`).
-- **Evidenz:** Dump A071/A008: `Osc 2 Sync to O3 = 1`. qpat_map.py:285: `unmapped += ["Osc 2 Sync to O3", ...]`;
-  in den qpats ist `Osc2WaveformSync = 0.0` (template default). Handbuch os3.txt:1680: Osc-Sync =
-  "typische Oszillator-Synchronisation"; qpat-Param existiert: `Osc2WaveformSync` (v15 doc line 977;
-  v8-Factories nutzen Werte 0.02-0.70, d.h. 0..1-Skala, 0=off). Zusaetzlich Matrix-Dst "WF2 Sync" existiert
-  (v8: 37; v14-Wert am Geraet pruefen).
-- **Root Cause:** qpat_map.py:285 (bewusst unmapped) — keine Stelle setzt `OscNWaveformSync`.
-- **Fix:** `if p.get("Osc 2 Sync to O3"): setp("Osc2WaveformSync", 1.0, "Sync on")` (Wert 1.0 = voller Sync;
-  genaue Amount-Skala am Geraet, evtl. 0.5 default). Betrifft A071 (Osc2 ist Wavetable 'Resonant2' —
-  pruefen ob WaveformSync bei WT-Osc greift, sonst Matrix-Slot src LFO? -> Device-Check).
-- **Test:** `test_osc2_sync_mapped_a071`: Dump A071 → `ov["Osc2WaveformSync"][0] == 1.0`; A001 (Sync=0) → nicht gesetzt/0.0.
+### P1-1 Hard sync is not translated: "Osc 2 Sync to O3" lands in `unmapped`
+> **Deprioritized 2026-11-15 (user):** windowed-sync sounds (A071, sound 215) use an
+> experimental, Blofeld-specific technique -> low priority, after P2.
+- **Affected:** A071 Windowed SYNC2FM (user=70: **"No sync on the Iridium"**), A008 (raw `Osc 2 Sync to O3 = 1`).
+- **Evidence:** dump A071/A008: `Osc 2 Sync to O3 = 1`. qpat_map.py:285: `unmapped += ["Osc 2 Sync to O3", ...]`;
+  in the qpats `Osc2WaveformSync = 0.0` (template default). Manual os3.txt:1680: osc sync =
+  "typical oscillator synchronization"; qpat param exists: `Osc2WaveformSync` (v15 doc line 977;
+  v8 factories use values 0.02-0.70, i.e. 0..1 scale, 0=off). Additionally matrix dst "WF2 Sync" exists
+  (v8: 37; check the v14 value on the device).
+- **Root cause:** qpat_map.py:285 (deliberately unmapped) — nowhere sets `OscNWaveformSync`.
+- **Fix:** `if p.get("Osc 2 Sync to O3"): setp("Osc2WaveformSync", 1.0, "Sync on")` (value 1.0 = full sync;
+  exact amount scale on the device, possibly 0.5 default). Affects A071 (Osc2 is wavetable 'Resonant2' —
+  check whether WaveformSync works on WT oscs, else matrix slot src LFO? -> device check).
+- **Test:** `test_osc2_sync_mapped_a071`: dump A071 → `ov["Osc2WaveformSync"][0] == 1.0`; A001 (Sync=0) → not set/0.0.
 
-### P1-2 Serielle F2-Modulationen zielen auf die abgeschaltete Filter-2-Stufe (und falsches Enum)
-- **Betroffen:** A001 (Filter 2 Mod Source=Velocity amt 107 → Slot `Velocity -> Filter2 Cutoff` dst 103),
+### P1-2 Serial F2 modulations target the switched-off filter-2 stage (and wrong enum)
+- **Affected:** A001 (Filter 2 Mod Source=Velocity amt 107 → slot `Velocity -> Filter2 Cutoff` dst 103),
   A071 (M7 LFO3→F2 Cutoff amt 13 → dst 103; M9 MW→F2 Reson. amt 100 → dst 105), A022 (M11 Modifier1→F2 Cutoff,
   M15 MW→F2 Cutoff).
-- **Evidenz:** qpat_map.py:435-447 (`d_disp = "Filter2 Cutoff"` Zeile 440) und BLOFELD_MOD_DST:109. Im seriellen
-  Modus ist `Filter2State = Off` (qpat_map.py:328) — die Filter-2-Stufe ist aus; der hörbare F2 ist der
-  DigiFormer. Modulationen auf "Filter2 Cutoff/Reso" gehen ins Leere (bzw. wg. P0-1 auf falsches Ziel).
-  Konsequenz z.B. A001: Velocity oeffnet am Blofeld BEIDE Filter, am Iridium nur F1.
-- **Root Cause:** qpat_map.py:435-447 + :109 — kein seriell-aware Remapping F2→DigiFormer.
-- **Fix:** im seriellen Fall (`seriell and not f2_bypass`): Blofeld-Ziele "F2 Cutoff" → MatrixDst "DF Amount"
-  (v14: 95.0), "F2 Reson." → "DF Color" (v14: 96.0); im parallelen Fall bleiben 104/105. Gleiches fuer den
-  direkten Block `Filter 2 Mod Source/Amount` (Zeile 436-447, n=2 → dst "DF Amount").
-- **Test:** A001: alle MatrixDst-Werte mit Display "Filter2 Cutoff" duerfen im seriellen qpat nicht vorkommen;
-  stattdessen ein Slot mit dst 95.0 und src Velocity. A010 (parallel) behaelt 104.0.
+- **Evidence:** qpat_map.py:435-447 (`d_disp = "Filter2 Cutoff"` line 440) and BLOFELD_MOD_DST:109. In serial
+  mode `Filter2State = Off` (qpat_map.py:328) — the filter-2 stage is off; the audible F2 is the
+  DigiFormer. Modulations to "Filter2 Cutoff/Reso" go nowhere (or, due to P0-1, to the wrong destination).
+  Consequence e.g. A001: velocity opens BOTH filters on the Blofeld, on the Iridium only F1.
+- **Root cause:** qpat_map.py:435-447 + :109 — no serial-aware remapping F2→DigiFormer.
+- **Fix:** in the serial case (`seriell and not f2_bypass`): Blofeld destinations "F2 Cutoff" → MatrixDst "DF Amount"
+  (v14: 95.0), "F2 Reson." → "DF Color" (v14: 96.0); in the parallel case they stay 104/105. Same for the
+  direct block `Filter 2 Mod Source/Amount` (lines 436-447, n=2 → dst "DF Amount").
+- **Test:** A001: no MatrixDst values with display "Filter2 Cutoff" may occur in the serial qpat;
+  instead a slot with dst 95.0 and src Velocity. A010 (parallel) keeps 104.0.
 
-### P1-3 FX-Block: Mix-Key nach Slot statt nach Typ + alle 14 Effekt-Parameter unmapped (Delay/Reverb/Drive-Chars)
-- **Betroffen:** A039 (user=90: "Delay beim Blofeld" — FX2=Clk.Delay mix 14, aber DelayTime/Feedback/Cutoff
-  der Blofeld-Parameter 1-14 werden nicht uebersetzt → Iridium-Delay laeuft auf Template-Default
-  DelayDelayL/R=0.30/0.35, DelaySync=Off, DelayFeed=0.75), A073 ("unterschiedliche Effekte": FX2=Delay mix 11
-  + FX1=Chorus mix 58), A001 (FX2=Clk.Delay), A008 (FX2=**Chorus** mix 24 → landet in `DelayDryWet`=0.189,
-  `ChorusDryWet` bleibt 0.0 von FX1 — sichtbar im qpat), A022 (FX2=Overdrive mix 11 → `DelayDryWet` 0.087).
-- **Evidenz:** qpat_map.py:468-475: `mixkey = {1: "ChorusDryWet", 2: "DelayDryWet"}.get(n)` (Zeile 473) — key
-  haengt vom FX-Slot ab, nicht vom gemappten Typ. `unmapped` enthaelt alle "Effect N Parameter 1-14"
-  (MAPPING-MASTER.md:130-159 ❌). Blofeld Clk.Delay-Parameter laut Handbuch (blofeld.txt:2442+): Length
-  (1/96..10 bars, notenwert-synced), Feedback 0..127, Cutoff (Feedback-HF-Daempfung), Polarity, Spread.
-  Iridium-Aequivalente (v15 doc): `DelaySync` (0/1), `DelayLeftSync/RightSync` (Notenwerte), `DelayDelayL/R`,
+### P1-3 FX block: mix key by slot instead of by type + all 14 effect parameters unmapped (delay/reverb/drive chars)
+- **Affected:** A039 (user=90: "delay on the Blofeld" — FX2=Clk.Delay mix 14, but the Blofeld delay
+  parameters 1-14 are not translated → the Iridium delay runs on template default
+  DelayDelayL/R=0.30/0.35, DelaySync=Off, DelayFeed=0.75), A073 ("different effects": FX2=Delay mix 11
+  + FX1=Chorus mix 58), A001 (FX2=Clk.Delay), A008 (FX2=**Chorus** mix 24 → lands in `DelayDryWet`=0.189,
+  `ChorusDryWet` stays 0.0 from FX1 — visible in the qpat), A022 (FX2=Overdrive mix 11 → `DelayDryWet` 0.087).
+- **Evidence:** qpat_map.py:468-475: `mixkey = {1: "ChorusDryWet", 2: "DelayDryWet"}.get(n)` (line 473) — the key
+  depends on the FX slot, not on the mapped type. `unmapped` contains all "Effect N Parameter 1-14"
+  (MAPPING-MASTER.md:130-159 ❌). Blofeld Clk.Delay parameters per the manual (blofeld.txt:2442+): Length
+  (1/96..10 bars, note-value synced), Feedback 0..127, Cutoff (feedback HF damping), Polarity, Spread.
+  Iridium equivalents (v15 doc): `DelaySync` (0/1), `DelayLeftSync/RightSync` (note values), `DelayDelayL/R`,
   `DelayFeed`, `DelayHiCut`, `DelayDryWet`, `DelayXPan`.
-- **Root Cause:** qpat_map.py:473 (falsches Mix-Key) + FX-Parameter komplett unmapped (Zeilen 468-475).
-- **Fix:** (a) Mix-Key aus dem gemappten Typ waehlen: Chorus→`ChorusDryWet`, Delay→`DelayDryWet`, Phaser→
-  `PhaserDryWet`, Flanger→`FlangerDryWet`, Reverb→`ReverbDryWet`(falls vorhanden), Drive→`DriveDryWet`;
-  (b) fuer Blofeld "Delay"/"Clk.Delay" auf FX2: `DelayDryWet=norm(Mix)`, `DelayFeed=norm(Feedback-Param)`,
-  `DelayHiCut≈norm(Cutoff)`, bei Clk.Delay zusaetzlich `DelaySync=1.0` + `DelayLeftSync/RightSync` aus
-  Length (Blofeld-Notenwert → Iridium-SyncRatio-Index, analog `iridium_sync_ratio_index`); (c) Chorus:
-  `ChorusSpeed/Depth` aus Blofeld-Chorus-Parametern.
-- **Test:** A008: `DelayDryWet` darf nicht gesetzt sein wenn FX2=Chorus, `ChorusDryWet==norm(24)`;
-  A039: `ov["DelaySync"][0]==1.0` und `DelayFeed` gesetzt; A001 FX2 Clk.Delay analog.
+- **Root cause:** qpat_map.py:473 (wrong mix key) + FX parameters completely unmapped (lines 468-475).
+- **Fix:** (a) choose the mix key from the mapped type: Chorus→`ChorusDryWet`, Delay→`DelayDryWet`, Phaser→
+  `PhaserDryWet`, Flanger→`FlangerDryWet`, Reverb→`ReverbDryWet`(if present), Drive→`DriveDryWet`;
+  (b) for Blofeld "Delay"/"Clk.Delay" on FX2: `DelayDryWet=norm(Mix)`, `DelayFeed=norm(Feedback param)`,
+  `DelayHiCut≈norm(Cutoff)`, for Clk.Delay additionally `DelaySync=1.0` + `DelayLeftSync/RightSync` from
+  Length (Blofeld note value → Iridium SyncRatio index, analogous to `iridium_sync_ratio_index`); (c) Chorus:
+  `ChorusSpeed/Depth` from the Blofeld chorus parameters.
+- **Test:** A008: `DelayDryWet` must not be set when FX2=Chorus, `ChorusDryWet==norm(24)`;
+  A039: `ov["DelaySync"][0]==1.0` and `DelayFeed` set; A001 FX2 Clk.Delay analogous.
 
-### P1-4 Fehlende Blofeld-Mod-Ziele in BLOFELD_MOD_DST → Slots werden fallengelassen (u.a. A019s einziger AT-Slot)
-- **Betroffen:** A019 (M4 **Pressure→F1 Drive** amt 113 → unmapped → "reagiert nicht auf Aftertouch";
-  zusaetzlich M3 Keytrack→AE Release unmapped), A001 (M9 Mod Wheel→F1 Drive amt 116 unmapped),
+### P1-4 Missing Blofeld mod destinations in BLOFELD_MOD_DST → slots get dropped (incl. A019's only AT slot)
+- **Affected:** A019 (M4 **Pressure→F1 Drive** amt 113 → unmapped → "does not react to aftertouch";
+  additionally M3 Keytrack→AE Release unmapped), A001 (M9 Mod Wheel→F1 Drive amt 116 unmapped),
   A008 (M1 Env3→RMod Level, M2 Env3→F1 Drive, M3 Env3→NoiseLevel, M6/M7/M16 Keytrack→O2/O3 FM,
-  M10 Keytrack→FE Release, M11 Vel→M1 Amount, M14 MW→LFO1Speed — alle unmapped), A010 (M1/M2 Env3→O1/O3 FM,
+  M10 Keytrack→FE Release, M11 Vel→M1 Amount, M14 MW→LFO1Speed — all unmapped), A010 (M1/M2 Env3→O1/O3 FM,
   M11 Vel→M1 Amount, M12/M13 MW→M3/M4 Amount, M15 Vel→F2 Pan), A022 (M2/M3 Control W→O2/O3 Level —
-  "Control W" fehlt auch in BLOFELD_MOD_SRC!, M4 Pressure→LFO2Speed, M7-9 MW→LFO1/2Speed, M10-12 Modifier1→...,
+  "Control W" is also missing in BLOFELD_MOD_SRC!, M4 Pressure→LFO2Speed, M7-9 MW→LFO1/2Speed, M10-12 Modifier1→...,
   M13 LFO2→F2 Pan), A071 (M5 Pressure→O1 FM, M6 Unisono V.→F2 Pan, M8 MW→F1 Drive), A073 (M1 MW→O2 FM).
-- **Evidenz:** `unmapped`-Liste der Mapping-Ausgabe pro Preset (85 Eintraege bei A008); BLOFELD_MOD_DST
-  (qpat_map.py:105-112) deckt nur Pitch/Osc-Pitch/Osc-Level/F1-F2 Cutoff+Reso/FE A+D+S/Volume ab.
-  Blofeld-Ziel-Enums (blofeld_dump.py:47-48): F1/F2 Drive, F1/F2 FM, F1/F2 Pan, LFO1-3Speed, Volume, ...
-  Iridium-Seite hat dafuer Destinations (Handbuch Appendix os3.txt:7700+): "DF Color", "DF Pan", "DF Level",
+- **Evidence:** `unmapped` list of the mapping output per preset (85 entries on A008); BLOFELD_MOD_DST
+  (qpat_map.py:105-112) only covers Pitch/Osc-Pitch/Osc-Level/F1-F2 Cutoff+Reso/FE A+D+S/Volume.
+  Blofeld destination enums (blofeld_dump.py:47-48): F1/F2 Drive, F1/F2 FM, F1/F2 Pan, LFO1-3Speed, Volume, ...
+  The Iridium side has destinations for those (manual appendix os3.txt:7700+): "DF Color", "DF Pan", "DF Level",
   "Filter 1/2 Pan/Level", "LFO1-6 Speed", "AmpEnv Attack/Decay/Release", "FXn DryWet/Control", "Drive Amount"...
-- **Root Cause:** qpat_map.py:105-112 (unvollstaendige Dst-Tabelle) + :94-103 (Src-Tabelle ohne "Control W",
+- **Root cause:** qpat_map.py:105-112 (incomplete dst table) + :94-103 (src table without "Control W",
   "Modifier 1-4", "Unisono V.").
-- **Fix (mindestens):** "AE Attack/Decay/Release" → AmpEnv-Dst (v14: Attack=109, Decay/Sustain/Release lt.
-  Exporten 110/111/112-Region — am Geraet verifizieren), "LFO1Speed..3" → "LFO1..3 Speed"-Dst (v14: 145/…),
-  "F1 Drive"/"F2 Drive" → seriell: "DF Color" (96.0), parallel: naechstes Drive — oder FX Drive Amount;
-  "F2 Pan" → "DF Pan"; "O1/O2/O3 FM" und "RMod Level"/"NoiseLevel"/"M1-4 Amount" als unmapped dokumentieren
-  (keine 1:1-Quelle). "Control W" → "Wheel" (Control W = zweites Wheel am Blofeld? verifizieren).
-- **Test:** A019: Pressure-Slot vorhanden (src 16.0, dst nicht Off); Anzahl unmapped-Mod-Slots sinkt;
-  assert kein aktiver Blofeld-Slot mit bekanntem Dst landet in unmapped.
+- **Fix (at least):** "AE Attack/Decay/Release" → AmpEnv dst (v14: Attack=109, Decay/Sustain/Release per
+  exports 110/111/112-region — verify on the device), "LFO1Speed..3" → "LFO1..3 Speed" dst (v14: 145/…),
+  "F1 Drive"/"F2 Drive" → serial: "DF Color" (96.0), parallel: nearest drive — or FX Drive Amount;
+  "F2 Pan" → "DF Pan"; "O1/O2/O3 FM" and "RMod Level"/"NoiseLevel"/"M1-4 Amount" document as unmapped
+  (no 1:1 source). "Control W" → "Wheel" (Control W = second wheel on the Blofeld? verify).
+- **Test:** A019: Pressure slot present (src 16.0, dst not Off); number of unmapped mod slots decreases;
+  assert no active Blofeld slot with a known dst lands in unmapped.
 
 ---
 
-## P2 — Kalibrierung / Approximationen (nach P0/P1 messen)
+## P2 — calibration / approximations (measure after P0/P1)
 
-### P2-1 `amt_bipolar()` skaliert bipolar Amounts halb (oder doppelt) — gegen Geraet kalibrieren
-- **Evidenz:** qpat_map.py:183-187: `0.5 + (raw-64)/254` — Docstring behauptet "127 -> 1.0", Code liefert 0.748.
-  Test `test_mod_matrix_slots_mapped` kodifiziert /254. User-Evidenz widerspricht "zu schwach": A001
-  "LFO1 Filter wirkt **zu stark**" (LFO1→F1 Cutoff amt raw 103 → 0.6535), A043 "stark AT-Bending"
-  (AT→Pitch raw 84 → 0.5787). D.h. Iridium MatrixAmount 0..1 ist offenbar **nicht** ±100% um 0.5,
-  sondern groesser (Richtung ±200%: 0.6535 ≈ +131% statt Blofeld +61%). Im Gegensatz dazu Vel→Volume
-  (Zeile 455) nutzt `0.5+0.5*norm` (volle Skala) — inkonsistent.
-- **Fix:** am Geraet eine Slot-Amount-Skala auslesen (Panel zeigt %); dann Divisor setzen: Blofeld
-  (raw-64)/64 = ±100% → Iridium-Wert so, dass Panel ±100% zeigt (vermutlich `0.5 + (raw-64)/64*0.25`,
-  also /256, falls 1.0=+200%). Einheitlich fuer amt_bipolar UND Vel→Volume.
-- **Test:** parametrisierter Divisor; Test gegen dokumentierten Anker (Panel-% bei raw 64/127/0).
+### P2-1 `amt_bipolar()` scales bipolar amounts half (or double) — calibrate against the device
+- **Evidence:** qpat_map.py:183-187: `0.5 + (raw-64)/254` — the docstring claims "127 -> 1.0", the code delivers 0.748.
+  Test `test_mod_matrix_slots_mapped` codifies /254. User evidence contradicts "too weak": A001
+  "LFO1 filter acts **too strong**" (LFO1→F1 Cutoff amt raw 103 → 0.6535), A043 "strong AT bending"
+  (AT→Pitch raw 84 → 0.5787). I.e. the Iridium MatrixAmount 0..1 is apparently **not** ±100% around 0.5,
+  but larger (direction ±200%: 0.6535 ≈ +131% instead of Blofeld +61%). In contrast Vel→Volume
+  (line 455) uses `0.5+0.5*norm` (full scale) — inconsistent.
+- **Fix:** read out a slot amount scale on the device (panel shows %); then set the divisor: Blofeld
+  (raw-64)/64 = ±100% → Iridium value such that the panel shows ±100% (presumably `0.5 + (raw-64)/64*0.25`,
+  i.e. /256, if 1.0=+200%). Uniform for amt_bipolar AND Vel→Volume.
+- **Test:** parameterized divisor; test against the documented anchor (panel % at raw 64/127/0).
 
-### P2-2 "LFOx*Press"-Quellen werden zu flachem "After Touch" (LFO-Multiplikator faellt weg)
-- **Betroffen:** A043 M1 (LFO2*Press→Pitch amt 84 → Slot AT→Pitch 0.579 konstanter Bending-Anteil —
-  user: "stark Aftertouch-Bending").
-- **Root Cause:** qpat_map.py:96-97 (`"LFO1*Press": "After Touch"` etc.) — Blofeld-Semantik ist
-  LFO-Signal × Pressure, nicht reines Pressure.
-- **Fix:** entweder Slot ganz weglassen (kein konstanter AT-Anteil) oder als AT mit reduziertem Amount;
-  am besten Device-Check, ob IridiumSrc "After Touch" × LFO ueber 2 Slots (AT→LFO-Gain) moeglich.
-- **Test:** A043: dst Pitch mit src AT nur aus echtem Pressure-Slot (M2), nicht aus M1.
+### P2-2 "LFOx*Press" sources become flat "After Touch" (LFO multiplier is lost)
+- **Affected:** A043 M1 (LFO2*Press→Pitch amt 84 → slot AT→Pitch 0.579 constant bending share —
+  user: "strong aftertouch bending").
+- **Root cause:** qpat_map.py:96-97 (`"LFO1*Press": "After Touch"` etc.) — Blofeld semantics is
+  LFO signal × pressure, not pure pressure.
+- **Fix:** either drop the slot entirely (no constant AT share) or as AT with reduced amount;
+  best a device check whether Iridium src "After Touch" × LFO via 2 slots (AT→LFO gain) is possible.
+- **Test:** A043: dst Pitch with src AT only from the real Pressure slot (M2), not from M1.
 
-### P2-3 FM (Osc N FM Source/Amount) nicht gemappt → "anderer Charakter in hohen Lagen"
-- **Betroffen:** A010 Wurly (user=80: "hohle square wave in hohen Lagen"; Osc1 FM←Osc2 amt **80**,
+### P2-3 FM (Osc N FM Source/Amount) not mapped → "different character in high registers"
+- **Affected:** A010 Wurly (user=80: "hollow square wave in high registers"; Osc1 FM←Osc2 amt **80**,
   Osc3 FM←Osc2 amt 80), A008 (Osc2 FM←Osc3 amt 35), A073 (M1 MW→O2 FM).
-- **Root Cause:** qpat_map.py:280-282 (FM Source/Amount in unmapped). Iridium hat keine Matrix-Osc-Quelle;
-  FM laeuft ueber Kernel-Modus (`OscNWaveformDesity` = Kernel-Count, qpat_map.py:270 setzt 0.0 = 1 Kernel).
-- **Fix:** Approximation ueber Kernel: Osc mit FM-Source → `OscNWaveformDesity` > 0 mit Kernel-FM-Template
-  (Handbuch os3.txt:2606+ "FM bells"-Kernel), Amount → FM-Index; oder als unmapped dokumentieren.
-  A010 zuerst am Geraet pruefen, ob fehlendes FM wirklich den Hochton-Charakter erklaert.
-- **Test:** A010: wenn FM Amount>0 → `Osc1WaveformDesity` > 0 gesetzt.
+- **Root cause:** qpat_map.py:280-282 (FM Source/Amount in unmapped). The Iridium has no matrix osc source;
+  FM runs via kernel mode (`OscNWaveformDesity` = kernel count, qpat_map.py:270 sets 0.0 = 1 kernel).
+- **Fix:** approximation via kernel: osc with FM source → `OscNWaveformDesity` > 0 with a kernel FM template
+  (manual os3.txt:2606+ "FM bells" kernel), amount → FM index; or document as unmapped.
+  Check A010 on the device first whether missing FM really explains the high-register character.
+- **Test:** A010: if FM Amount>0 → `Osc1WaveformDesity` > 0 set.
 
-### P2-4 Wavetable-Bridge-Luecken: Blofeld-WTs ohne Iridium-Aequivalent bleiben auf Template "Resonant" (0.0)
-- **Betroffen:** A022 Osc1 "Fat Organ" (user=95: "mittl. Oberton am Blofeld lauter"), A071 Osc1 "Alt 1",
-  Osc2 "Resonant2" (user=70, neben Sync der 2. Grund fuer anderen SYNC2FM-Charakter).
-- **Root Cause:** qpat_map.py:44-51 (`BLOFELD_WAVETABLE_TO_IRIDIUM`) + :249-253 (unmapped → Table bleibt 0).
-- **Fix:** Bridge-Tabelle um die haeufigen Blofeld-WTs erweitern (naechstes Iridium-WT per Ohr/CLAP waehlen,
-  z.B. "Organ Syn"=14 fuer Fat Organ); Rest als unmapped lassen.
-- **Test:** A022: `Osc1WavetableTable != 0.0` nach Erweiterung.
+### P2-4 Wavetable bridge gaps: Blofeld WTs without an Iridium equivalent stay on template "Resonant" (0.0)
+- **Affected:** A022 Osc1 "Fat Organ" (user=95: "mid harmonic louder on the Blofeld"), A071 Osc1 "Alt 1",
+  Osc2 "Resonant2" (user=70, next to sync the 2nd reason for the different SYNC2FM character).
+- **Root cause:** qpat_map.py:44-51 (`BLOFELD_WAVETABLE_TO_IRIDIUM`) + :249-253 (unmapped → table stays 0).
+- **Fix:** extend the bridge table with the frequent Blofeld WTs (choose the next Iridium WT by ear/CLAP,
+  e.g. "Organ Syn"=14 for Fat Organ); leave the rest as unmapped.
+- **Test:** A022: `Osc1WavetableTable != 0.0` after the extension.
 
-### P2-5 Weitere bekannte Abweichungen (Doku-Level, kein akuter User-Befund)
-- LFO free Speed: `norm(raw)` (qpat_map.py:392) unkalibriert gegen Iridium-Hz-Skala (kann "LFO1 wirkt zu
-  stark" verstaerken, A001) — Hz-Kalib ankerbasiert wie bei Glide/Cutoff nachziehen.
-- Mixer Balance → `OscNPan` (qpat_map.py:279) ist semantisch falsch (MAPPING-MASTER ⚠️): in parallel
-  haengt Balance den F1/F2-Anteil, nicht Stereo-Pan; besser `OscNDestination` DF/Fil-Anteil. Mono-Messung
-  kaschiert es (Peaks ok), im Stereobild falsch (A010/A019/A043 Balance=0 → Pan 0.0 hart links).
-- `OscNFinePitch = norm(Detune)` (qpat_map.py:277): Blofeld Detune bipolar ±64 cent um raw 64 —
-  norm() skaliert auf volle Iridium-Range (A008 Osc1 Detune raw 126 → 0.992 ≈ +98 statt +62 cent).
-- "Osc Pitch Source/Amount" (globaler Pitch-Mod, bei A008 = LFO1*MW amt 74, A019/A043/A071 amt 64)
+### P2-5 Further known deviations (doc level, no acute user finding)
+- LFO free speed: `norm(raw)` (qpat_map.py:392) uncalibrated against the Iridium Hz scale (can reinforce
+  "LFO1 acts too strong", A001) — anchor-based Hz calibration like for glide/cutoff to follow.
+- Mixer Balance → `OscNPan` (qpat_map.py:279) is semantically wrong (MAPPING-MASTER ⚠️): in parallel
+  balance sets the F1/F2 share, not stereo pan; better `OscNDestination` DF/Fil share. Mono measurement
+  masks it (peaks ok), in the stereo image wrong (A010/A019/A043 Balance=0 → Pan 0.0 hard left).
+- `OscNFinePitch = norm(Detune)` (qpat_map.py:277): Blofeld detune bipolar ±64 cent around raw 64 —
+  norm() scales to the full Iridium range (A008 Osc1 Detune raw 126 → 0.992 ≈ +98 instead of +62 cent).
+- "Osc Pitch Source/Amount" (global pitch mod, on A008 = LFO1*MW amt 74, A019/A043/A071 amt 64)
   unmapped (qpat_map.py:285).
 - Amp `Mod Source/Amount` (A008: AmpEnv, A019/A043/A010/A022/A039/A071/A073: LFO3 amt 64) unmapped —
-  Iridium-Aequivalent waere Matrix-Slot → Volume.
+  Iridium equivalent would be a matrix slot → Volume.
 
-## Was NICHT im qpat-Mapping liegt (Out of Scope, Hardware/Protokoll)
-- Iridium-PC-Umschaltung defekt (kein NRPN Pid 3113) → Manual-Panel-Workaround (HANDOVER-2026-11-14).
-- Roh-Pegel des Iridium generell niedrig (Scarlett-Gain In 5/6 / Iridium-Master) — `norm_pegel` kompensiert
-  messseitig; erklaert NICHT die seriellen Ausreisser (die bleiben nach Norm im RMS nur ~1 dB auseinander,
-  aber der Crest-Faktor/DF-Defekt bleibt hörbar).
-- A008 "vermutl 1 Oktave tiefer": CoarsePitch-Werte im qpat sind konsistent mit den Rohwerten
-  (Osc2/3 = 24.0, Osc1 = 64.0 aber Vol=0); d1 `octave_lower` nur p=0.50. Hypothese: psychoakustisch durch
-  den zugeschnuerten Filter (F1-Rohwert 22 ≈ 39 Hz + DF) — nach P0-1/P1-2 re-testen, bevor Osc-Mapping
-  angefasst wird.
+## What is NOT in the qpat mapping (out of scope, hardware/protocol)
+- Iridium PC switching broken (no NRPN pid 3113) → manual-panel workaround (HANDOVER-2026-11-14).
+- Raw level of the Iridium generally low (Scarlett gain In 5/6 / Iridium master) — `norm_pegel` compensates
+  on the measurement side; does NOT explain the serial outliers (after norm they are only ~1 dB apart in RMS,
+  but the crest factor/DF defect remains audible).
+- A008 "presumably 1 octave lower": CoarsePitch values in the qpat are consistent with the raw values
+  (Osc2/3 = 24.0, Osc1 = 64.0 but Vol=0); d1 `octave_lower` only p=0.50. Hypothesis: psychoacoustic due to
+  the closed filter (F1 raw 22 ≈ 39 Hz + DF) — re-test after P0-1/P1-2 before touching the osc mapping.
 
-## Vorgeschlagene Reihenfolge
-1. P0-1 (MatrixDst v14: 95/104/96) + P0-2 (AfterTouchDoPoly=0) — ein Rebuild aller 9 qpats, dann 9-Presets-
-   Re-Messung (sim_manual_compare) + User-Rating; erwartet: serielle Peaks steigen, `darker`-Flag verschwindet.
-2. P1-1 Sync (A071/A008), P1-2 serielle F2-Mods, P1-3 FX, P1-4 Mod-Dst-Luecken.
-3. P2-Kalibrierungen (amt_bipolar, LFO-Speed, WT-Bridge) — jeweils mit Device-Anker.
+## Suggested order
+1. P0-1 (MatrixDst v14: 95/104/96) + P0-2 (AfterTouchDoPoly=0) — one rebuild of all 9 qpats, then 9-preset
+   re-measurement (sim_manual_compare) + user rating; expected: serial peaks rise, `darker` flag disappears.
+2. P1-1 sync (A071/A008), P1-2 serial F2 mods, P1-3 FX, P1-4 mod destination gaps.
+3. P2 calibrations (amt_bipolar, LFO speed, WT bridge) — each with a device anchor.
 
-Alle Tests in `tests/test_qpat_map.py` muessen mitgeaendert werden (sie kodifizieren tlw. die v8-Werte,
-z.B. `test_mod_matrix_slots_mapped` mit dst 103/105 und amt /254).
+All tests in `tests/test_qpat_map.py` must be adjusted along (they partly codify the v8 values,
+e.g. `test_mod_matrix_slots_mapped` with dst 103/105 and amt /254).

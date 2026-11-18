@@ -1,4 +1,4 @@
-"""Task 9: CLI Phase B – `sim compare` + `ab --embed/--llm` (TDD, alles gemockt)."""
+"""Task 9: CLI phase B - `sim compare` + `ab --embed/--llm` (TDD, everything mocked)."""
 
 import json
 import sys
@@ -58,7 +58,7 @@ class FakeOllama:
         return True
 
     def judge(self, x_a, x_b, sr, prompt=None, peak_a=None, peak_b=None):
-        return {"score": 88, "summary": "nah", "differences": ["d"], "mode": "audio",
+        return {"score": 88, "summary": "close", "differences": ["d"], "mode": "audio",
                 "model": self.model}
 
 
@@ -92,7 +92,7 @@ def test_measure_ab_embed_llm_adds_keys_and_db_roundtrip(phaseb_env):
     assert rep["sim"]["score"] is not None and rep["sim"]["combined"] is not None
     assert rep["embed"]["embed_score"] == 100.0
     assert rep["llm"]["score"] == 88
-    # DB-Roundtrip: report_json traegt die neuen Keys (Blob, keine Migration)
+    # DB roundtrip: report_json carries the new keys (blob, no migration)
     conn = db.connect(db_path)
     db.insert_ab_run(conn, "t", "A043", 36, 0.1, rep["files"]["report"],
                      rep["files"]["blofeld_npy"], rep["files"]["iridium_npy"], rep)
@@ -113,7 +113,7 @@ def test_legacy_ab_report_without_phaseb_keys_still_works(phaseb_env):
     conn = db.connect(db_path)
     db.insert_ab_run(conn, "old", None, 36, 3.0, "x", "a", "b", legacy)
     row = db.list_ab_runs(conn)[0]["report_json"]
-    assert "sim" not in row  # alte Rows bleiben unveraendert lesbar
+    assert "sim" not in row  # old rows stay readable unchanged
     rc = run(cli, db_path, "ab", "--list")
     assert rc == 0
 

@@ -1,8 +1,8 @@
-"""Upload -> Parse -> Konvertieren -> ZIP/Report (offline, ohne MIDI-Hardware).
+"""Upload -> parse -> convert -> ZIP/report (offline, without MIDI hardware).
 
-Nutzt die pure-python-Module aus dem bloridium-Paket (blofeld_dump, qpat,
-qpat_map, waldorf) per Dateipfad – so braucht der Docker-Container weder
-numpy noch mido/python-rtmidi (bloridium/__init__.py wuerde die importieren).
+Uses the pure-Python modules from the bloridium package (blofeld_dump, qpat,
+qpat_map, waldorf) via file path – so the Docker container needs neither
+numpy nor mido/python-rtmidi (bloridium/__init__.py would import them).
 """
 
 from __future__ import annotations
@@ -22,16 +22,16 @@ import matching
 WEBAPP = Path(__file__).resolve().parent
 REPO = WEBAPP.parent
 
-# Versionierung des Conversion-Tools (UI-Titel, report.json, MANIFEST)
+# Versioning of the conversion tool (UI title, report.json, MANIFEST)
 CONVERSION_VERSION = "0.3"
 
 
 class UploadError(ValueError):
-    """Ungueltiger Upload – wird von der App als 400 gerendert."""
+    """Invalid upload – rendered by the app as HTTP 400."""
 
 
 def load_core() -> SimpleNamespace:
-    """blofeld_dump/qpat/qpat_map/waldorf als Module laden (ohne Paket-__init__)."""
+    """Load blofeld_dump/qpat/qpat_map/waldorf as modules (without the package __init__)."""
     env = os.environ.get("BLORIDIUM_CORE_DIR")
     candidates = [Path(env)] if env else []
     candidates += [WEBAPP / "core", REPO / "bloridium"]
@@ -44,8 +44,8 @@ def load_core() -> SimpleNamespace:
                 spec.loader.exec_module(mod)
                 mods[name] = mod
             return SimpleNamespace(**mods)
-    raise RuntimeError("bloridium-Core-Module nicht gefunden "
-                       "(BLORIDIUM_CORE_DIR oder <repo>/bloridium erwartet)")
+    raise RuntimeError("bloridium core modules not found "
+                       "(BLORIDIUM_CORE_DIR or <repo>/bloridium expected)")
 
 
 def default_template_path() -> Path:
@@ -55,11 +55,11 @@ def default_template_path() -> Path:
     for c in (WEBAPP / "template_waveform.qpat", REPO / "docs" / "refs" / "qpat" / "template_waveform.qpat"):
         if c.exists():
             return c
-    raise RuntimeError("qpat-Template nicht gefunden (BLORIDIUM_TEMPLATE setzen)")
+    raise RuntimeError("qpat template not found (set BLORIDIUM_TEMPLATE)")
 
 
 def split_sysex_messages(data: bytes) -> list[bytes]:
-    """.syx in einzelne SysEx-Nachrichten (F0..F7) zerlegen. Ohne F0: [data]."""
+    """Split .syx into individual SysEx messages (F0..F7). Without F0: [data]."""
     if not data:
         return []
     if 0xF0 not in data:
@@ -76,32 +76,32 @@ def split_sysex_messages(data: bytes) -> list[bytes]:
 
 
 def location_str(bb: int, nn: int) -> str:
-    """Wie workflow.location_str: (0x7F, 0) -> 'edit', sonst z. B. (0, 42) -> 'A043'."""
+    """Like workflow.location_str: (0x7F, 0) -> 'edit', else e.g. (0, 42) -> 'A043'."""
     if bb == 0x7F and nn == 0:
         return "edit"
     return f"{chr(ord('A') + bb)}{nn + 1:03d}"
 
 
 def parse_upload(filename: str, data: bytes) -> dict:
-    """Upload parsen: .hex dekodieren, SysEx splitten, SNDDs parsen.
+    """Parse upload: decode .hex, split SysEx, parse SNDDs.
 
-    Rueckgabe: {"sounds": [parse_sndd-Ergebnis...], "errors": [...], "skipped": int}
+    Returns: {"sounds": [parse_sndd results...], "errors": [...], "skipped": int}
     """
     if filename.lower().endswith(".hex"):
         try:
             data = bytes.fromhex("".join(data.decode("ascii").split()))
         except (UnicodeDecodeError, ValueError) as e:
-            raise UploadError(f".hex-Datei ungueltig: {e}") from None
+            raise UploadError(f"invalid .hex file: {e}") from None
     core = load_core()
     sounds, errors, skipped = [], [], 0
     for idx, msg in enumerate(split_sysex_messages(data)):
         try:
             parsed = core.blofeld_dump.parse_sndd(msg)
         except ValueError:
-            skipped += 1  # Fremd-Nachricht (z. B. MULD, Identity) – nicht SNDD
+            skipped += 1  # foreign message (e.g. MULD, Identity) – not SNDD
             continue
         if not parsed["chk_ok"]:
-            errors.append({"index": idx, "error": "Checksumme falsch"})
+            errors.append({"index": idx, "error": "checksum wrong"})
             continue
         sounds.append(parsed)
     return {"sounds": sounds, "errors": errors, "skipped": skipped}
@@ -113,34 +113,34 @@ def safe_name(name: str, loc: str) -> str:
 
 
 def convert_sound(core, template: dict, parsed: dict, loc: str) -> dict:
-    """Ein parse_sndd-Ergebnis -> .qpat-Bytes (identisch zu workflow.convert_parsed)."""
+    """One parse_sndd result -> .qpat bytes (identical to workflow.convert_parsed)."""
     overrides, unmapped = core.qpat_map.blofeld_to_qpat_params(parsed)
     merged = core.qpat_map.apply_to_template(template, overrides, name=parsed["name"])
     qbytes = core.qpat.build_qpat(
         merged["name"], merged["params"], creator=merged["creator"],
         description=merged["description"], categories=merged["categories"],
-        version=core.qpat.PRESET_VERSION,  # v14, Zielgeraet OS4
+        version=core.qpat.PRESET_VERSION,  # v14, target device OS4
         sample_maps=merged.get("sample_maps"))
     return {"loc": loc, "name": parsed["name"], "qpat_bytes": qbytes,
             "mapped": len(overrides), "unmapped": unmapped}
 
 
 def process_upload(filename: str, data: bytes, data_dir) -> dict:
-    """Komplette Pipeline. Schreibt <data_dir>/<token>/{result.zip,report.json}.
+    """Full pipeline. Writes <data_dir>/<token>/{result.zip,report.json}.
 
-    Rueckgabe: report-dict (inkl. token, zip_name, sounds mit score + features).
-    Wirft UploadError bei ungueltigem/leerem Upload.
+    Returns: report dict (incl. token, zip_name, sounds with score + features).
+    Raises UploadError on invalid/empty upload.
     """
     if not data:
-        raise UploadError("leere Datei")
+        raise UploadError("empty file")
     core = load_core()
     template = core.qpat.load(default_template_path())
     parsed_up = parse_upload(filename, data)
     if not parsed_up["sounds"]:
         detail = "; ".join(f"Msg {e['index']}: {e['error']}" for e in parsed_up["errors"][:3])
         raise UploadError(
-            f"keine gueltige Blofeld-SNDD-Nachricht gefunden "
-            f"({len(parsed_up['errors'])} Checksum-Fehler, {parsed_up['skipped']} Fremd-Nachrichten)"
+            f"no valid Blofeld SNDD message found "
+            f"({len(parsed_up['errors'])} checksum errors, {parsed_up['skipped']} foreign messages)"
             + (f" – {detail}" if detail else ""))
 
     token = uuid.uuid4().hex
@@ -149,16 +149,16 @@ def process_upload(filename: str, data: bytes, data_dir) -> dict:
 
     zip_buf = io.BytesIO()
     manifest_lines = [
-        f"# Bloridium Upload-Paket – {filename}",
-        f"erstellt: {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
-        f"Sounds: {len(parsed_up['sounds'])}, Fehler: {len(parsed_up['errors'])}, "
-        f"uebersprungen: {parsed_up['skipped']}",
+        f"# Bloridium upload package – {filename}",
+        f"created: {datetime.now(timezone.utc).isoformat(timespec='seconds')}",
+        f"Sounds: {len(parsed_up['sounds'])}, errors: {len(parsed_up['errors'])}, "
+        f"skipped: {parsed_up['skipped']}",
         "",
-        "Am Iridium: USB-Stick/SD -> Load > Actions > Import (Favorites Bank 6, CC0=6 + PC).",
+        "On the Iridium: USB stick/SD -> Load > Actions > Import (Favorites Bank 6, CC0=6 + PC).",
         f"Conversion v{CONVERSION_VERSION}; Score = similarity v{matching.SIMILARITY_VERSION} "
-        "(deterministischer Platzhalter, siehe webapp/matching.py).",
+        "(deterministic placeholder, see webapp/matching.py).",
         "",
-        "| Location | Name | qpat-Datei | gemappt | unmapped | Score |",
+        "| Location | Name | qpat file | mapped | unmapped | Score |",
         "|---|---|---|---|---|---|",
     ]
     sounds_report = []
@@ -179,7 +179,7 @@ def process_upload(filename: str, data: bytes, data_dir) -> dict:
                 "mapped": conv["mapped"], "unmapped": conv["unmapped"],
                 "score": est["score"], "score_parts": est["parts"],
                 "penalties": est["penalties"],
-                # Feature-Vektor fuer die spaetere (gelernte) Matching-Funktion:
+                # Feature vector for the later (learned) matching function:
                 "features": {"params": parsed["params"]},
             })
         zf.writestr("MANIFEST.md", "\n".join(manifest_lines) + "\n")

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Blofeld: empfangende MIDI-Kanaele ermitteln + Hinweis zum Betriebsmodus.
+"""Blofeld: determine receiving MIDI channels + note on the operating mode.
 
-WICHTIG: Ein Kanal-Scan kann den Modus (Single vs Multi) NICHT zuverlaessig
-erkennen – im Multi Mode duerfen alle 16 Parts auf beliebigen Kanaelen liegen
-(bei uns z.B. nur Kanal 5 belegt, trotzdem war der Multi Mode AN).
-Der Modus muss am Geraet geprueft/gesetzt werden: Shift+Sound/Multi.
+IMPORTANT: a channel scan CANNOT reliably detect the mode (Single vs Multi) --
+in Multi mode all 16 parts may sit on arbitrary channels
+(in our case e.g. only channel 5 was occupied, yet Multi mode was ON).
+The mode must be checked/set on the device: Shift+Sound/Multi.
 
-Stand: Blofeld ist auf SINGLE MODE umgeschaltet (nur Global-Kanal 5 antwortet).
+Status: Blofeld has been switched to SINGLE MODE (only global channel 5 responds).
 """
 
 from __future__ import annotations
@@ -26,8 +26,8 @@ NOTE = 60
 
 
 def responsive_channels(out, base, channels=range(16), settle=1.2):
-    """Pro Kanal eine Note spielen; Kanal gilt als empfangend, wenn Peak deutlich
-    ueber Baseline UND absolut > -60 dBFS (vermeidet Release-Reste)."""
+    """Play one note per channel; a channel counts as receiving if the peak is
+    clearly above the baseline AND absolute > -60 dBFS (avoids release tails)."""
     hot = []
     b = float(np.max(base))
     for ch in channels:
@@ -46,7 +46,7 @@ def responsive_channels(out, base, channels=range(16), settle=1.2):
 
 def main() -> int:
     synth = midi.connect("blofeld")
-    print(f"Port: {synth.out_port_name} / {synth.in_port_name}, Global-Kanal (0-basiert): {synth.channel}")
+    print(f"Port: {synth.out_port_name} / {synth.in_port_name}, global channel (0-based): {synth.channel}")
 
     synth.device_inquiry()
     for m in synth.receive(2.0):
@@ -58,9 +58,9 @@ def main() -> int:
         if m.type == "sysex":
             p = waldorf.parse_sysex(m.data)
             if p.get("cmd") == waldorf.CMD["global_dump"]:
-                print(f"GLBD empfangen, {len(p['payload'])} Datenbytes")
+                print(f"GLBD received, {len(p['payload'])} data bytes")
 
-    # Stumm + Release abwarten, dann Kanal-Scan
+    # mute + wait for release, then channel scan
     for ch in range(16):
         synth.out.send(mido.Message("control_change", control=123, value=0, channel=ch))
         synth.out.send(mido.Message("control_change", control=120, value=0, channel=ch))
@@ -68,10 +68,10 @@ def main() -> int:
     base = audio.measure(audio.record(duration=2.0, channels=audio.CHANNELS["blofeld"]))["peak_dbfs"]
     time.sleep(1.0)
     hot = responsive_channels(synth.out, base)
-    print(f"Empfangende MIDI-Kanaele: {hot}")
-    print("\nHINWEIS: Modus (Single/Multi) ist per Kanal-Scan NICHT allein erkennbar,")
-    print("da Multi-Parts auf beliebigen Kanaelen liegen duerfen. Am Geraet aendern:")
-    print("Shift+Sound/Multi. Stand: SINGLE MODE aktiv (nur Global-Kanal antwortet).")
+    print(f"Receiving MIDI channels: {hot}")
+    print("\nNOTE: the mode (Single/Multi) cannot be detected from a channel scan alone,")
+    print("because Multi parts may sit on arbitrary channels. Change on the device:")
+    print("Shift+Sound/Multi. Status: SINGLE MODE active (only the global channel responds).")
     synth.close()
     return 0
 

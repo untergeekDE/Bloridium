@@ -1,4 +1,4 @@
-"""Task 2: SQLite-Bank – Schema v1 + CRUD-Helfer (bloridium/db.py)."""
+"""Task 2: SQLite bank - schema v1 + CRUD helpers (bloridium/db.py)."""
 
 import pytest
 
@@ -29,7 +29,7 @@ def test_upsert_and_get_sound(db_path):
     db.upsert_sound(conn, _sound_row("A043", "A", 43, "SH Power"))
     got = db.get_sound(conn, "A043")
     assert got["name"] == "SH Power"
-    assert got["parsed_json"] == {"name": "SH Power"}  # Wert JSON-dekodiert, Key = Spaltenname
+    assert got["parsed_json"] == {"name": "SH Power"}  # value JSON-decoded, key = column name
     db.upsert_sound(conn, _sound_row("A043", "A", 43, "SH Power v2"))
     assert db.get_sound(conn, "A043")["name"] == "SH Power v2"
     assert db.get_sound(conn, "B001") is None
@@ -56,7 +56,7 @@ def test_qpat_register_and_list(db_path):
     qpats = db.list_qpats(conn)
     assert len(qpats) == 1
     assert qpats[0]["path"] == "transfer/X.qpat"
-    assert qpats[0]["params_json"]["Osc1Type"]["value"] == 1.0  # dekodiert
+    assert qpats[0]["params_json"]["Osc1Type"]["value"] == 1.0  # decoded
 
 
 def test_conversions_insert_and_list_by_sound(db_path):
@@ -68,7 +68,7 @@ def test_conversions_insert_and_list_by_sound(db_path):
     rows = db.list_conversions(conn, sound="A043")
     assert len(rows) == 1
     assert rows[0]["mapped"] == 80
-    assert rows[0]["unmapped_json"] == ["Osc 1 Keytrack", "Filter Routing"]  # dekodiert
+    assert rows[0]["unmapped_json"] == ["Osc 1 Keytrack", "Filter Routing"]  # decoded
     assert len(db.list_conversions(conn)) == 2
 
 
@@ -83,4 +83,4 @@ def test_ab_runs_insert_list_filter_get(db_path):
     assert len(db.list_ab_runs(conn)) == 2
     got = db.get_ab_run(conn, r1)
     assert got["sound_location"] == "A043"
-    assert got["report_json"] == {"delta": 1.0}  # dekodiert
+    assert got["report_json"] == {"delta": 1.0}  # decoded

@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-"""sim_cc_sweep.py – automatischer CC-Sweep gegen das Blofeld-Original.
+"""sim_cc_sweep.py – automatic CC sweep against the Blofeld original.
 
-Laedt einen konvertierten Sound im Iridium (Favorites Bank 6 per PC), spielt
-den passenden Blofeld-Sound (Bank A, PC = Location-1) live mit und dreht
-jeden CC aus der offiziellen MIDI-Guide-Map (docs/midi-maps/iridium_midi_guide.csv)
-selbsttaetig durch. Pro CC-Wert wird der sim-Score (0-100) gegen den Blofeld
-gemessen und geloggt (recordings/sim_log.jsonl, mode="cc_sweep").
+Loads a converted sound in the Iridium (Favorites bank 6 via PC), plays the
+matching Blofeld sound (bank A, PC = location-1) live along and turns every CC
+from the official MIDI guide map (docs/midi-maps/iridium_midi_guide.csv)
+automatically. For each CC value the sim score (0-100) against the Blofeld is
+measured and logged (recordings/sim_log.jsonl, mode="cc_sweep").
 
-Aufruf:
+Usage:
   python3 scripts/sim_cc_sweep.py --loc A043 --note 72 --values 0,64,127
   python3 scripts/sim_cc_sweep.py --loc A043 --ccs 2,9,33 --values fine
 
-Zwischen den CCs wird der Sound per PC (hin und zurueck auf Bank 6) neu
-geladen, damit CC-Ueberschreibungen nicht in die naechste Messung laufen.
+Between CCs the sound is reloaded via PC (there and back on bank 6) so that CC
+overrides do not leak into the next measurement.
 
-WICHTIG (rdb-.mimap geladen, verifiziert 2026-11-09 via spike_verify_mimap.py):
+IMPORTANT (rdb-.mimap loaded, verified 2026-11-09 via spike_verify_mimap.py):
 - CC0 = Filter1 Cutoff (rdb), CC7 = Filter1 Amount, CC32 = OSC1 Fine Pitch --
-  Bank-Select und Volume sind damit per CC nicht mehr erreichbar; Bank bleibt 6.
-- Daher: KEIN CC0/CC32/CC7 in reset/reload senden! CC7=0 stummt NICHT mehr.
-- CC0 (Cutoff) wird als zusaetzlicher Sweep-Kanal vorne angefuehrt.
+  bank select and volume are no longer reachable via CC; bank stays 6.
+- Therefore: NEVER send CC0/CC32/CC7 in reset/reload! CC7=0 no longer mutes.
+- CC0 (cutoff) is prepended as an additional sweep channel.
 
 Report: recordings/cc_sweep_<LOC>_<note>_<ts>.json
 """
@@ -38,19 +38,19 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from bloridium import audio, midi, sim
-from scripts.sim_sweep_pcs import DEFAULT_MAP  # noqa: E402  (scripts/ ist kein Paket -> sys.path oben)
+from scripts.sim_sweep_pcs import DEFAULT_MAP  # noqa: E402  (scripts/ is not a package -> sys.path above)
 
 REPO = Path(__file__).resolve().parent.parent
 GUIDE = REPO / "docs" / "midi-maps" / "iridium_midi_guide.csv"
 
-# Niemals sweepen: ModWheel (CC1, nicht in Guide), All-Notes-Off (CC123).
-# Mit rdb-Map sind CC0/CC7/CC32 Parameter (Cutoff/Amount/FinePitch), keine
-# Bank/Volume mehr -- siehe Modul-Docstring.
+# Never sweep: ModWheel (CC1, not in guide), All-Notes-Off (CC123).
+# With the rdb map, CC0/CC7/CC32 are parameters (cutoff/amount/fine pitch), no
+# longer bank/volume -- see module docstring.
 EXCLUDE_CCS = {1, 123}
 
 
 def load_guide_ccs() -> list[tuple[int, str]]:
-    out = [(0, "Filter1 Cutoff [rdb CC0]")]  # rdb-Map: CC0 -> Pid 966 Cutoff
+    out = [(0, "Filter1 Cutoff [rdb CC0]")]  # rdb map: CC0 -> Pid 966 cutoff
     with open(GUIDE, newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
             if r.get("cc_msb"):
@@ -61,8 +61,9 @@ def load_guide_ccs() -> list[tuple[int, str]]:
 
 
 def reset_all(blo=None, irr=None) -> None:
-    """CC123=0 ueberall. CC7=127 nur am Blofeld (echtes Volume); am Iridium
-    ist CC7 mit rdb-Map Filter1 Amount -- dort nie anfassen!"""
+    """CC123=0 everywhere. CC7=127 only on the Blofeld (real volume); on the Iridium
+    CC7 is Filter1 Amount with the rdb map -- never touch it there (it would
+    change/mute the sound)!"""
     for s in (blo, irr):
         if s is None:
             continue
@@ -74,8 +75,8 @@ def reset_all(blo=None, irr=None) -> None:
 
 
 def reload_patch(irr, bank: int, pc: int, other_pc: int) -> None:
-    """Sound per PC-Wechsel (hin/zurueck) frisch laden -> CC-Ueberschreibungen weg.
-    Kein CC0/CC32 senden (rdb-Map: das sind Parameter, Bank bleibt 6)."""
+    """Reload the sound via PC change (there and back) -> CC overrides gone.
+    Do not send CC0/CC32 (rdb map: those are parameters, bank stays 6)."""
     irr.program_change(other_pc, channel=5)
     time.sleep(0.5)
     irr.program_change(pc, channel=5)
@@ -100,20 +101,20 @@ def measure(blo, irr, note: int, dur: float, sr: int):
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--loc", required=True, help="Blofeld-Location (z. B. A043)")
+    ap.add_argument("--loc", required=True, help="Blofeld location (e.g. A043)")
     ap.add_argument("--note", type=int, default=72)
     ap.add_argument("--bank", type=int, default=6)
     ap.add_argument("--dur", type=float, default=1.6)
     ap.add_argument("--values", default="0,64,127",
-                    help="'0,64,127' oder 'fine' (0..127 Schritt 8)")
+                    help="'0,64,127' or 'fine' (0..127 step 8)")
     ap.add_argument("--ccs", default=None,
-                    help="nur diese CCs (z. B. '2,9,33'); Default: alle aus der Guide-Map")
+                    help="only these CCs (e.g. '2,9,33'); default: all from the guide map")
     ap.add_argument("--log", default=str(sim.DEFAULT_LOG))
     ap.add_argument("--report-dir", default=str(REPO / "recordings"))
     args = ap.parse_args(argv)
 
     if args.loc not in DEFAULT_MAP:
-        print(f"unbekannte Location {args.loc!r};bekannt: {sorted(DEFAULT_MAP)}", file=sys.stderr)
+        print(f"unknown location {args.loc!r}; known: {sorted(DEFAULT_MAP)}", file=sys.stderr)
         return 2
     irr_pc = DEFAULT_MAP[args.loc]
     blo_pc = int(args.loc[1:]) - 1
@@ -136,13 +137,14 @@ def main(argv=None) -> int:
     report = {"loc": args.loc, "note": args.note, "bank": args.bank,
               "irr_pc": irr_pc, "blo_pc": blo_pc, "values": values, "ccs": []}
     try:
-        # Bank A explizit waehlen (CC0/CC32 = Bank select am BLOFELD)!
+        # Select bank A explicitly (CC0/CC32 = bank select on the BLOFELD) --
+        # otherwise the PC lands in whatever bank is active on the device!
         blo.control_change(0, 0, channel=blo.channel)
         blo.control_change(32, 0, channel=blo.channel)
         blo.program_change(blo_pc, channel=blo.channel)
         reload_patch(irr, args.bank, irr_pc, other_pc)
 
-        # Baseline ohne CC-Eingriff (ein Retry, falls erste Aufnahme leer)
+        # Baseline without CC intervention (one retry if the first recording is empty)
         base = None
         for attempt in range(2):
             bx, ix = measure(blo, irr, args.note, args.dur, audio.SAMPLERATE)
@@ -156,11 +158,11 @@ def main(argv=None) -> int:
             reload_patch(irr, args.bank, irr_pc, other_pc)
         report["baseline"] = base
         if base["score"] is None:
-            print(f"ABBRUCH: Baseline stumm (score=None) fuer {args.loc} PC{irr_pc}. "
-                  f"Wahrscheinlich FALSCHES FAVORITES-BANK am Iridium aktiv "
-                  f"(mit rdb-.mimap laesst sich die Bank nicht per CC0 waehlen, "
-                  f"nur am Geraet!). Bitte Bank mit den 8 Sounds waehlen "
-                  f"(pre-map Bank 6, Display 06xx) und erneut starten.",
+            print(f"ABORT: baseline silent (score=None) for {args.loc} PC{irr_pc}. "
+                  f"Probably the WRONG FAVORITES BANK is active on the Iridium "
+                  f"(with the rdb-.mimap the bank cannot be selected via CC0, "
+                  f"only on the device!). Please select the bank with the 8 sounds "
+                  f"(pre-map bank 6, display 06xx) and start again.",
                   file=sys.stderr, flush=True)
             return 3
         print(f"BASELINE {args.loc} note{args.note}: score={base['score']} "
@@ -187,7 +189,7 @@ def main(argv=None) -> int:
             entry = {"cc": cc, "param": pname, "rows": rows, "best": best,
                      "delta": (best["score"] - base["score"]) if best and base["score"] is not None else None}
             report["ccs"].append(entry)
-        # aufraeumen: Sound frisch laden
+        # cleanup: reload the sound fresh
         reload_patch(irr, args.bank, irr_pc, other_pc)
     finally:
         blo.close()
@@ -199,7 +201,7 @@ def main(argv=None) -> int:
     if report.get("baseline", {}).get("score") is not None:
         top = sorted((c for c in report["ccs"] if c["delta"] is not None),
                      key=lambda c: c["delta"], reverse=True)[:10]
-        print("Top-Verbesserungen vs Baseline:")
+        print("Top improvements vs baseline:")
         for c in top:
             print(f"  CC{c['cc']:3d} {c['param']:24s} best v={c['best']['value']:3d} "
                   f"score={c['best']['score']} delta={c['delta']:+.2f}")

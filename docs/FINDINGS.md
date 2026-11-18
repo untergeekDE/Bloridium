@@ -1,165 +1,165 @@
-# Findings – Verbindungsaufbau & Messungen (dokumentiert)
+# Findings – connection setup & measurements (documented)
 
-Alle Angaben empirisch verifiziert am Mac (macOS, CoreMIDI + AVFoundation).
+All statements empirically verified on the Mac (macOS, CoreMIDI + AVFoundation).
 
-## Sichtbare MIDI-Ports (CoreMIDI/rtmidi)
+## Visible MIDI ports (CoreMIDI/rtmidi)
 
 ```
 OUT/IN: Launchpad Pro MK3 LPProMK3 MIDI
 OUT/IN: Launchpad Pro MK3 LPProMK3 DIN
 OUT/IN: Launchpad Pro MK3 LPProMK3 DAW
 OUT/IN: Scarlett 18i8 USB
-OUT/IN: Blofeld                              <- Blofeld per USB (neu)
+OUT/IN: Blofeld                              <- Blofeld via USB (new)
 OUT/IN: Iridium Keyboard (MIDI 2.0) Synth
 OUT/IN: Iridium Keyboard (MIDI 2.0) MIDI 2.0
 ```
 
-## MIDI-Mapping (verifiziert)
+## MIDI mapping (verified)
 
-| Synth | Port | Kanal (1-basiert) | Richtung | Identity |
+| Synth | Port | Channel (1-based) | Direction | Identity |
 |---|---|---|---|---|
-| Blofeld | `Blofeld` (USB) | **5** (Single Mode, Global Channel) | bidirektional | `F0 7E .. 06 02 3E 13 00 00 00 "1.24" F7` (Waldorf=3E, Blofeld=13, FW 1.24) |
-| Blofeld (Fallback) | `Launchpad Pro MK3 LPProMK3 DIN` | 5 | Out only (In liefert nur Launchpad-eigenes Reply `00 20 29`) | – |
-| Iridium | `Iridium Keyboard (MIDI 2.0) MIDI 2.0` | **6-9** (Parts 1-4) | Out (Keyboard sendet ch6) + In funktioniert | kein Identity-Reply bisher |
-| Iridium | `Iridium Keyboard (MIDI 2.0) Synth` | – | empfängt nichts (Display zeigt keine MIDI-In-Reaktion) | – |
+| Blofeld | `Blofeld` (USB) | **5** (Single Mode, Global Channel) | bidirectional | `F0 7E .. 06 02 3E 13 00 00 00 "1.24" F7` (Waldorf=3E, Blofeld=13, FW 1.24) |
+| Blofeld (fallback) | `Launchpad Pro MK3 LPProMK3 DIN` | 5 | Out only (In only delivers the Launchpad's own reply `00 20 29`) | – |
+| Iridium | `Iridium Keyboard (MIDI 2.0) MIDI 2.0` | **6-9** (Parts 1-4) | Out (keyboard sends ch6) + In works | no identity reply so far |
+| Iridium | `Iridium Keyboard (MIDI 2.0) Synth` | – | receives nothing (display shows no MIDI-in reaction) | – |
 
-Wichtig: Am Iridium-Endpunkt `MIDI 2.0` werden MIDI-1.0-Bytes von CoreMIDI
-automatisch als UMP (mt=2) zugestellt – plain mido-Messages funktionieren dort.
-Nach Umschalten der SOM2-USB-Ports ("Computer"/"USB CTRL") bzw. Replug/Reboot
-war der Empfang am `MIDI 2.0`-Endpunkt aktiv.
+Important: on the Iridium endpoint `MIDI 2.0`, MIDI 1.0 bytes are automatically
+delivered as UMP (mt=2) by CoreMIDI – plain mido messages work there.
+After switching the SOM2 USB ports ("Computer"/"USB CTRL") or replug/reboot,
+reception on the `MIDI 2.0` endpoint was active.
 
-## Audio-Mapping (Scarlett 18i8, 20 Kanäle @ 48 kHz, AVFoundation)
+## Audio mapping (Scarlett 18i8, 20 channels @ 48 kHz, AVFoundation)
 
-| Synth | Scarlett-Eingänge | 0-basierte Kanäle im Stream |
+| Synth | Scarlett inputs | 0-based channels in the stream |
 |---|---|---|
 | Blofeld | **3/4** | c2/c3 |
 | Iridium | **5/6** | c4/c5 |
 
-Verifiziert per Tastendruck am Iridium (Audio erschien auf In5/6, ca. -22 dBFS)
-und per MIDI-Note (Blofeld->In3/4 ca. -17 dBFS, Iridium->In5/6 ca. -27 dBFS).
+Verified by key press on the Iridium (audio appeared on In5/6, ca. -22 dBFS)
+and via MIDI note (Blofeld->In3/4 ca. -17 dBFS, Iridium->In5/6 ca. -27 dBFS).
 
-## Blofeld: Multi- vs Single Mode
+## Blofeld: Multi vs Single Mode
 
-- **Kanal-Scan ist KEIN zuverlässiger Mode-Indikator**: Im Multi Mode dürfen
-  alle 16 Parts auf *beliebigen* Kanälen liegen (bei uns z. B. nur Kanal 5
-  belegt – trotzdem war der Multi Mode an). Nur "alle 16 Kanäle antworten"
-  wäre ein sicheres Multi-Kriterium; ein einzelner Kanal beweist nichts.
-- Stand: Blofeld war im **MULTI MODE** (laut User) und wurde auf **SINGLE MODE**
-  umgeschaltet (Shift+Sound/Multi). Verifiziert: danach antwortet nur noch
-  Kanal 5. Für den Programm-Transfer Single Mode verwenden.
-- Global Channel = Kanal 5 (im Single Mode antwortet nur dieser).
-- Release-Reste täuschen beim Scan (scheinbar Kanäle 2/3/5): vorher CC123 +
-  CC120 auf allen Kanälen und ~4 s warten, dann Baseline.
-- `scripts/check_blofeld_mode.py` zeigt Kanaele/Identity/GLBD und den Hinweis.
+- **Channel scan is NOT a reliable mode indicator**: in Multi Mode all 16 parts may
+  sit on *arbitrary* channels (for us e.g. only channel 5 was occupied – yet Multi Mode
+  was on). Only "all 16 channels respond" would be a safe Multi criterion; a single
+  channel proves nothing.
+- Status: the Blofeld was in **MULTI MODE** (per user) and was switched to **SINGLE MODE**
+  (Shift+Sound/Multi). Verified: afterwards only channel 5 responds. Use Single Mode for
+  program transfer.
+- Global Channel = channel 5 (in Single Mode only this one responds).
+- Release leftovers fool the scan (apparently channels 2/3/5): send CC123 +
+  CC120 on all channels beforehand and wait ~4 s, then baseline.
+- `scripts/check_blofeld_mode.py` shows channels/identity/GLBD and the hint.
 
-## Blofeld-SysEx (über USB-Port `Blofeld`, funktioniert)
+## Blofeld SysEx (via USB port `Blofeld`, works)
 
-Format `F0 3E 13 <dev> <cmd> [data] F7` (Checksum bei Requests weglassen):
+Format `F0 3E 13 <dev> <cmd> [data] F7` (omit checksum on requests):
 
-| Request | Cmd | Reply | Inhalt |
+| Request | Cmd | Reply | Content |
 |---|---|---|---|
-| `F0 3E 13 00 04 F7` (GLBR) | 0x04 | GLBD (0x14), ~74 Datenbytes | Global-Parameter-Dump |
-| `F0 3E 13 00 00 F7` (SNDR) | 0x00 | SNDD (0x10), ~386 Bytes | aktueller Sound (Edit-Puffer) |
-| `F0 3E 13 00 01 F7` (MULR) | 0x01 | MULD (0x11), ~419 Bytes | aktuelles Multi (enthält z.B. "String Ch5") |
+| `F0 3E 13 00 04 F7` (GLBR) | 0x04 | GLBD (0x14), ~74 data bytes | global parameter dump |
+| `F0 3E 13 00 00 F7` (SNDR) | 0x00 | SNDD (0x10), ~386 bytes | current sound (edit buffer) |
+| `F0 3E 13 00 01 F7` (MULR) | 0x01 | MULD (0x11), ~419 bytes | current multi (contains e.g. "String Ch5") |
 
-Helfer: `bloridium/waldorf.py` (`build_sysex`, `parse_sysex`, `identity_reply_info`).
+Helpers: `bloridium/waldorf.py` (`build_sysex`, `parse_sysex`, `identity_reply_info`).
 
-## Technische Stolperfallen (gelöst)
+## Technical pitfalls (solved)
 
-- ffmpeg `pan`-Filter kennt keine Layouts > 8 Kanäle -> bei >= 16 Kanälen
-  roh aufnehmen und in numpy slicen (`bloridium/audio.py`).
-- AVFoundation gibt das Scarlett manchmal nicht sofort frei -> Retry mit
-  1 s Pause in `audio.record`.
-- python-rtmidi `send_message` lehnt Pakete > 3 Bytes ab (nur SysEx) ->
-  für echtes UMP das kompilierte Tool `tools/ump_send` nutzen
+- ffmpeg `pan` filter doesn't know layouts > 8 channels -> with >= 16 channels
+  record raw and slice in numpy (`bloridium/audio.py`).
+- AVFoundation sometimes doesn't release the Scarlett immediately -> retry with
+  1 s pause in `audio.record`.
+- python-rtmidi `send_message` rejects packets > 3 bytes (SysEx only) ->
+  for real UMP use the compiled tool `tools/ump_send`
   (`clang -framework CoreMIDI -framework Foundation -o ump_send ump_send.m`).
-- Direkter `MIDISend`-Aufruf via ctypes stellte keine Pakete zu ->
-  `bloridium/midi2.py` nutzt daher `tools/ump_send`.
-- Identity-Reply auf dem Launchpad-DIN-Port (`00 20 29`) kommt vom
-  **Launchpad selbst**, nicht vom Blofeld.
-- Störsignale auf In11/12 (ca. -5 dBFS) waren hängengebliebene Noten;
-  per CC123 auf allen Kanälen beseitigt.
+- Direct `MIDISend` via ctypes didn't deliver any packets ->
+  `bloridium/midi2.py` therefore uses `tools/ump_send`.
+- Identity reply on the Launchpad DIN port (`00 20 29`) comes from the
+  **Launchpad itself**, not from the Blofeld.
+- Noise on In11/12 (ca. -5 dBFS) was stuck notes;
+  eliminated with CC123 on all channels.
 
-## Runde 2: SysEx-Mapping (Stand: in Arbeit)
+## Round 2: SysEx mapping (status: in progress)
 
-### Blofeld-SysEx – vollständig dokumentiert & ausgelesen
-- Offizielle Spec heruntergeladen: `docs/manuals/Blofeld_sysex_v1_04.pdf`
-  (Nextcloud-Share `ybExJgT4TzqT8ir`, "Blofeld sysex 1.04" im Blofeld-FAQ-Bereich).
-- SNDD-Format: `F0 3E 13 DEV 10 BB NN <SDATA 383 B> CHK F7`; CHK = Summe(SDATA) & 0x7F
-  (Status/IDs zählen NICHT mit). SNDP (0x20) = einzelner Parameter per Index 0..382.
-- SDATA-Kompletttabelle (Spec 3.1, Indizes 0..382) in `bloridium/blofeld_dump.py`
-  umgesetzt (inkl. Wertetabellen 4.1–4.18, FX 5.x).
-- `scripts/step2_read_blofeld_dump.py [A043|edit]` liest SNDD und speichert nach
-  `dumps/blofeld_sndd_<loc>_<ts>.bin/.hex`. Verifiziert: 392 B gesamt, CHK ok.
-  - Default (kein Arg) = Edit-Puffer (BB=7F): lieferte **„JP Wannabe"** – der Puffer
-    hält den zuletzt *editierten* Sound, nicht den gewählten!
-  - Location-basiert (SNDR mit BB NN, z.B. `A043` = `00 2A`): **„SH Power"**
-    (A043 lt. User; Osc1=Saw, Osc2=Pulse, Osc3=off, F1=LP24dB Cutoff 52 Reso 51,
-    Cat=Bass, Mod1: LFO2*Press→Pitch Amt 84).
-- `scripts/step2_parse_blofeld_dump.py` dekodiert den Dump (290 benannte Parameter,
-  z.B. Osc1/2 Shape=Saw, F1=LP12dB Cutoff 67 Reso 38, Mod1: LFO1*MW→Pitch Amt 82).
+### Blofeld SysEx – fully documented & read out
+- Official spec downloaded: `docs/manuals/Blofeld_sysex_v1_04.pdf`
+  (Nextcloud share `ybExJgT4TzqT8ir`, "Blofeld sysex 1.04" in the Blofeld FAQ area).
+- SNDD format: `F0 3E 13 DEV 10 BB NN <SDATA 383 B> CHK F7`; CHK = sum(SDATA) & 0x7F
+  (status/IDs do NOT count). SNDP (0x20) = single parameter per index 0..382.
+- Complete SDATA table (spec 3.1, indices 0..382) in `bloridium/blofeld_dump.py`
+  implemented (incl. value tables 4.1-4.18, FX 5.x).
+- `scripts/step2_read_blofeld_dump.py [A043|edit]` reads SNDD and saves to
+  `dumps/blofeld_sndd_<loc>_<ts>.bin/.hex`. Verified: 392 B total, CHK ok.
+  - Default (no arg) = edit buffer (BB=7F): delivered **"JP Wannabe"** – the buffer
+    holds the last *edited* sound, not the selected one!
+  - Location-based (SNDR with BB NN, e.g. `A043` = `00 2A`): **"SH Power"**
+    (A043 per user; Osc1=Saw, Osc2=Pulse, Osc3=off, F1=LP24dB Cutoff 52 Reso 51,
+    Cat=Bass, Mod1: LFO2*Press->Pitch Amt 84).
+- `scripts/step2_parse_blofeld_dump.py` decodes the dump (290 named parameters,
+  e.g. Osc1/2 Shape=Saw, F1=LP12dB Cutoff 67 Reso 38, Mod1: LFO1*MW->Pitch Amt 82).
 
-### Iridium – Stand SysEx
-- **Kein SysEx-Reply auf beiden USB-Endpunkten** (`MIDI 2.0` und `Synth`):
-  weder Universal Device Inquiry noch Waldorf-Style-Sweep `F0 3E <model 0x00..0x1F> 00 <cmd 0x00/0x01/0x04> F7`
-  (siehe `scripts/step2_probe_iridium_sysex.py`) – 0 Antworten.
-- Kanalstimme (Notes) und CC werden auf `MIDI 2.0` empfangen (verifiziert per Audio).
-- CC-Empfang getestet: CC7=0 auf Kanälen 6–9 senkt Peak um ca. -4,6 dBFS;
-  einzelne OSC-VOL-CCs (33/47/61) zeigen nur geringe Peak-Deltas (Layer-/Kanal-Zuordnung
-  prüfen; CC7 wirkt kanalweit).
-- Iridium-CC-Tabelle (115 CCs, CC 2..116): `docs/midi-maps/iridium_midi_guide.csv`
-  (midi.guide / pencilresearch/midi GitHub). Achtung: Filter1 Cutoff hat dort KEINEN CC;
-  eingehende NRPN werden laut OS3-Handbuch ignoriert.
-- Erste Mapping-Tabelle (Blofeld SNDD → Iridium CC): `docs/MAPPING.md`.
-- Iridium-Handbücher (lokal) enthalten KEINE SysEx-Byte-Doku (nur Glossar);
-  OS4/SOMv2-Manual beschreibt nur neue Global-MIDI-Optionen (Layer-Kanäle pro Port).
-  Offizielles „Iridium MIDI Implementation"-PDF liegt vermutlich im Login-Bereich
-  (My Waldorf) bzw. als .qpat/.syx-Format – .syx-Import über Load>Actions>Import
-  ist dokumentiert (Waldorf-FAQ).
-- **Iridium antwortet auf KEIN SysEx** – getestet: bytestream + natives UMP
-  (SysEx7 mt=3 UND SysEx8 mt=5), beide Endpunkte (`MIDI 2.0`, `Synth`),
-  Model-Sweep 0x00–0x3F, Device-ID-Sweep 0x00–0x7E, cmds 0x00/0x01/0x04/0x30,
-  mit/ohne Location – 0 Antworten. Aber: Kanal-MIDI TX/RX funktioniert
-  (nach Program Change sendet der Iridium CC123-All-Notes-Off-Bursts auf ch6-8;
-  CC7=0 auf ch6-9 senkt Peak um -4,6 dBFS). => Dump-Lese-Richtung vermutlich nur
-  als Datei-Export (Load>Actions>Export -> SD/USB als .qpat) oder evtl. DIN.
-- **.qpat-Format reverse-engineered** (offizielle Soundsets von waldorfmusic.com,
+### Iridium – SysEx status
+- **No SysEx reply on either USB endpoint** (`MIDI 2.0` and `Synth`):
+  neither Universal Device Inquiry nor Waldorf-style sweep `F0 3E <model 0x00..0x1F> 00 <cmd 0x00/0x01/0x04> F7`
+  (see `scripts/step2_probe_iridium_sysex.py`) – 0 replies.
+- Channel voice (notes) and CC are received on `MIDI 2.0` (verified via audio).
+- CC reception tested: CC7=0 on channels 6-9 lowers the peak by ca. -4.6 dBFS;
+  individual OSC-VOL CCs (33/47/61) show only small peak deltas (check layer/channel
+  assignment; CC7 acts channel-wide).
+- Iridium CC table (115 CCs, CC 2..116): `docs/midi-maps/iridium_midi_guide.csv`
+  (midi.guide / pencilresearch/midi GitHub). Beware: Filter1 Cutoff has NO CC there;
+  incoming NRPN are ignored per the OS3 manual.
+- First mapping table (Blofeld SNDD -> Iridium CC): `docs/MAPPING.md`.
+- Iridium manuals (local) contain NO SysEx byte documentation (only glossary);
+  the OS4/SOMv2 manual only describes new global MIDI options (layer channels per port).
+  The official "Iridium MIDI Implementation" PDF is presumably in the login area
+  (My Waldorf) or as .qpat/.syx format – .syx import via Load>Actions>Import
+  is documented (Waldorf FAQ).
+- **Iridium answers NO SysEx at all** – tested: bytestream + native UMP
+  (SysEx7 mt=3 AND SysEx8 mt=5), both endpoints (`MIDI 2.0`, `Synth`),
+  model sweep 0x00-0x3F, device-ID sweep 0x00-0x7E, cmds 0x00/0x01/0x04/0x30,
+  with/without location – 0 replies. But channel MIDI TX/RX works
+  (after program change the Iridium sends CC123 all-notes-off bursts on ch6-8;
+  CC7=0 on ch6-9 lowers the peak by -4.6 dBFS). => Dump read direction probably only
+  as file export (Load>Actions>Export -> SD/USB as .qpat) or possibly DIN.
+- **.qpat format reverse-engineered** (official soundsets from waldorfmusic.com,
   `docs/refs/*.zip`: Quantum_Factories.zip 1186 qpat, additional_patches_IKB.zip
-  453 qpat): magic `b4 ec 33 00`, uint32 Version, name/author/bank/category/attrs
-  je char[32], dann Key-Value-Records ab ~0x200 (Typ-Byte `?@B>=<` + Key,
-  Value-Feld ~34 B ab key+33; numerisch = float LE, sonst String). Parser:
-  `bloridium/qpat.py`. Vollständiger Iridium-Parameter-Namensraum extrahiert
+  453 qpat): magic `b4 ec 33 00`, uint32 version, name/author/bank/category/attrs
+  each char[32], then key-value records from ~0x200 (type byte `?@B>=<` + key,
+  value field ~34 B from key+33; numeric = float LE, else string). Parser:
+  `bloridium/qpat.py`. Complete Iridium parameter namespace extracted
   (Osc1Type/Osc1Vol/Filter1CutOff/Filter1Reso/Filter12Type/AmpEnv*/Filter1Env*/
-  FreeEnv1-3*/MatrixAmount1-40/FX1Type/... – 645 Params in einem Patch).
-  Samples dazu: `docs/refs/qpat/*.qpat`.
-- **Recherche-Ergebnis (Subagent, ses_e44a06781ffeZV5NgA6lrz4Uzc): Iridium/Quantum
-  haben KEINE SysEx-Anwendungsschicht** – kein Dump-Request, keine SysEx-Antwort,
-  auch nicht ueber DIN (OS 3.3+ UMP = reiner Transport, kein SysEx-Handler;
-  Gearspace: „there is no sysex layer in quantum/iridium"). Patch-Transfer nur
-  dateibasiert: `Load>Actions>Export/Import` -> SD/USB als **.qpat**. Waldorf-SysEx
-  existiert nur fuer Legacy + M (Model-ID 0x30); Blofeld = 0x13.
-  .qpat-Spec (verifiziert gegen offizielle Waldorf-Files + autosamplerT-Code):
-  `b4 ec 33 00` magic, u32 version, name/author/desc + 4x category je char[32],
-  param-count u16, 16 Resource-Header a 12 B (type/offset/len), pad auf 0x200,
-  dann 68-B-Records: `float32 LE value | char[32] name (mit Typ-Praefix @/?/B...) |
-  char[32] display`, danach Sample-Maps (tab-getrennt). Writer-Referenz:
+  FreeEnv1-3*/MatrixAmount1-40/FX1Type/... – 645 params in one patch).
+  Samples: `docs/refs/qpat/*.qpat`.
+- **Research result (subagent, ses_e44a06781ffeZV5NgA6lrz4Uzc): Iridium/Quantum
+  have NO SysEx application layer** – no dump request, no SysEx reply,
+  also not via DIN (OS 3.3+ UMP = pure transport, no SysEx handler;
+  Gearspace: "there is no sysex layer in quantum/iridium"). Patch transfer only
+  file-based: `Load>Actions>Export/Import` -> SD/USB as **.qpat**. Waldorf SysEx
+  exists only for legacy + M (model ID 0x30); Blofeld = 0x13.
+  .qpat spec (verified against official Waldorf files + autosamplerT code):
+  `b4 ec 33 00` magic, u32 version, name/author/desc + 4x category each char[32],
+  param-count u16, 16 resource headers a 12 B (type/offset/len), pad to 0x200,
+  then 68-B records: `float32 LE value | char[32] name (with type prefix @/?/B...) |
+  char[32] display`, then sample maps (tab-separated). Writer reference:
   github.com/timandtheocean/autosamplerT `src/export/export_qpat.py`.
-  => **Iridium-"Dump" = .qpat-Datei** (am Geraet Load>Actions>Export auf USB/SD,
-  dann am Mac parsen mit bloridium/qpat.py). Umgekehrt koennen wir .qpat selbst
-  schreiben (Blofeld-SNDD -> qpat-Keys) und am Geraet importieren.
-  Artefakte des Subagenten: /private/var/folders/kg/zkn9b6n546vfmpb6qd3n4pdr0000gn/T/iridium-research/.
-- **Iridium erscheint NICHT als USB-Drive am Mac** (geprueft 2026-11-08: diskutil/
-  system_profiler zeigen kein zusaetzliches Laufwerk, nur MIDI-Endpunkte). rolfw's
-  Idee von 2019 („sample storage appears as an external drive on your computer") kam
-  fuer Quantum/Iridium nie (Paul_xyz 2023: nur filebasiert). Gearspace Iridium S.112:
-  USB-Host erkennt „Only MIDI and storage devices". „Internal Flash als Drive" = nur
-  im Geraete-eigenen Browser (Kopie Stick<->Flash am Geraet). => Datei-Austausch nur
-  per USB-Stick/SD im Host-Port/Slot.
-- **Vorfall geloest: Iridium verstummt bei CC7=0** – CC7 ist am Iridium der
-  **Output/Main Level** (nicht in midi.guide-CSV gelistet); 0 = stumm. Nach CC7=0
-  kein Ton auf In5/6 (ueberlebt Patch-Wechsel; MIDI-Eingang lebt: PC -> CC123).
-  Fix: CC7 hochsetzen (User am Geraet bestaetigt). mapping.py mappt jetzt
-  Blofeld "Amplifier Volume" -> CC7. Neustart nicht noetig, nur CC7>0.
-- Nach Neustart (Preset 0039 "Stepping Out" = SPLIT): ch6 note36 = -26 dBFS,
-  note60 = -59 (Split um C4); ch7 note60 = -36 dBFS. => Fuer A/B tiefere Note
-  nutzen (36) oder alle Part-Kanaele 6-9 beschreiben.
+  => **Iridium "dump" = .qpat file** (on the device Load>Actions>Export to USB/SD,
+  then parse on the Mac with bloridium/qpat.py). Conversely we can write .qpat
+  ourselves (Blofeld-SNDD -> qpat keys) and import on the device.
+  Artifacts of the subagent: /private/var/folders/kg/zkn9b6n546vfmpb6qd3n4pdr0000gn/T/iridium-research/.
+- **Iridium does NOT appear as USB drive on the Mac** (checked 2026-11-08: diskutil/
+  system_profiler show no additional drive, only MIDI endpoints). rolfw's
+  2019 idea ("sample storage appears as an external drive on your computer") never
+  came for Quantum/Iridium (Paul_xyz 2023: file-based only). Gearspace Iridium p.112:
+  USB host recognizes "Only MIDI and storage devices". "Internal flash as drive" = only
+  in the device's own browser (copy stick<->flash on the device). => File exchange only
+  via USB stick/SD in the host port/slot.
+- **Incident solved: Iridium goes silent at CC7=0** – CC7 is the
+  **Output/Main Level** on the Iridium (not listed in the midi.guide CSV); 0 = silent. After CC7=0
+  no sound on In5/6 (survives patch change; MIDI input alive: PC -> CC123).
+  Fix: set CC7 high (confirmed by user on the device). mapping.py now maps
+  Blofeld "Amplifier Volume" -> CC7. No restart needed, just CC7>0.
+- After reboot (preset 0039 "Stepping Out" = SPLIT): ch6 note36 = -26 dBFS,
+  note60 = -59 (split at C4); ch7 note60 = -36 dBFS. => For A/B use a lower note
+  (36) or address all part channels 6-9.

@@ -1,4 +1,4 @@
-"""sim_compare.py – Phase-B-Flags --embed/--llm/--strict (TDD Task 7, Backends gemockt)."""
+"""sim_compare.py - phase B flags --embed/--llm/--strict (TDD Task 7, backends mocked)."""
 
 import json
 import sys
@@ -70,13 +70,13 @@ def test_npy_embed_flag_adds_embed_score(sc, tmp_path, monkeypatch):
 def test_embed_missing_model_degrades_exit_0(sc, tmp_path, capsys):
     sim_compare, sim_embed = sc
     md = tmp_path / "models"
-    md.mkdir()  # kein GGUF drin
+    md.mkdir()  # no GGUF in there
     pa, pb = _npy_pair(tmp_path)
     log = tmp_path / "log.jsonl"
     rc = sim_compare.main(["--npy", pa, pb, "--embed", "--models-dir", str(md),
                            "--log", str(log)])
-    assert rc == 0  # degrade, kein Hard-Fail
-    assert "WARNUNG" in capsys.readouterr().err
+    assert rc == 0  # degrade, no hard fail
+    assert "WARNING" in capsys.readouterr().err
     r = json.loads(log.read_text().strip())["result"]
     assert r["embed_score"] is None and r["combined"] == r["score"]
     assert "clap" in r["backend_error"]
@@ -123,11 +123,11 @@ def test_no_embed_flag_means_no_backend(sc, tmp_path, monkeypatch):
     pa, pb = _npy_pair(tmp_path)
     rc = sim_compare.main(["--npy", pa, pb, "--models-dir", str(md),
                            "--log", str(tmp_path / "l.jsonl")])
-    assert rc == 0 and called == []  # ohne --embed wird kein Backend gebaut
+    assert rc == 0 and called == []  # without --embed no backend is built
 
 
 def test_npy_spec_png_dir_writes_png(sc, tmp_path):
-    """--spec-png-dir rendert Side-by-Side-PNG und verlinkt es im Log; Default: aus."""
+    """--spec-png-dir renders a side-by-side PNG and links it in the log; default: off."""
     from pathlib import Path
     sim_compare, sim_embed = sc
     pa, pb = _npy_pair(tmp_path)
@@ -139,7 +139,7 @@ def test_npy_spec_png_dir_writes_png(sc, tmp_path):
     entry = json.loads(log.read_text().strip())
     sp = entry["result"]["spec_png"]
     assert sp and sp.endswith("spec_pair.png") and Path(sp).exists()
-    # ohne Flag: spec_png None, kein PNG
+    # without flag: spec_png None, no PNG
     log2 = tmp_path / "log2.jsonl"
     rc = sim_compare.main(["--npy", pa, pb, "--log", str(log2)])
     assert rc == 0

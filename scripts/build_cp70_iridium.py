@@ -1,22 +1,22 @@
-"""CP70 (EXS24-Samplepack) -> Waldorf Iridium .qpat + Sample-Folder.
+"""CP70 (EXS24 sample pack) -> Waldorf Iridium .qpat + sample folder.
 
-Quelle: CP70-Exs24-v1.2.zip (Logic EXS24: CP70.exs + CP70/*.wav, 44.1 kHz/16-bit/mono).
-Ziel:   transfer/cp70/  mit
-        - 220_CP70_Piano.qpat   (v14, OSC1=Particle, Sample-Map eingebettet als Resource 4)
-        - CP70.map              (identische Map als Standalone-Datei fuer Actions>Load Map)
-        - samples/CP70/*.wav    ( Stick -> Iridium Timbre>Actions>Add>Copy -> internal /samples/CP70/ )
-        - MANIFEST.md           (Import-Anleitung)
+Source: CP70-Exs24-v1.2.zip (Logic EXS24: CP70.exs + CP70/*.wav, 44.1 kHz/16-bit/mono).
+Target: transfer/cp70/ with
+        - 220_CP70_Piano.qpat   (v14, OSC1=Particle, sample map embedded as Resource 4)
+        - CP70.map              (identical map as standalone file for Actions>Load Map)
+        - samples/CP70/*.wav    ( USB stick -> Iridium Timbre>Actions>Add>Copy -> internal /samples/CP70/ )
+        - MANIFEST.md           (import instructions)
 
-Aufbau des EXS24-Instruments (reverse-engineered, siehe Docstring parse_exs):
-  Gruppen CP70B-* = Bass  (Keys 29..52), CP70_* = Mitte (53..78), CP70H_* = High (79..127),
-  je 6 Velocity-Layer (z. B. CP70_40 = vel 0-40), *_OFF = Release-Samples (b44==1, weggelassen),
-  *_1.wav = Alternate Takes (weggelassen). Pro Zone: key_lo/hi, root, vel_lo/hi.
+Layout of the EXS24 instrument (reverse-engineered, see parse_exs docstring):
+  groups CP70B-* = bass (keys 29..52), CP70_* = mid (53..78), CP70H_* = high (79..127),
+  each with 6 velocity layers (e.g. CP70_40 = vel 0-40), *_OFF = release samples (b44==1, skipped),
+  *_1.wav = alternate takes (skipped). Per zone: key_lo/hi, root, vel_lo/hi.
 
-Sample-Aufbereitung (analog untergeek.de/2024/12/cp70-piano-for-the-iridium):
-  Leading Silence trimmen, Peak auf -6 dBFS normieren (alle Samples gleicher Pegel,
-  Dynamik macht die VCA via AmpVeloAmount), Map-Gain = 1.0.
+Sample preparation (analogous to undergeek.de/2024/12/cp70-piano-for-the-iridium):
+  trim leading silence, normalize peak to -6 dBFS (all samples at the same level --
+  dynamics come from the VCA via AmpVeloAmount), map gain = 1.0.
 
-Map-Format (16 TSV-Spalten, "3:" = internal memory):
+Map format (16 TSV columns, "3:" = internal memory):
   "3:/samples/CP70/<file>.wav"  pitch  note_lo  note_hi  gain  vel_lo  vel_hi
   NN(0.5)  start(0)  end(1)  dir(0)  loop_start(0)  loop_end(1)  loop_mode(0)  xfade(0.5)  track_pitch(1)
 
@@ -38,11 +38,11 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parent.parent
 ZIP_PATH = Path("/Users/jan/Nextcloud/AAA Musik/01 Sounds/SAMPLES/CP70-Exs24-v1.2.zip")
-TEMPLATE = REPO / "dumps/export-001/00000-NotSoGrand.qpat"  # v14 Device-Export mit Particle-OSC + Maps
+TEMPLATE = REPO / "dumps/export-001/00000-NotSoGrand.qpat"  # v14 device export with Particle OSC + maps
 OUT_DIR = REPO / "transfer/cp70"
-SAMPLE_DIR = OUT_DIR / "samples/CP70"          # Stick-Layout: <stick>/samples/CP70/
-INTERNAL_SAMPLE_PATH = "3:/samples/CP70"       # so liegen die Samples im Iridium-internalen Speicher
-QPAT_NAME = "220_CP70_Piano.qpat"              # Slot 0220 (0200-0215 belegt, siehe IRIDIUM-FAVORITES-MAP)
+SAMPLE_DIR = OUT_DIR / "samples/CP70"          # USB-stick layout: <stick>/samples/CP70/
+INTERNAL_SAMPLE_PATH = "3:/samples/CP70"       # this is where the samples live in the Iridium's internal memory
+QPAT_NAME = "220_CP70_Piano.qpat"              # Slot 0220 (0200-0215 occupied, see IRIDIUM-FAVORITES-MAP)
 SOUND_NAME = "CP70 Piano"
 PEAK = 0.5                                      # -6 dBFS
 TRIM_THRESHOLD = 0.004                          # ~ -48 dBFS
@@ -54,7 +54,7 @@ TRIM_BACKOFF = 88                               # 2 ms @44.1k
 def parse_exs(data: bytes) -> list[dict]:
     """CP70.exs -> Zonenliste [{sample, frames, zname, klo, khi, root, vlo, vhi, b44}]."""
     pos = [m.start() for m in re.finditer(b"TBOS", data)]
-    # Sample-Tabelle: TBOS-Records ab erstem Sample-Eintrag "*.wav" (676 B stride)
+    # Sample table: TBOS records starting at the first sample entry "*.wav" (676 B stride)
     sbase = next(p for p in pos
                  if re.match(rb"CP70\S* \d\d(_1)?\.wav", data[p + 4:p + 28]))
     samps = []
@@ -66,7 +66,7 @@ def parse_exs(data: bytes) -> list[dict]:
             break
         samps.append({"name": name, "frames": struct.unpack("<I", rec[0x48:0x4C])[0]})
         p += 676
-    # Zonen-Tabelle: 220-B-Records ab 0xb4 (nach dem Header)
+    # Zone table: 220-byte records from 0xb4 (after the header)
     zbase = 0xB4
     zones = []
     p = zbase
@@ -86,7 +86,7 @@ def parse_exs(data: bytes) -> list[dict]:
 
 
 def select_zones(zones: list[dict]) -> list[dict]:
-    """Hauptaufnahmen waehlen: kein OFF (b44==1), keine _1-Takes, Register laut Gruppenname."""
+    """Select main takes: no OFF (b44==1), no _1 takes, register per group name."""
     out = []
     for z in zones:
         if z["b44"] != 8 or z["sample"].endswith("_1.wav"):
@@ -124,7 +124,7 @@ def trim_and_normalize(x: np.ndarray, rate: int) -> np.ndarray:
 
 
 def detect_pitch_midi(x: np.ndarray, rate: int) -> float | None:
-    """Autokorrelation auf 0.4 s nach Attack -> MIDI-Note (float), 25..1200 Hz."""
+    """Autocorrelation on 0.4 s after the attack -> MIDI note (float), 25..1200 Hz."""
     n0 = min(len(x), int(rate * 0.05))
     seg = x[n0:n0 + int(rate * 0.4)]
     if seg.size < 4096:
@@ -136,7 +136,7 @@ def detect_pitch_midi(x: np.ndarray, rate: int) -> float | None:
     ac = np.correlate(seg, seg, mode="full")[len(seg) - 1:]
     ac /= (ac[0] + 1e-12)
     lag = lo + int(np.argmax(ac[lo:hi]))
-    if 0 < lag < len(ac) - 1:  # parabolische Interpolation um den Peak
+    if 0 < lag < len(ac) - 1:  # parabolic interpolation around the peak (sub-sample accuracy)
         y0, y1, y2 = ac[lag - 1], ac[lag], ac[lag + 1]
         d = 0.5 * (y0 - y2) / (y0 - 2 * y1 + y2 + 1e-12)
         lag += d
@@ -167,18 +167,18 @@ def main() -> None:
 
     zf = zipfile.ZipFile(ZIP_PATH)
     zones = select_zones(parse_exs(zf.read("CP70.exs")))
-    print(f"Zonen gewaehlt: {len(zones)}")
+    print(f"Zones selected: {len(zones)}")
 
     SAMPLE_DIR.mkdir(parents=True, exist_ok=True)
     entries = []          # (fname, root, klo, khi, vlo, vhi)
     used = {}
     for z in zones:
         src = z["sample"]
-        fname = src.replace(" ", "_")               # stick-/FAT32-sicher
+        fname = src.replace(" ", "_")               # USB-stick/FAT32-safe
         x, rate = read_wav_mono(zf, src)
         x = trim_and_normalize(x, rate)
         root = float(z["root"])
-        if root <= 0:                                # C-1-Zonen: Root per f0 bestimmen
+        if root <= 0:                                # C-1 zones: determine root from f0 (no valid EXS root key)
             det = detect_pitch_midi(x, rate)
             if det is not None:
                 root = det
@@ -191,8 +191,9 @@ def main() -> None:
             print(f"  {src:22s} root_exs={z['root']:3d} f0={det if det is None else round(det, 2)} "
                   f"key {z['klo']}-{z['khi']} vel {z['vlo']}-{z['vhi']}")
 
-    # Luecken im Pack fuellen (z. B. Keys 65-66 in Layer CP70_75): fehlende (key, vel)-
-    # Zellen mit einer Donor-Zone desselben Keys nachbarlicher Vel-Range abdecken.
+    # Fill gaps in the pack (e.g. keys 65-66 in layer CP70_75): cover missing (key, vel)
+    # cells with a donor zone of the same key from a neighboring vel range, so every
+    # (key, vel) cell is playable.
     cov = set()
     for _, _, klo, khi, vlo, vhi in entries:
         for k in range(klo, khi + 1):
@@ -208,30 +209,30 @@ def main() -> None:
         donors = by_key.get(k, [])
         if not donors:
             continue
-        # Donor = Zone mit naechster Vel-Range
+        # Donor = zone with the nearest vel range (least audible difference)
         donor = min(donors, key=lambda e: min(abs(e[4] - v), abs(e[5] - v)))
         entries.append((donor[0], donor[1], k, k, v, v))
         cov.add((k, v))
         filled += 1
-    print(f"Gap-Fill: {filled} Zellen ergaenzt")
+    print(f"Gap fill: {filled} cells added")
     lines = [map_line(*e) for e in sorted(entries, key=lambda e: (e[2], e[4]))]
     map_text = "\n".join(lines) + "\n"
     total = sum((SAMPLE_DIR / f).stat().st_size for f in used.values())
-    print(f"Samples: {len(used)} Dateien, {total/1e6:.1f} MB; Map-Zeilen: {len(lines)}")
+    print(f"Samples: {len(used)} files, {total/1e6:.1f} MB; map lines: {len(lines)}")
 
     (OUT_DIR / "CP70.map").write_text(map_text)
 
-    # --- qpat aus Device-Export-Template (v14, OSC1=Particle) ---
+    # --- qpat from the device-export template (v14, OSC1=Particle) ---
     tpl = qpat.load(TEMPLATE)
     params = {k: (v["value"], v["display"]) for k, v in tpl["params"].items()}
     params.update({
         "Osc1Type": (2.0, "Particle"),
-        "Osc2Type": (5.0, "Off"),                    # v14 Device-Enum: Off=5 (v15: 6)
+        "Osc2Type": (5.0, "Off"),                    # v14 device enum: Off=5 (v15: 6)
         "Osc3Type": (5.0, "Off"),
         "Osc1ParticleSampleMode": (2.0, "Normal"),
         "Osc1Vol": (1.0, ""),
         "Osc1Pan": (0.5, ""),
-        "AmpVeloAmount": (0.75, ""),                 # Dynamik ueber VCA (Samples sind normiert)
+        "AmpVeloAmount": (0.75, ""),                 # dynamics via VCA (samples are normalized to equal peak)
         "AmpEnvAttack": (0.0, ""),
         "AmpEnvDecay": (0.9, ""),
         "AmpEnvSustain": (1.0, ""),
@@ -245,20 +246,20 @@ def main() -> None:
         "MainVolume": (0.9, ""),
         "GlideOnOff": (0.0, "Off"),
     })
-    # Resource 4 (USER_SAMPLE_MAP1) + Tail exakt wie im Device-Export:
-    # tail = map_text + NUL, resource = (4, offset=0, length=len(map_text)+1)
+    # Resource 4 (USER_SAMPLE_MAP1) + tail exactly as in the device export:
+    # tail = map_text + NUL, resource = (type 4, offset=0, length=len(map_text)+1)
     resources = [{"type": 0, "offset": 0, "length": 0}] * 16
     resources[0] = {"type": 4, "offset": 0, "length": len(map_text.encode()) + 1}
     tail = map_text.encode() + b"\x00"
-    # geaenderte Params mit neuem Display schreiben (raw_fields ohne diese Keys)
+    # write changed params with their new display (raw_fields without these keys)
     changed = {"Osc1Vol", "Osc1Pan", "Osc2Type", "DigiFormerType", "Filter1CutOff", "Filter1Reso",
                "Filter2State", "AmpVeloAmount", "AmpEnvAttack", "AmpEnvDecay", "AmpEnvRelease",
                "MainVolume"}
     raw_fields = {k: v for k, v in tpl["_raw_fields"].items() if k not in changed}
     out = qpat.build_qpat(
         SOUND_NAME, params, creator="bloridium",
-        description="Yamaha CP70 (EXS24 pack) als Iridium-Sampler: OSC1 Particle, "
-                    "6 Velocity-Layer, Keys 29-127, Samples in /samples/CP70",
+        description="Yamaha CP70 (EXS24 pack) as Iridium sampler: OSC1 Particle, "
+                    "6 velocity layers, keys 29-127, samples in /samples/CP70",
         categories=["Piano", "Sample", "CP70", ""],
         version=tpl["version"],
         resources=resources, tail=tail,
@@ -267,7 +268,7 @@ def main() -> None:
     qpat_path = OUT_DIR / QPAT_NAME
     qpat_path.write_bytes(out)
 
-    # --- verifizieren ---
+    # --- verify (re-parse and assert the structures we just built) ---
     chk = qpat.parse_qpat(qpat_path.read_bytes())
     assert chk["name"] == SOUND_NAME and chk["version"] == 14
     assert chk["resources"][0]["type"] == 4 and chk["resources"][0]["length"] == len(map_text) + 1
@@ -275,7 +276,7 @@ def main() -> None:
     assert chk["params"]["Osc1Type"]["value"] == 2.0
     assert chk["params"]["Osc2Type"]["value"] == 5.0
     n_lines = len([l for l in chk["sample_maps"][0].splitlines() if l.strip()])
-    print(f"OK: {qpat_path} ({len(out)} B), Map {n_lines} Zeilen, "
+    print(f"OK: {qpat_path} ({len(out)} B), map {n_lines} lines, "
           f"res4 len {chk['resources'][0]['length']}, tail {len(chk['_tail'])} B")
     (OUT_DIR / "zones.json").write_text(json.dumps(
         [{k: z[k] for k in ("sample", "zname", "klo", "khi", "root", "vlo", "vhi")} for z in zones],
