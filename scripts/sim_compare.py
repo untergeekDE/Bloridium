@@ -52,7 +52,8 @@ def _score_pair(args, a, b, meta):
     return sim_embed.score_pair_embed(a, b, sr=audio.SAMPLERATE, meta=meta,
                                       log_path=args.log, clap=clap, ollama=ollama,
                                       use_llm=args.llm, strict=args.strict,
-                                      profile_backend=d1)
+                                      profile_backend=d1,
+                                       spec_png_dir=getattr(args, "spec_png_dir", None))
 
 
 def run_npy(pa, pb, log, meta, args) -> int:
@@ -122,6 +123,9 @@ def main(argv=None) -> int:
     ap.add_argument("--strict", action="store_true",
                     help="fehlendes Backend ist hart (Exit 3) statt Degrade")
     ap.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
+    ap.add_argument("--spec-png-dir", default=None,
+                    help="Side-by-Side-Spektrogramm-PNG (A|B|Delta dB) rendern und im Log "
+                         "verlinken (Default: aus)")
     args = ap.parse_args(argv)
     meta = _meta(args.meta)
     if args.npy:

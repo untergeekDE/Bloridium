@@ -67,6 +67,11 @@ def main(argv=None) -> int:
     ap.add_argument("--d1-model", default=sim_embed.DEFAULT_D1_MODEL)
     ap.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
     ap.add_argument("--wav-dir", default=str(REPO / "recordings"))
+    ap.add_argument("--spec-png-dir", default=str(REPO / "recordings" / "spec"),
+                    help="Side-by-Side-Spektrogramm-PNGs (A|B|Delta dB) pro Messung, "
+                         "im Log verlinkt (Default recordings/spec/)")
+    ap.add_argument("--no-spec-png", action="store_true",
+                    help="kein Spektrogramm-PNG rendern")
     args = ap.parse_args(argv)
 
     notes = [int(n) for n in args.notes.split(",")]
@@ -131,7 +136,9 @@ def main(argv=None) -> int:
                                                    log_path=args.log, clap=clap, ollama=ollama,
                                                    use_llm=not args.no_llm and full,
                                                    norm_pegel=norm,
-                                                   profile_backend=d1 if full else None)
+                                                   profile_backend=d1 if full else None,
+                                                   spec_png_dir=None if args.no_spec_png
+                                                   else args.spec_png_dir)
                     print(f"-- {loc} note{note} wheel={pct:.0f}% --")
                     sim_embed.print_result(r, f"blofeld:{loc}", f"iridium:set6pc{irr_pc}")
                     if r.get("peak_dbfs"):

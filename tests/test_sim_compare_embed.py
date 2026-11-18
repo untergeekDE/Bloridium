@@ -124,3 +124,23 @@ def test_no_embed_flag_means_no_backend(sc, tmp_path, monkeypatch):
     rc = sim_compare.main(["--npy", pa, pb, "--models-dir", str(md),
                            "--log", str(tmp_path / "l.jsonl")])
     assert rc == 0 and called == []  # ohne --embed wird kein Backend gebaut
+
+
+def test_npy_spec_png_dir_writes_png(sc, tmp_path):
+    """--spec-png-dir rendert Side-by-Side-PNG und verlinkt es im Log; Default: aus."""
+    from pathlib import Path
+    sim_compare, sim_embed = sc
+    pa, pb = _npy_pair(tmp_path)
+    log = tmp_path / "log.jsonl"
+    sdir = tmp_path / "spec"
+    rc = sim_compare.main(["--npy", pa, pb, "--log", str(log),
+                           "--spec-png-dir", str(sdir)])
+    assert rc == 0
+    entry = json.loads(log.read_text().strip())
+    sp = entry["result"]["spec_png"]
+    assert sp and sp.endswith("spec_pair.png") and Path(sp).exists()
+    # ohne Flag: spec_png None, kein PNG
+    log2 = tmp_path / "log2.jsonl"
+    rc = sim_compare.main(["--npy", pa, pb, "--log", str(log2)])
+    assert rc == 0
+    assert json.loads(log2.read_text().strip())["result"]["spec_png"] is None

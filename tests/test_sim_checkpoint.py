@@ -69,7 +69,7 @@ def test_checkpoint_only_a001_defaults(repo, tmp_path, monkeypatch, capsys):
 
     log = tmp_path / "log.jsonl"
     rc = sim_checkpoint.main(["--only", "A001", "--irr-pc", "108",
-                              "--no-embed", "--no-llm",
+                              "--no-embed", "--no-llm", "--no-spec-png",
                               "--log", str(log), "--wav-dir", str(tmp_path)])
     assert rc == 0
     rows = [json.loads(l) for l in log.read_text().splitlines()]
@@ -172,7 +172,7 @@ def test_checkpoint_stumm_weiter_exit1(repo, tmp_path, monkeypatch):
     monkeypatch.setattr(sim_embed, "score_pair_embed", fake_score_pair_embed)
 
     log = tmp_path / "log.jsonl"
-    rc = sim_checkpoint.main(["--only", "A001", "--no-embed", "--no-llm", "--no-wait",
+    rc = sim_checkpoint.main(["--only", "A001", "--no-embed", "--no-llm", "--no-wait", "--no-spec-png",
                               "--log", str(log), "--wav-dir", str(tmp_path)])
     assert rc == 1
     rows = [json.loads(l) for l in log.read_text().splitlines()]
@@ -208,7 +208,7 @@ def test_checkpoint_no_wait_and_overrides(repo, tmp_path, monkeypatch):
 
     log = tmp_path / "log.jsonl"
     rc = sim_checkpoint.main(["--only", "A008", "--notes", "60,72", "--wheel", "0",
-                              "--no-embed", "--no-llm", "--no-wait",
+                              "--no-embed", "--no-llm", "--no-wait", "--no-spec-png",
                               "--log", str(log), "--wav-dir", str(tmp_path)])
     assert rc == 0
     rows = [json.loads(l) for l in log.read_text().splitlines()]
@@ -216,3 +216,25 @@ def test_checkpoint_no_wait_and_overrides(repo, tmp_path, monkeypatch):
     assert {r["meta"]["note"] for r in rows} == {60, 72}
     assert {r["meta"]["wheel_pct"] for r in rows} == {0.0}
     assert all(r["meta"]["blofeld"] == "A008" for r in rows)
+
+
+def test_checkpoint_spec_png_dir(repo, tmp_path, monkeypatch):
+    """--spec-png-dir: pro Kombination ein spec_<LOC>_n<note>_w<pct>.png, im Log verlinkt."""
+    sim_checkpoint = _load(repo)
+    sent, notes_log = [], {"blofeld": [], "iridium": []}
+    _install_fakes(monkeypatch, repo, sent, notes_log)
+    monkeypatch.setattr("builtins.input", lambda *a: "")
+    sdir = tmp_path / "spec"
+    log = tmp_path / "log.jsonl"
+    rc = sim_checkpoint.main(["--only", "A001", "--no-embed", "--no-llm", "--no-wait",
+                              "--spec-png-dir", str(sdir),
+                              "--log", str(log), "--wav-dir", str(tmp_path)])
+    assert rc == 0
+    pngs = sorted(p.name for p in sdir.glob("spec_A001_*.png"))
+    assert len(pngs) == 12
+    assert any("_n36_w0.png" in p for p in pngs)
+    assert any("_n72_w100.png" in p for p in pngs)
+    rows = [json.loads(l) for l in log.read_text().splitlines()]
+    assert len(rows) == 12
+    assert all(r["result"]["spec_png"] and r["result"]["spec_png"].endswith(".png")
+               for r in rows)
