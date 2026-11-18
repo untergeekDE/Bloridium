@@ -52,6 +52,72 @@ BAND_NAMES = ("low", "mid", "high")
 # DSP-Kern
 # --------------------------------------------------------------------------
 
+import re as _re
+
+_WAV_RE = _re.compile(r"^ab_(.+)_(\d{8}_\d{6})_n(\d+)(_w[\d.]+)?_(blo|irr)\.wav$")
+_NPY_RE = _re.compile(r"^ab_(.+)_(\d{8}_\d{6})_(blofeld|iridium)\.npy$")
+
+
+def index_wavs(rec_dir) -> dict:
+    """Index aller Aufnahme-Paare in rec_dir:
+    {(loc, note, wtag): [(ts, path_a, path_b), ...]} – wav (n<note>) wie npy (live)."""
+    idx: dict = {}
+    rec_dir = Path(rec_dir)
+    for p in sorted(rec_dir.iterdir()):
+        m = _WAV_RE.match(p.name)
+        if m:
+            loc, ts, note, wtag, _ = m.groups()
+            other = p.with_name(p.name[: -len("_blo.wav")] + "_irr.wav")
+            if other.exists():
+                idx.setdefault((loc, note, wtag or ""), []).append((ts, p, other))
+            continue
+        m = _NPY_RE.match(p.name)
+        if m:
+            loc, ts, which = m.groups()
+            if which == "blofeld":
+                other = p.with_name(p.name.replace("_blofeld.npy", "_iridium.npy"))
+                if other.exists():
+                    idx.setdefault((loc, "", ""), []).append((ts, p, other))
+    return idx
+
+
+def pick_wav_pair(idx: dict, loc: str, ts: str | None, note, wheel_pct=None):
+    """Passendes Paar aus dem Index: gleiche loc/note/wtag, ts moeglichst nah am Log-ts.
+    -> (path_a, path_b) oder None."""
+    wtag = f"_w{float(wheel_pct):.0f}" if wheel_pct is not None else ""
+    cands = idx.get((loc, str(note), wtag)) or idx.get((loc, str(note), "")) \
+        or idx.get((loc, "", ""))
+    if not cands:
+        return None
+    if ts:
+        from datetime import datetime
+
+        def _key(c):
+            try:
+                return abs((datetime.strptime(c[0], "%Y%m%d_%H%M%S")
+                            - datetime.strptime(ts, "%Y%m%d_%H%M%S")).total_seconds())
+            except ValueError:
+                return 1e18
+        cands = sorted(cands, key=_key)
+    return cands[0][1], cands[0][2]
+
+
+def load_pair(pa, pb, sr: int = 48000):
+    """WAV- oder NPY-Paar laden -> (a, b, sr)."""
+    pa, pb = Path(pa), Path(pb)
+    if pa.suffix == ".npy":
+        a = np.asarray(np.load(pa), dtype=np.float64)
+        b = np.asarray(np.load(pb), dtype=np.float64)
+        a = a.mean(axis=0) if a.ndim > 1 else a.ravel()
+        b = b.mean(axis=0) if b.ndim > 1 else b.ravel()
+        return a, b, sr
+    a, sr_a = read_wav(pa)
+    b, sr_b = read_wav(pb)
+    if sr_a != sr_b:
+        raise ValueError(f"sample rates differ ({sr_a} vs {sr_b})")
+    return a, b, sr_a
+
+
 def read_wav(path) -> tuple[np.ndarray, int]:
     """Mono-WAV (PCM16/32) via stdlib wave -> (float32-Signal in [-1,1], sr)."""
     import wave

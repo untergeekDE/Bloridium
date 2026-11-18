@@ -139,6 +139,7 @@ def main(argv=None) -> int:
                         sim_embed.write_wav(ix, audio.SAMPLERATE,
                                             wav_dir / f"ab_{loc}_{ts}_n{note}{wtag}_irr.wav")
                     meta = {"mode": "checkpoint", "blofeld": loc, "blofeld_pc": blo_pc,
+                            "wav": f"ab_{loc}_{ts}_n{note}{wtag}",
                             "irr_pc": irr_pc, "bank": 6, "note": note, "wheel_pct": pct}
                     full = args.full_all or (pct == wheel_pcts[0] and note == ref_note)
                     sd_mode = ("vision" if full else "dsp") if args.specdiff else "off"

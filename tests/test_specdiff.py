@@ -351,3 +351,36 @@ def test_cli_sim_compare_npy_specdiff_dsp(tmp_path, capsys):
     assert e["result"]["specdiff"]["labels"]["severity"] in specdiff.SEVERITIES
     assert '"specdiff"' not in capsys.readouterr().out or True
     assert "specdiff" in capsys.readouterr().out or True
+
+
+def test_index_and_pick_nearest_ts(tmp_path):
+    rec = tmp_path / "rec"
+    rec.mkdir()
+    _write_wav_pair(rec, "A001", "20261114_174637", 72)
+    idx = specdiff.index_wavs(rec)
+    pair = specdiff.pick_wav_pair(idx, "A001", "20261114_174905", 72, None)
+    assert pair is not None and pair[0].name == "ab_A001_20261114_174637_n72_blo.wav"
+    # live-NPY-Paar
+    np.save(rec / "ab_A002_20261114_154306_blofeld.npy", _sig(1.0, 220.0, 3))
+    np.save(rec / "ab_A002_20261114_154306_iridium.npy", _sig(1.0, 330.0, 4))
+    idx = specdiff.index_wavs(rec)
+    pair = specdiff.pick_wav_pair(idx, "A002", "20261114_154306", None, None)
+    assert pair is not None and pair[0].suffix == ".npy"
+    a, b, sr = specdiff.load_pair(*pair)
+    assert sr == 48000 and a.ndim == 1 and b.ndim == 1
+
+
+def test_cli_specdiff_batch_nearest_ts_fallback(tmp_path, capsys):
+    from bloridium import cli
+    rec = tmp_path / "rec"
+    rec.mkdir()
+    _write_wav_pair(rec, "A001", "20261114_174637", 72)     # anderer ts als im Log
+    log = tmp_path / "log.jsonl"
+    log.write_text(json.dumps({"ts": "20261114_174905",
+                               "meta": {"mode": "live", "blofeld": "A001", "note": 72},
+                               "result": {"score": 88.0}}) + "\n")
+    rc = cli.main(["specdiff", "--log", str(log), "--recordings", str(rec),
+                   "--no-vision", "--write"])
+    assert rc == 0
+    e = json.loads(log.read_text().splitlines()[0])
+    assert "specdiff" in e["result"] and e["result"]["score"] == 88.0

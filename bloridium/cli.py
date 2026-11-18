@@ -673,6 +673,7 @@ def cmd_specdiff(args) -> int:
         return 2
     lines = log.read_text().splitlines()
     out_lines = list(lines)
+    idx = specdiff.index_wavs(rec)
     n_done = 0
     for i, line in enumerate(lines):
         if not line.strip():
@@ -680,24 +681,26 @@ def cmd_specdiff(args) -> int:
         e = json.loads(line)
         meta = e.get("meta") or {}
         loc, ts = meta.get("blofeld"), e.get("ts")
-        if not loc or not ts:
+        if not loc:
             continue
         if args.only and loc != args.only:
             continue
         note = meta.get("note")
         w = meta.get("wheel_pct")
         wtag = f"_w{float(w):.0f}" if w is not None else ""
-        cands = [rec / f"ab_{loc}_{ts}_n{note}{wtag}", rec / f"ab_{loc}_{ts}_n{note}"]
-        wa = wb = None
-        for base in cands:
-            if Path(str(base) + "_blo.wav").exists() and Path(str(base) + "_irr.wav").exists():
-                wa, wb = Path(str(base) + "_blo.wav"), Path(str(base) + "_irr.wav")
-                break
-        if wa is None:
+        pair = None
+        if meta.get("wav"):  # exakter Pfad aus der Messung (neuere Logs)
+            base = rec / meta["wav"]
+            for suf_a, suf_b in (("_blo.wav", "_irr.wav"), ("_blofeld.npy", "_iridium.npy")):
+                if Path(str(base) + suf_a).exists() and Path(str(base) + suf_b).exists():
+                    pair = (Path(str(base) + suf_a), Path(str(base) + suf_b))
+                    break
+        if pair is None:
+            pair = specdiff.pick_wav_pair(idx, loc, ts, note, w)
+        if pair is None:
             continue
         try:
-            a, sr = specdiff.read_wav(wa)
-            b, _ = specdiff.read_wav(wb)
+            a, b, sr = specdiff.load_pair(*pair)
             r = specdiff.interpret_pair(a, b, sr, backend=backend)
         except ValueError as ex:
             print(f"skip {loc} {ts}: {ex}", file=sys.stderr)

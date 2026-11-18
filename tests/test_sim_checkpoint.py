@@ -77,7 +77,7 @@ def test_checkpoint_only_a001_defaults(repo, tmp_path, monkeypatch, capsys):
     for r in rows:
         # score_pair_embed adds "backends" to meta (model/prompt versioning)
         assert set(r["meta"]) == {"mode", "blofeld", "blofeld_pc", "irr_pc",
-                                  "bank", "note", "wheel_pct", "backends"}
+                                  "bank", "note", "wheel_pct", "backends", "wav"}
         assert r["meta"]["mode"] == "checkpoint"
         assert r["meta"]["blofeld"] == "A001"
         assert r["meta"]["irr_pc"] == 108
