@@ -181,12 +181,12 @@ def test_mod_matrix_slots_mapped(overrides):
     # 3: MW->FE Sustain 17, 4: MW->FE Decay 102, 5: Vel->F1 Cutoff 115, 6: Vel->F1 Reso 95
     # amounts bipolar centered around 0.5: irr = 0.5 + (blo-64)/254
     exp = {
-        1: (16.0, 1.0, 0.5 + (84 - 64) / 254),    # AfterTouch -> Pitch
-        2: (16.0, 3.0, 0.5 + (43 - 64) / 254),    # AfterTouch -> Osc2 Pitch
-        3: (14.0, 114.0, 0.5 + (17 - 64) / 254),  # Wheel -> Filt1Env Sustain
+        1: (17.0, 1.0, 0.5 + (84 - 64) / 254),    # AfterTouch (17) -> Pitch
+        2: (17.0, 3.0, 0.5 + (43 - 64) / 254),    # AfterTouch -> Osc2 Pitch
+        3: (14.0, 124.0, 0.5 + (17 - 64) / 254),  # Wheel -> Filt1Env Sustain
         4: (14.0, 123.0, 0.5 + (102 - 64) / 254), # Wheel -> Filt1Env Decay
-        5: (32.0, 100.0, 0.5 + (115 - 64) / 254), # Velocity -> Filter1 Cutoff
-        6: (32.0, 101.0, 0.5 + (95 - 64) / 254),  # Velocity -> Filter1 Reso
+        5: (33.0, 109.0, 0.5 + (115 - 64) / 254), # Velocity -> Filter1 Cutoff
+        6: (33.0, 110.0, 0.5 + (95 - 64) / 254),  # Velocity -> Filter1 Reso
     }
     for slot, (src, dst, amt) in exp.items():
         assert overrides[f"MatrixSrc{slot}"][0] == src, f"slot {slot} src"
@@ -198,7 +198,7 @@ def test_mod_matrix_slots_mapped(overrides):
 def test_filter_direct_mod_source_mapped_to_extra_matrix_slot(overrides):
     # Blofeld "Filter 1 Mod Source = Mod Wheel, Mod Amount = 111" -> next free slot (7) -> Filter1 Cutoff
     assert overrides["MatrixSrc7"][0] == 14.0
-    assert overrides["MatrixDst7"][0] == 100.0
+    assert overrides["MatrixDst7"][0] == 109.0
     assert overrides["MatrixAmount7"][0] == pytest.approx(0.5 + (111 - 64) / 254)
 
 
@@ -207,10 +207,16 @@ def test_amp_velocity_maps_to_velocity_volume_slot(overrides):
     # Matrix amount is bipolar centered at 0.5 -> 0.5 + 0.5*norm = 0.752
     # (0.5 would be neutral/ineffective! bipolar trap 2026-11-09)
     assert overrides["AmpVeloAmount"][0] == pytest.approx(64 / 127)
-    assert overrides["MatrixSrc8"][0] == 32.0    # Velocity (v14)
-    assert overrides["MatrixDst8"][0] == 115.0   # Volume (v14; v8 slot 112 is v9 Filt1Env Sustain)
+    assert overrides["MatrixSrc8"][0] == 33.0    # Velocity (runtime)
+    assert overrides["MatrixDst8"][0] == 152.0   # Volume (runtime)
     assert overrides["MatrixAmount8"][0] == pytest.approx(0.5 + 0.5 * 64 / 127)
     assert overrides["MatrixOnOff8"][0] == 1.0
+    # A043 also has Amplifier Mod Source=LFO 3 (slot 9 -> Volume) and
+    # Osc Pitch Source=LFO1*MW (slot 10 -> Wheel -> Pitch)
+    assert overrides["MatrixSrc9"][0] == 9.0     # LFO 3
+    assert overrides["MatrixDst9"][0] == 152.0   # Volume
+    assert overrides["MatrixSrc10"][0] == 14.0   # Wheel (LFO1*MW)
+    assert overrides["MatrixDst10"][0] == 1.0    # Pitch
 
 
 def test_glide_rate_calibrated_not_linear():
@@ -274,47 +280,63 @@ DUMPS_9 = {
 }
 
 
-def test_matrix_dst_enum_is_v14():
-    # v14 OS4 exports (dumps/export-0*/*.qpat): DF Amount=95, Filter2 Cutoff=104,
-    # Filter2 Reso=105; 71/103 do NOT occur in v14 (v8: 71='DF Amount', 103='FX1 Control')
-    assert qpat_map.MATRIX_DST["DF Amount"] == 95.0
-    assert qpat_map.MATRIX_DST["Filter2 Cutoff"] == 104.0
-    assert qpat_map.MATRIX_DST["Filter2 Reso"] == 105.0
+def test_matrix_dst_enum_is_runtime():
+    # OS 4.1.0b2 runtime enum (param-info 2480, 2026-11-18) = qpat file value (identity)
+    assert qpat_map.MATRIX_DST["DF Amount"] == 104.0
+    assert qpat_map.MATRIX_DST["Filter2 Cutoff"] == 113.0
+    assert qpat_map.MATRIX_DST["Filter2 Reso"] == 114.0
+    assert qpat_map.MATRIX_DST["Volume"] == 152.0
+    assert qpat_map.MATRIX_DST["Filter1 Cutoff"] == 109.0
 
 
 def test_serial_df_env_slot_dst_v14():
-    # Serial (A001): slot Filter1 Env -> DF Amount must land on dst 95.0 in v14,
-    # otherwise the DigiFormer does not open -> serial patches too dark/quiet (up to -64.8 dBFS)
+    # Serial (A001): slot Filter1 Env -> DF Amount must land on dst 104.0 (runtime),
+    # otherwise the DigiFormer does not open -> serial patches too dark/quiet
     parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A001"]))
     ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
     df_slots = [k for k, v in ov.items() if k.startswith("MatrixDst") and v[1] == "DF Amount"]
     assert df_slots, "serial needs Filter1 Env -> DF Amount slot"
     for k in df_slots:
-        assert ov[k][0] == 95.0, f"{k} dst must be the v14 value 95.0"
+        assert ov[k][0] == 104.0, f"{k} dst must be the runtime value 104.0"
 
 
-def test_aftertouch_do_poly_mono_alle_9():
-    # Blofeld sends Channel AT; template default AfterTouchDoPoly=1.0 is Poly AT ->
-    # matrix src 'After Touch' does not react to Channel AT (A019/A043, P0-2).
+def test_aftertouch_do_poly_poly_alle_9():
+    # User decision 2026-11-18 (live): Iridium reacts to Channel AT, but the keyboard
+    # produces Poly AT -> conversion targets POLY AT (AfterTouchDoPoly=1.0).
+    # (Earlier: 0.0 'Mono AT' per P0-2, ANALYSIS-2026-11-15.)
     for loc, dump in DUMPS_9.items():
         parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / dump))
         ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
         assert "AfterTouchDoPoly" in ov, loc
-        assert ov["AfterTouchDoPoly"][0] == 0.0, loc
+        assert ov["AfterTouchDoPoly"][0] == 1.0, loc
+
+
+def test_aftertouch_matrix_src_is_17_runtime():
+    # OS 4.1.0b2 runtime enum (param-info 2478) = qpat file value (identity, controlled
+    # load test 2026-11-18): 'After Touch' = 17. Poly AT = AfterTouchDoPoly=1.0
+    # (see test_aftertouch_do_poly_poly_alle_9).
+    assert qpat_map.MATRIX_SRC["After Touch"] == 17.0
+    ov, _ = qpat_map.blofeld_to_qpat_params(
+        bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A043"])))
+    assert ov["MatrixSrc1"][0] == 17.0   # A043 M1: LFO2*Press -> Pitch
+    assert ov["MatrixSrc2"][0] == 17.0   # A043 M2: Pressure -> O2 Pitch
 
 
 def test_no_v8_enum_leak_in_v14_qpat_all_9():
     # v8 template slots that the mapping does not overwrite must not write v8 enum values
     # (e.g. MatrixDst 71 'DF Amount', 103) into the v14 file (P0-1, A008: [71, 95])
     tpl = qpat.load(REPO / TEMPLATE)
-    V8_ONLY_DST = {71.0, 74.0, 72.0, 73.0, 75.0, 76.0, 103.0, 112.0, 145.0}
+    # every MatrixDst we write must be a valid RUNTIME enum value (param-info 2480,
+    # 2026-11-18) - the loader reads file values 1:1, so an old/stale enum value would
+    # silently target a different destination on the device.
+    VALID_DST = set(qpat_map.MATRIX_DST.values())
     for loc, dump in DUMPS_9.items():
         parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / dump))
         ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
         merged = qpat_map.apply_to_template(tpl, ov, name=parsed["name"])
         for k, (val, _disp) in merged["params"].items():
             if k.startswith("MatrixDst"):
-                assert val not in V8_ONLY_DST, f"{loc}: {k}={val} is a v8 enum in v14"
+                assert val in VALID_DST, f"{loc}: {k}={val} is not a runtime enum value"
 
 
 def test_osc_pan_always_center_balance_is_not_pan():
@@ -328,3 +350,182 @@ def test_osc_pan_always_center_balance_is_not_pan():
         for n in (1, 2, 3):
             assert ov[f"Osc{n}Pan"][0] == pytest.approx(0.5), f"{loc} Osc{n}Pan"
         assert any("Mixer Osc 1 Balance" in u for u in unmapped), loc
+
+
+# --- 2026-11-18 rebuild: sync, serial F2 remap, FX by type, detune centering ---
+
+def test_osc2_sync_mapped_a071_a008_not_a001():
+    # P1-1: Blofeld "Osc 2 Sync to O3" -> Osc2WaveformSync (was unmapped, A071 "no sync")
+    for loc in ("A071", "A008"):
+        parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9[loc]))
+        assert parsed["params"]["Osc 2 Sync to O3"] == 1
+        ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+        assert ov["Osc2WaveformSync"][0] == 1.0, loc
+        assert not any("Sync to O3" in u for u in unmapped), loc
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A001"]))
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert "Osc2WaveformSync" not in ov   # sync off -> template default (0.0)
+
+
+def test_serial_f2_mod_targets_digiformer_a001():
+    # P1-2: A001 serial, Filter 2 Mod Source=Velocity amt 107 -> slot Velocity->DF Amount
+    # (dst 95.0), NOT Filter2 Cutoff (104.0 - the F2 stage is Off in serial mode)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A001"]))
+    assert parsed["params"]["Filter 2 Mod Source"] == "Velocity"
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    vel_df = [k for k in ov if k.startswith("MatrixDst")
+              and ov[k][1] == "DF Amount" and ov[k.replace("Dst", "Src")][0] == 33.0]
+    assert vel_df, "serial needs Velocity -> DF Amount slot"
+    assert all(ov[k][0] == 104.0 for k in vel_df)
+    no_f2 = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "Filter2 Cutoff"]
+    assert not no_f2, "serial must not target the switched-off F2 stage"
+
+
+def test_parallel_keeps_filter2_mod_a010():
+    # A010 parallel: F2 stays filter 2 -> F2 mods keep dst 104.0
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A010"]))
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    f2c = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "Filter2 Cutoff"]
+    assert f2c and all(ov[k][0] == 113.0 for k in f2c)
+
+
+def test_fx_mix_key_by_type_not_slot_a008():
+    # P1-3: A008 FX2=Chorus mix 24 -> ChorusDryWet, NOT DelayDryWet (old slot-based bug)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A008"]))
+    assert parsed["params"]["Effect 2 Type"] == "Chorus"
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["ChorusDryWet"][0] == pytest.approx(24 / 127)
+    assert "DelayDryWet" not in ov
+    # both FX slots are Chorus -> FX2 params win on the shared keys (slot 2 processed last)
+    assert ov["ChorusSpeed"][0] == pytest.approx(parsed["params"]["Effect 2 Parameter 1"] / 127)
+
+
+def test_fx_clk_delay_params_a039():
+    # A039 FX2=Clk.Delay mix 14, p5 Feedback=1, p6 Cutoff=100, p11 Length=7 (0..29 clock)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A039"]))
+    assert parsed["params"]["Effect 2 Type"] == "Clk.Delay"
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["FX2Type"][1] == "Delay"
+    assert ov["DelayDryWet"][0] == pytest.approx(14 / 127)
+    assert ov["DelaySync"][0] == 1.0
+    assert ov["DelayFeed"][0] == pytest.approx(1 / 127)
+    assert ov["DelayHiCut"][0] == pytest.approx(100 / 127)
+    assert ov["DelayLeftSync"][0] == pytest.approx(7 / 29)
+    assert ov["DelayRightSync"][0] == pytest.approx(7 / 29)
+
+
+def test_detune_centered_not_full_range_a008():
+    # A008 Osc1 Detune raw 126: old norm() -> 0.992 (almost full Iridium range);
+    # bipolar centered: 0.5 + (126-64)/254 = 0.744
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A008"]))
+    assert parsed["params"]["Osc 1 Detune"] == 126
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc1FinePitch"][0] == pytest.approx(0.5 + (126 - 64) / 254)
+    assert ov["Osc1FinePitch"][0] != pytest.approx(126 / 127)
+    assert qpat_map.fine_pitch_norm(64) == pytest.approx(0.5)
+
+
+def test_lfo_speed_mod_dst_runtime_a022():
+    # A022 M14 MW->LFO1Speed -> dst 'LFO1 Speed' = 154.0 (runtime enum, param-info 2480)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A022"]))
+    ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    lfo_dst = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "LFO1 Speed"]
+    assert lfo_dst and all(ov[k][0] == 154.0 for k in lfo_dst)
+    assert not any("LFO1Speed" in u for u in unmapped)
+
+
+def test_ae_attack_mod_dst_runtime():
+    # 'AE Attack' -> 'AmpEnv Attack' dst 118.0 (runtime enum, param-info 2480)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A019"]))
+    parsed["params"]["Modulation 3 Destination"] = "AE Attack"
+    ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    ae = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "AmpEnv Attack"]
+    assert ae and all(ov[k][0] == 118.0 for k in ae)
+    assert not any("AE Attack" in u for u in unmapped)
+
+
+def test_amp_mod_source_slot_a008():
+    # A008 Amplifier Mod Source=AmpEnv amt 64 -> slot src 'Amp Env' (1.0) -> Volume (115)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A008"]))
+    assert parsed["params"]["Amplifier Mod Source"] == "AmpEnv"
+    ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    amp = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "Volume"
+           and ov[k.replace("Dst", "Src")][0] == 1.0]
+    assert amp and all(ov[k][0] == 152.0 for k in amp)
+    assert not any("Amplifier Mod Source" in u for u in unmapped)
+
+
+def test_fe_release_and_ae_release_mapped_runtime():
+    # A008 M10: Keytrack -> FE Release -> dst 'Filt1Env Release' = 125 (runtime)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A008"]))
+    assert parsed["params"]["Modulation 10 Destination"] == "FE Release"
+    ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    fe = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "Filt1Env Release"]
+    assert fe and all(ov[k][0] == 125.0 for k in fe)
+    assert not any("FE Release" in u for u in unmapped)
+    # synthetic AE Release -> 121
+    parsed["params"]["Modulation 10 Destination"] = "AE Release"
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    ae = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "AmpEnv Release"]
+    assert ae and all(ov[k][0] == 121.0 for k in ae)
+
+
+def test_f2_pan_serial_goes_to_df_pan_parallel_to_filter2_pan():
+    # A008 is serial: a Mod slot with dst 'F2 Pan' must become 'DF Pan' (107)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A008"]))
+    assert parsed["params"]["Filter Routing"] == 1
+    parsed["params"]["Modulation 5 Source"] = "Velocity"
+    parsed["params"]["Modulation 5 Destination"] = "F2 Pan"
+    parsed["params"]["Modulation 5 Amount"] = 100
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    pans = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] in ("DF Pan", "Filter2 Pan")]
+    assert pans and all(ov[k][0] == 107.0 and ov[k][1] == "DF Pan" for k in pans)
+    # parallel (A010): F2 Pan stays 'Filter2 Pan' = 115
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A010"]))
+    assert parsed["params"]["Filter Routing"] == 0
+    parsed["params"]["Modulation 5 Source"] = "Velocity"
+    parsed["params"]["Modulation 5 Destination"] = "F2 Pan"
+    parsed["params"]["Modulation 5 Amount"] = 100
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    pans = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "Filter2 Pan"]
+    assert pans and all(ov[k][0] == 115.0 for k in pans)
+
+
+def test_wavetable_bridge_covers_all_blofeld_shapes():
+    # runtime WavetableTable names (param-info 19) match Blofeld SHAPES 1:1
+    from bloridium.blofeld_dump import SHAPES
+    missing = [s for s in SHAPES if s != "off" and s not in ("Pulse", "Saw", "Triangle", "Sine")
+               and s not in qpat_map.BLOFELD_WAVETABLE_TO_IRIDIUM]
+    assert missing == [], f"unbridged Blofeld wavetables: {missing}"
+
+
+def test_fx_type_runtime_shifted_by_tremolo():
+    # param-info 2754/2756: Tremolo inserted at 1 -> Phaser=2, Chorus=3, Delay=5, Drive=8
+    assert qpat_map.FX_TYPE["Chorus"] == 3.0
+    assert qpat_map.FX_TYPE["Delay"] == 5.0
+    assert qpat_map.FX_TYPE["Drive"] == 8.0
+    assert qpat_map.FX_TYPE["Off"] == 0.0
+
+
+def test_osc_type_off_is_6_runtime():
+    # param-info 0: 6 = Off (old tables had 4)
+    assert qpat_map.OSC_TYPE["Off"] == 6.0
+
+
+def test_reverb_fx2_mix_via_matrix_slot_and_params():
+    # FX2=Reverb: no ReverbDryWet key -> mix via Constant -> 'FX2 DryWet' (144),
+    # ReverbColor from p2 (Shape), ReverbTime from p3 (Decay), spec 5.9
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A039"]))
+    parsed["params"]["Effect 2 Type"] = "Reverb"
+    parsed["params"]["Effect 2 Mix"] = 64
+    parsed["params"]["Effect 2 Parameter 2"] = 100   # Shape
+    parsed["params"]["Effect 2 Parameter 3"] = 80    # Decay
+    ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["FX2Type"][1] == "Reverb" and ov["FX2Type"][0] == 6.0   # runtime enum
+    assert ov["ReverbTime"][0] == pytest.approx(80 / 127)
+    assert ov["ReverbColor"][0] == pytest.approx(100 / 127)
+    dw = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "FX2 DryWet"]
+    assert dw and all(ov[k][0] == 144.0 for k in dw)
+    amt = ov[dw[0].replace("Dst", "Amount")][0]
+    assert amt == pytest.approx(0.5 + 0.5 * 64 / 127)
+    assert not any("Mix for Reverb" in u for u in unmapped)

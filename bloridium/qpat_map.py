@@ -14,9 +14,15 @@ from __future__ import annotations
 
 import math
 
-# enum tables (display -> value) - filter values from own OS4 exports
-# (dumps/export-001, qpat v14); ATTENTION: numbering differs from older files!
-OSC_TYPE = {"Wavetable": 0.0, "Waveform": 1.0, "Particle": 2.0, "Resonator": 3.0, "Off": 4.0}
+# Enum tables (display -> value) = RUNTIME values of OS 4.1.0b2, live-verified via QUIR
+# `param-info` on 2026-11-18 (docs/refs/quir_runtime_enums_2026-11-18.md). KEY FINDING
+# 2026-11-18 (controlled load test, v14 file written by us, loaded via load-patch):
+# the loader interprets qpat enum values with the CURRENT runtime layout
+# (file value == runtime value, e.g. file dst 109 -> runtime 109; device saves of
+# v11 patches are identity too: 17->17). The old displays in dumps/export-001
+# (v14 files from an older OS build, e.g. 95='DF Amount') are STALE - do not use them.
+OSC_TYPE = {"Wavetable": 0.0, "Waveform": 1.0, "Particle": 2.0, "Resonator": 3.0,
+            "Kernels": 4.0, "Seeds": 5.0, "Off": 6.0}
 WF_SHAPE = {"Sawtooth": 0.0, "Sine": 1.0, "Triangle": 2.0, "Square": 3.0,
             "Pink Noise": 4.0, "White Noise": 5.0}
 FILTER12_TYPE = {"12dB LP": 0.0, "12dB sat. LP": 1.0, "24dB LP": 3.0,
@@ -35,24 +41,38 @@ BLOFELD_FILTER2_TO_FORMER = {
     "BP 24dB": "Nave LP24", "BP 12dB": "Nave LP24",      # approximation (no BP24 seen in v14 exports)
     "Notch24dB": "Nave LP24", "Notch12dB": "Nave LP24",  # approximation
 }
-FX_TYPE = {"Off": 0.0, "Phaser": 1.0, "Chorus": 2.0, "Flanger": 3.0, "Delay": 4.0,
-           "Reverb": 5.0, "EQ": 6.0, "Drive": 7.0, "Compressor": 8.0}
+# FX1Type/FX2Type runtime enum (param-info 2754/2756): Tremolo was inserted at 1,
+# so everything from Phaser on shifts +1 vs the old tables.
+FX_TYPE = {"Off": 0.0, "Tremolo": 1.0, "Phaser": 2.0, "Chorus": 3.0, "Flanger": 4.0,
+           "Delay": 5.0, "Reverb": 6.0, "EQ": 7.0, "Drive": 8.0, "Compressor": 9.0}
 
 # Blofeld shape (Spec 4.1) -> Iridium (OscType, WF shape)
 BLOFELD_SHAPE_TO_IRIDIUM = {
     "off": ("Off", None), "Pulse": ("Waveform", "Square"), "Saw": ("Waveform", "Sawtooth"),
     "Triangle": ("Waveform", "Triangle"), "Sine": ("Waveform", "Sine"),
 }
-# Blofeld wavetable (shape label, SHAPES from index 5) -> Iridium OscN WavetableTable ID.
-# IDs v14 from own OS4 exports + factory dumps (e.g. dumps/00003-WT Probe.qpat:
-# Osc1WavetableTable 2.0 = "Mallet Syn"). Names from the Blofeld side (SHAPES list).
+# Blofeld wavetable (SHAPES label, spec 4.1 from index 5) -> Iridium OscN WavetableTable
+# ID = RUNTIME enum (param-info 19, 2026-11-18). The Iridium table names match the
+# Blofeld SHAPES 1:1 for almost every entry -> near-complete bridge (P2-4 solved).
 BLOFELD_WAVETABLE_TO_IRIDIUM = {
-    "Resonant": 0.0, "MalletSyn": 2.0, "Bellish": 4.0, "Saw-Sweep": 6.0, "Add Harm": 9.0,
-    "Reso 3 HP": 10.0, "Clipper": 13.0, "Organ Syn": 14.0, "SquareSaw": 15.0,
-    "Polated": 17.0, "Robotic": 20.0, "StrongHrm": 21.0, "2 Echoes": 25.0,
-    "Formant 2": 26.0, "FmnVocal": 27.0, "SawSync 3": 34.0, "PulSync 1": 35.0,
-    "PulSync 3": 37.0, "K+Strong1": 47.0, "1-2-3-4-5": 50.0, "Vibes": 62.0,
-    "Glassy": 79.0,
+    "Alt 1": 66.0, "Alt 2": 67.0, "Resonant": 0.0, "Resonant2": 1.0, "MalletSyn": 2.0,
+    "Sqr-Sweep": 3.0, "Bellish": 4.0, "Pul-Sweep": 5.0, "Saw-Sweep": 6.0,
+    "MellowSaw": 7.0, "Feedback": 8.0, "Add Harm": 9.0, "Reso 3 HP": 10.0,
+    "Wind Syn": 11.0, "High Harm": 12.0, "Clipper": 13.0, "Organ Syn": 14.0,
+    "SquareSaw": 15.0, "Formant 1": 16.0, "Polated": 17.0, "Transient": 18.0,
+    "ElectricP": 19.0, "Robotic": 20.0, "StrongHrm": 21.0, "PercOrgan": 22.0,
+    "ClipSweep": 23.0, "ResoHarms": 24.0, "2 Echoes": 25.0, "Formant 2": 26.0,
+    "FmnVocal": 27.0, "MicroSync": 28.0, "Micro PWM": 29.0, "Glassy": 30.0,
+    "Square HP": 31.0, "SawSync 1": 32.0, "SawSync 2": 33.0, "SawSync 3": 34.0,
+    "PulSync 1": 35.0, "PulSync 2": 36.0, "PulSync 3": 37.0,
+    "SinSync 1": 38.0, "SinSync 2": 39.0, "SinSync 3": 40.0,
+    "PWM Pulse": 41.0, "PWM Saw": 42.0, "Fuzz Wave": 43.0, "Distorted": 44.0,
+    "HeavyFuzz": 45.0, "Fuzz Sync": 46.0, "K+Strong1": 47.0, "K+Strong2": 48.0,
+    "K+Strong3": 49.0, "1-2-3-4-5": 50.0, "19/twenty": 51.0,
+    "Wavetrip1": 52.0, "Wavetrip2": 53.0, "Wavetrip3": 54.0, "Wavetrip4": 55.0,
+    "MaleVoice": 56.0, "Low Piano": 57.0, "ResoSweep": 58.0, "Xmas Bell": 59.0,
+    "FM Piano": 60.0, "Fat Organ": 61.0, "Vibes": 62.0, "Chorus 2": 63.0,
+    "True PWM": 64.0, "UpperWaves": 65.0,
 }
 # Blofeld filter type (Spec 4.4) -> Iridium Filter12Type (v14 values).
 # Notch/Comb are approximations (the real Comb-/PPG models live in the DigiFormer,
@@ -81,38 +101,52 @@ FILTER_LINK = {"Single": 0.0, "Boost": 1.0, "Independent": 6.0, "Linked": 7.0}
 # That is why the mapping below sets Filter2State to 'Off', never 'Bypass',
 # whenever filter 2 must not be heard.
 FILTER2_STATE = {"Active": 0.0, "Bypass": 1.0, "Off": 2.0}
+# MATRIX_SRC/DST = OS 4.1.0b2 runtime enum (param-info 2478/2480, 2026-11-18; qpat file
+# values are read 1:1 - see docs/refs/quir_runtime_enums_2026-11-18.md).
+# After Touch = 17 (Poly AT decision 2026-11-18: AfterTouchDoPoly=1.0).
 MATRIX_SRC = {"Off": 0.0, "Amp Env": 1.0, "Filter1 Env": 2.0, "Filter2 Env": 3.0,
               "Free Env1": 4.0, "Free Env2": 5.0, "Free Env3": 6.0,
               "LFO 1": 7.0, "LFO 2": 8.0, "LFO 3": 9.0, "LFO 4": 10.0, "LFO 5": 11.0, "LFO 6": 12.0,
-              "Pitch Bend": 15.0, "Wheel": 14.0, "After Touch": 16.0,
-              "Keytrack": 31.0, "Velocity": 32.0}
+              "Wheel": 14.0, "Pitch Bend": 15.0, "After Touch": 17.0, "Pedal": 19.0,
+              "Breath Control": 21.0, "CC 22": 22.0, "CC 23": 23.0, "CC 24": 24.0, "CC 25": 25.0,
+              "Keytrack": 32.0, "Velocity": 33.0, "Release Velocity": 34.0, "Constant": 40.0}
 MATRIX_DST = {"Off": 0.0, "Pitch": 1.0, "Osc1 Pitch": 2.0, "Osc2 Pitch": 3.0, "Osc3 Pitch": 4.0,
               "Osc1 Mix": 5.0, "Osc2 Mix": 6.0, "Osc3 Mix": 7.0,
-              "Filter1 Cutoff": 100.0, "Filter1 Reso": 101.0,
-              # v14 values from own OS4 exports (dumps/export-0*/v14: 104='Filter2 Cutoff',
-              # 105='Filter2 Reso'); v8 values 103/71 must NOT be used in v14
-              # (P0-1, ANALYSIS-2026-11-15: otherwise the serial DF env slot lands on the
-              # wrong destination -> DigiFormer stays closed, serial patches down to -64.8 dBFS)
-              "Filter2 Cutoff": 104.0, "Filter2 Reso": 105.0,
-              "Filt1Env Attack": 113.0, "Filt1Env Sustain": 114.0, "Filt1Env Decay": 123.0,
-              # Volume: v14 exports are silent; v8 slot tables know both 112 AND 115,
-              # v15=152 -> take 115.0, verify on the device (112 is v9 'Filt1Env Sustain')
-              "Volume": 115.0, "Pan": 144.0,
-              "DF Amount": 95.0,   # v14: 95 (v8 was 71/74)
-              "DF Color": 96.0,    # v11: 96; not present in v14 exports -> verify on the device
-              # wavetable position / waveform warp (v14 values from own OS4 exports)
-              "WT1 Position": 11.0, "WT2 Position": 39.0, "WT3 Position": 67.0,
-              "WF1 Warp": 18.0, "WF2 Warp": 46.0, "WF3 Warp": 74.0}
+              "Osc1 Pan": 8.0, "Osc2 Pan": 9.0, "Osc3 Pan": 10.0,
+              "WT1 Position": 11.0, "WF1 Warp": 18.0, "WT2 Position": 42.0, "WF2 Warp": 49.0,
+              "WT3 Position": 73.0, "WF3 Warp": 80.0,
+              "DF Amount": 104.0, "DF Color": 105.0, "DF Pan": 107.0, "DF Level": 108.0,
+              "Filter1 Cutoff": 109.0, "Filter1 Reso": 110.0, "Filter1 Pan": 111.0,
+              "Filter1 Level": 112.0, "Filter2 Cutoff": 113.0, "Filter2 Reso": 114.0,
+              "Filter2 Pan": 115.0, "Filter2 Level": 116.0, "VCA": 117.0,
+              "AmpEnv Attack": 118.0, "AmpEnv Decay": 119.0, "AmpEnv Sustain": 120.0,
+              "AmpEnv Release": 121.0,
+              "Filt1Env Attack": 122.0, "Filt1Env Decay": 123.0, "Filt1Env Sustain": 124.0,
+              "Filt1Env Release": 125.0,
+              "Free1Env Attack": 130.0, "Free1Env Decay": 131.0, "Free1Env Sustain": 132.0,
+              "Free1Env Release": 133.0, "Free2Env Attack": 134.0, "Free2Env Decay": 135.0,
+              "Free2Env Sustain": 136.0, "Free2Env Release": 137.0,
+              "FX1 DryWet": 142.0, "FX2 DryWet": 144.0,
+              "Volume": 152.0, "Pan": 153.0,
+              "LFO1 Speed": 154.0, "LFO2 Speed": 155.0, "LFO3 Speed": 156.0,
+              "Chorus DryWet": 174.0, "Delay DryWet": 190.0, "Drive DryWet": 196.0}
+# All MATRIX_* values above are the OS 4.1.0b2 RUNTIME enum (param-info 2478/2480,
+# 2026-11-18) - the qpat loader uses them 1:1 (controlled load test 2026-11-18).
 # Blofeld mod source -> Iridium MatrixSrc display (pressure combos approx. to After Touch)
 BLOFELD_MOD_SRC = {
     "LFO 1": "LFO 1", "LFO 2": "LFO 2", "LFO 3": "LFO 3",
     "LFO1*MW": "Wheel", "LFO2*MW": "Wheel", "LFO3*MW": "Wheel",
     "LFO1*Press": "After Touch", "LFO2*Press": "After Touch", "LFO3*Press": "After Touch",
     "Mod Wheel": "Wheel", "Pressure": "After Touch", "Poly Press": "After Touch",
-    "Velocity": "Velocity", "Rel. Velo": "Velocity",
+    "Velocity": "Velocity", "Rel. Velo": "Release Velocity",
     "Keytrack": "Keytrack", "Pitch Bend": "Pitch Bend",
     "FilterEnv": "Filter1 Env", "AmpEnv": "Amp Env",
     "Env3": "Free Env1", "Env4": "Free Env2",
+    "Sustain": "Pedal", "BreathCtrl": "Breath Control",
+    # approx: Blofeld Control W-Z (assignable controllers) -> generic CC sources;
+    # exact CC numbers unverified. MAXIMUM/minimum -> Constant.
+    "Control W": "CC 22", "Control X": "CC 23", "Control Y": "CC 24", "Control Z": "CC 25",
+    "MAXIMUM": "Constant", "minimum": "Constant",
 }
 # Blofeld mod destination -> Iridium MatrixDst display (FE = filter envelope -> Filt1Env)
 BLOFELD_MOD_DST = {
@@ -121,7 +155,18 @@ BLOFELD_MOD_DST = {
     "F1 Cutoff": "Filter1 Cutoff", "F1 Reson.": "Filter1 Reso",
     "F2 Cutoff": "Filter2 Cutoff", "F2 Reson.": "Filter2 Reso",
     "FE Attack": "Filt1Env Attack", "FE Decay": "Filt1Env Decay", "FE Sustain": "Filt1Env Sustain",
+    "FE Release": "Filt1Env Release",
+    "AE Attack": "AmpEnv Attack", "AE Decay": "AmpEnv Decay",
+    "AE Sustain": "AmpEnv Sustain", "AE Release": "AmpEnv Release",
+    "E3 Attack": "Free1Env Attack", "E3 Decay": "Free1Env Decay",
+    "E3 Sustain": "Free1Env Sustain", "E3 Release": "Free1Env Release",
+    "E4 Attack": "Free2Env Attack", "E4 Decay": "Free2Env Decay",
+    "E4 Sustain": "Free2Env Sustain", "E4 Release": "Free2Env Release",
+    "F1 Pan": "Filter1 Pan", "F2 Pan": "Filter2 Pan",
+    "LFO1Speed": "LFO1 Speed", "LFO2Speed": "LFO2 Speed", "LFO3Speed": "LFO3 Speed",
     "Volume": "Volume",
+    # no Iridium matrix dst exists for: F1/F2 Drive, F1/F2 FM, O1-3 FM, RMod Level/Bal.,
+    # NoiseLevel/Bal., O1-3 Balance, M1-4 Amount (runtime dst list, param-info 2480)
 }
 
 
@@ -199,7 +244,17 @@ def amt_bipolar(raw: int) -> float:
     """Blofeld mod amount (bipolar, center 64 = 0) -> Iridium MatrixAmount 0..1
     centered around 0.5: 64 -> 0.5 (neutral), 127 -> 1.0, 0 -> 0.0.
     Unlike plain norm() this keeps the center at the neutral point, so
-    wheel/velocity do not fully add up on the Iridium."""
+    wheel/velocity do not fully add up on the Iridium.
+    NOTE: the divisor 254 (i.e. Iridium range = +/-200% at 0/1) is an assumption -
+    calibrate live via audio sweep (plan 2026-11-18)."""
+    return max(0.0, min(1.0, 0.5 + (raw - 64) / 254.0))
+
+
+def fine_pitch_norm(raw: int) -> float:
+    """Blofeld osc detune (bipolar, center 64 = 0, range +/-64 cent) -> Iridium
+    OscNFinePitch norm 0..1 centered at 0.5. Divisor 254 assumes the Iridium full
+    range is +/-127 cent - live-calibration TODO (audio pitch sweep)."""
+    raw = max(0, min(127, int(raw)))
     return max(0.0, min(1.0, 0.5 + (raw - 64) / 254.0))
 
 
@@ -292,7 +347,11 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         oct_up = (sdata[oct_idx[n - 1]] - 64) / 12.0
         semi = sdata[semi_idx[n - 1]] - 64
         setp(f"Osc{n}CoarsePitch", 24.0 + 12.0 * oct_up + semi, f"{semi:+.0f} semi")
-        setp(f"Osc{n}FinePitch", norm(p[f"Osc {n} Detune"]), "")
+        # Detune is bipolar around raw 64 (Blofeld: +/-64 cent) -> center at 0.5 on the
+        # Iridium, NOT norm(raw) (old: A008 Osc1 Detune 126 -> 0.992 ~ full range instead
+        # of near-center). The Iridium cent-per-norm scale is a live-calibration TODO
+        # (audio pitch sweep, see plan 2026-11-18); divisor 254 assumes +/-127 cent range.
+        setp(f"Osc{n}FinePitch", fine_pitch_norm(p[f"Osc {n} Detune"]), "")
         setp(f"Osc{n}Vol", norm(p[f"Mixer Osc {n} Level"]), "")
         # Pan: the Blofeld has NO osc pan - 'Mixer Osc N Balance' is the F1/F2 share
         # (MAPPING-MASTER), not a stereo pan. Mapped wrongly, Pan 0.0 = hard left
@@ -305,20 +364,27 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         unmapped.append(f"Mixer Osc {n} Balance (F1/F2 share, not pan; later maybe OscNDestination)")
         if otype != "Wavetable":
             unmapped.append(f"Osc {n} Brilliance")
-    unmapped += ["Osc 2 Sync to O3", "Osc Pitch Source", "Osc Pitch Amount"]
+    # Hard sync (P1-1, ANALYSIS-2026-11-15): Blofeld "Osc 2 Sync to O3" -> Osc2WaveformSync
+    # (A071/A008 had sync=1 and landed unmapped -> "no sync on the Iridium").
+    if p.get("Osc 2 Sync to O3"):
+        setp("Osc2WaveformSync", 1.0, "Sync on")
+    # (Osc Pitch Source/Amount now mapped as matrix slot -> Pitch, see below)
 
     # --- glide / unisono ---
     setp("GlideOnOff", 1.0 if p.get("Glide") else 0.0, "On" if p.get("Glide") else "Off")
     # Glide Rate time-calibrated (log scale), not linear: norm() mapped too high (see above)
     _gr = p.get("Glide Rate", 0)
     setp("GlideRate", glide_rate_norm(_gr), f"~{blofeld_glide_seconds(_gr):.3f}s")
-    setp("UnisonoCount", norm((p.get("Allocation/Unisono", 0) >> 5) & 0x07 or 1))
+    # UnisonoCount is an enum (runtime: 0=Off, 1=2 voices ... 7=8), not a norm.
+    # Blofeld Allocation/Unisono bits 5-7 = voices-1 (0 = mono) -> pass through as enum.
+    setp("UnisonoCount", float((p.get("Allocation/Unisono", 0) >> 5) & 0x07))
     setp("UnisonoDetune", norm(p.get("Unisono Detune", 0)))
-    # Aftertouch: the Blofeld sends channel AT, but the template (and all OS4 exports)
-    # sit at AfterTouchDoPoly=1.0 'Poly AT' -> matrix src 'After Touch' then does NOT
-    # listen to channel AT (P0-2, ANALYSIS-2026-11-15: A019 'does not react to AT',
-    # A043 'strong AT bending'). Switch global to mono/channel AT.
-    setp("AfterTouchDoPoly", 0.0, "Mono AT")
+    # Aftertouch (user decision 2026-11-18, live-verified): the Iridium reacts to
+    # CHANNEL AT, but the keyboard produces POLY AT in general -> the conversion
+    # targets POLY AT: AfterTouchDoPoly=1.0 ('Poly AT'; runtime enum param-info 2876:
+    # 0=Mono AT, 1=Poly AT) and matrix src "After Touch"=17 (param-info 2478).
+    # Earlier setting was 0.0 'Mono AT' (P0-2, ANALYSIS-2026-11-15).
+    setp("AfterTouchDoPoly", 1.0, "Poly AT")
 
     # --- mixer extras ---
     # key is called "RingModOsc1ToOsc2" in the template/device (not "RingmodOsc12"!)
@@ -453,6 +519,12 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                 on = 0
             if 1 <= on <= 3:
                 d_disp = f"WT{on} Position" if osc_is_wavetable.get(on) else f"WF{on} Warp"
+        if seriell and not f2_bypass:
+            # P1-2 (ANALYSIS-2026-11-15): in serial mode the audible F2 is the DigiFormer
+            # (Filter2State 'Off') -> modulations to F2 must target the Former instead,
+            # otherwise they go nowhere (A001 Velocity->F2 Cutoff etc.).
+            d_disp = {"Filter2 Cutoff": "DF Amount", "Filter2 Reso": "DF Color",
+                      "Filter2 Pan": "DF Pan"}.get(d_disp, d_disp)
         if s_disp and d_disp:
             setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
             setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)
@@ -467,6 +539,8 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             slot += 1
             s_disp = BLOFELD_MOD_SRC.get(src)
             d_disp = "Filter1 Cutoff" if n == 1 else "Filter2 Cutoff"
+            if n == 2 and seriell and not f2_bypass:
+                d_disp = "DF Amount"   # serial: F2 lives in the DigiFormer (P1-2)
             if s_disp:
                 setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
                 setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)
@@ -484,6 +558,32 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp(f"MatrixDst{slot}", MATRIX_DST["Volume"], "Volume")
         setp(f"MatrixAmount{slot}", 0.5 + 0.5 * norm(amp_velo))
         setp(f"MatrixOnOff{slot}", 1.0, "Active")
+    # Blofeld "Amplifier Mod Source/Amount" -> matrix slot -> Volume (previously unmapped;
+    # A008 AmpEnv, A019/A043/A010/... LFO3 amt 64)
+    amp_mod_src = p.get("Amplifier Mod Source")
+    if isinstance(amp_mod_src, str) and amp_mod_src != "off":
+        s_disp = BLOFELD_MOD_SRC.get(amp_mod_src)
+        if s_disp:
+            slot += 1
+            setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
+            setp(f"MatrixDst{slot}", MATRIX_DST["Volume"], "Volume")
+            setp(f"MatrixAmount{slot}", amt_bipolar(p.get("Amplifier Mod Amount", 64)))
+            setp(f"MatrixOnOff{slot}", 1.0, "Active")
+        else:
+            unmapped.append(f"Amplifier Mod Source {amp_mod_src!r}")
+    # Blofeld "Osc Pitch Source/Amount" (global pitch mod) -> matrix slot -> Pitch
+    # (A008 LFO1*MW amt 74, several others amt 64; previously unmapped)
+    osc_pitch_src = p.get("Osc Pitch Source")
+    if isinstance(osc_pitch_src, str) and osc_pitch_src != "off":
+        s_disp = BLOFELD_MOD_SRC.get(osc_pitch_src)
+        if s_disp:
+            slot += 1
+            setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
+            setp(f"MatrixDst{slot}", MATRIX_DST["Pitch"], "Pitch")
+            setp(f"MatrixAmount{slot}", amt_bipolar(p.get("Osc Pitch Amount", 64)))
+            setp(f"MatrixOnOff{slot}", 1.0, "Active")
+        else:
+            unmapped.append(f"Osc Pitch Source {osc_pitch_src!r}")
     # Serial: the Blofeld filter env opens BOTH filters (F1 -> F2). On the Iridium
     # filter1 gets the env (Filter1EnvAmount above), the DigiFormer (F2 replacement) needs
     # its own matrix slot -- otherwise it stays statically closed (finding 2026-11-14:
@@ -496,15 +596,51 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp(f"MatrixOnOff{slot}", 1.0, "Active")
 
     # --- FX ---
-    # note: the wet/dry mix only lands on ChorusDryWet (FX1) / DelayDryWet (FX2);
-    # the Iridium has no single mix key per FX slot
+    # P1-3 (ANALYSIS-2026-11-15): the mix key depends on the mapped FX TYPE, not on the
+    # slot (old: FX2=Chorus mix landed in DelayDryWet). Blofeld effect parameters per
+    # SysEx spec 5.2-5.9 (param k of FX n = parsed[f"Effect {n} Parameter {k}"]):
+    #   Chorus: p1 Speed, p2 Depth | Flanger: p1/p2 + p5 Feedback | Phaser: + p5 Feedback,
+    #   p6 Center | Overdrive: p2 Drive, p3 Post Gain | Delay (FX2): p4 Length, p5 Feedback,
+    #   p6 Cutoff | Clk.Delay (FX2): p5 Feedback, p6 Cutoff, p11 Length (0..29 = 1/96..10 bars)
+    FX_MIX_KEY = {"Chorus": "ChorusDryWet", "Flanger": "FlangerDryWet",
+                  "Phaser": "PhaserDryWet", "Delay": "DelayDryWet", "Drive": "DriveDryWet"}
+    FX_PARAMS = {
+        "Chorus": {"ChorusSpeed": 1, "ChorusDepth": 2},
+        "Flanger": {"FlangerSpeed": 1, "FlangerDepth": 2, "FlangerFeedback": 5},
+        "Phaser": {"PhaserSpeed": 1, "PhaserDepth": 2, "PhaserFeedback": 5, "PhaserFreq": 6},
+        "Overdrive": {"DriveAmount": 2, "DriveGain": 3},
+        "Delay": {"DelayFeed": 5, "DelayHiCut": 6},
+        "Clk.Delay": {"DelayFeed": 5, "DelayHiCut": 6},
+    }
     for n, key in ((1, "FX1Type"), (2, "FX2Type")):
         t = p[f"Effect {n} Type"]
-        ir = BLOFELD_FX_TO_IRIDIUM.get(t if isinstance(t, str) else "", "Off")
+        t = t if isinstance(t, str) else ""
+        ir = BLOFELD_FX_TO_IRIDIUM.get(t, "Off")
         setp(key, FX_TYPE[ir], ir)
-        mixkey = {1: "ChorusDryWet", 2: "DelayDryWet"}.get(n)
+        mixkey = FX_MIX_KEY.get(ir)
         if mixkey:
             setp(mixkey, norm(p[f"Effect {n} Mix"]))
+        elif ir not in ("Off", "Reverb") and p.get(f"Effect {n} Mix", 0):
+            unmapped.append(f"Effect {n} Mix for {ir} (no per-FX DryWet key)")
+        for ikey, pnum in FX_PARAMS.get(t, {}).items():
+            setp(ikey, norm(p.get(f"Effect {n} Parameter {pnum}", 0)))
+        if ir == "Reverb":
+            # no ReverbDryWet key exists -> mix via matrix slot Constant -> 'FX2 DryWet'
+            # (runtime dst 144); Reverb params (spec 5.9): p2 Shape -> Color, p3 Decay -> Time
+            setp("ReverbColor", norm(p.get(f"Effect {n} Parameter 2", 0)))
+            setp("ReverbTime", norm(p.get(f"Effect {n} Parameter 3", 0)))
+            mix = p.get(f"Effect {n} Mix", 0)
+            if isinstance(mix, (int, float)) and mix > 0 and n == 2:
+                slot += 1
+                setp(f"MatrixSrc{slot}", MATRIX_SRC["Constant"], "Constant")
+                setp(f"MatrixDst{slot}", MATRIX_DST["FX2 DryWet"], "FX2 DryWet")
+                setp(f"MatrixAmount{slot}", 0.5 + 0.5 * norm(mix))
+                setp(f"MatrixOnOff{slot}", 1.0, "Active")
+        if t == "Clk.Delay":
+            # clock-synced delay: Length raw 0..29 (1/96..10 bars) -> sync index (approx)
+            setp("DelaySync", 1.0, "On")
+            setp("DelayLeftSync", min(1.0, p.get("Effect 2 Parameter 11", 0) / 29.0))
+            setp("DelayRightSync", min(1.0, p.get("Effect 2 Parameter 11", 0) / 29.0))
 
     # --- arp ---
     unmapped += [k for k in p if k.startswith("Arp")]

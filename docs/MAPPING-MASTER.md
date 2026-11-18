@@ -1,7 +1,18 @@
 # Master table: Blofeld parameters -> Iridium qpat (mapping status)
 
 Created: 2026-11-09. Based on: `bloridium/blofeld_dump.py` (SDATA table, spec 3.1) + `bloridium/qpat_map.py`.
-Reference sound: A043 "SH Power" (107 mapped / 75 unmapped of 290 set params).
+Reference sound: A043 "SH Power" (129 mapped / 75 unmapped of 290 set params after the 2026-11-18 rebuild).
+
+**2026-11-18 rebuild (live-verified decisions + enum scans; device exports qpat v14):**
+- Aftertouch: **Poly AT** — `AfterTouchDoPoly=1.0` (user, live). Matrix src "After Touch"=**17.0**.
+  Enum values = OS 4.1.0b2 **runtime** values (param-info, 2026-11-18); qpat file values are read
+  1:1 (controlled load test) — see `docs/refs/quir_runtime_enums_2026-11-18.md`.
+- `Osc 2 Sync to O3` -> `Osc2WaveformSync=1.0`; serial F2 mods -> DF Amount(95)/DF Color(96);
+  FX mix key by mapped type + FX params (spec 5.2-5.9); detune centered at 0.5;
+  Amp Mod / Osc Pitch Mod -> matrix slots; new v14 dsts: AmpEnv Attack=109, LFO1-3 Speed=145-147.
+- Still open (live clarification, see `docs/superpowers/plans/2026-11-18-converter-rebuild-polyat.md`):
+  amt_bipolar divisor, FinePitch cent scale, LFO free-speed Hz, AE Decay/Sustain/Release + FE Release
+  + F1/F2 Drive/Pan dsts (need `param-info 2480`), WT bridge by CLAP, qpat version v14 vs v15 on device.
 
 **PC/Favorites mapping on the Iridium (which sound on which MIDI PC): see `docs/IRIDIUM-FAVORITES-MAP.md`**
 (mido PC = display "MIDI" - 2; MIDI 100-106 = calib test sounds, 107-115 = the 9 converted sounds).
@@ -14,7 +25,7 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 |---|---|---|---|---|
 | 1 | Osc 1 Octave | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
 | 2 | Osc 1 Semitone | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
-| 3 | Osc 1 Detune | OscNFinePitch | ✅ direct | norm raw/127 |
+| 3 | Osc 1 Detune | OscNFinePitch | ⚠️ deviation | centered `0.5+(raw-64)/254` (was norm(); cent scale live-TODO) |
 | 4 | Osc 1 Bend Range | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 5 | Osc 1 Keytrack | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 6 | Osc 1 FM Source | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
@@ -27,7 +38,7 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 16 | Osc 1 Brilliance | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 17 | Osc 2 Octave | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
 | 18 | Osc 2 Semitone | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
-| 19 | Osc 2 Detune | OscNFinePitch | ✅ direct | norm raw/127 |
+| 19 | Osc 2 Detune | OscNFinePitch | ⚠️ deviation | centered `0.5+(raw-64)/254` (was norm(); cent scale live-TODO) |
 | 20 | Osc 2 Bend Range | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 21 | Osc 2 Keytrack | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 22 | Osc 2 FM Source | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
@@ -40,7 +51,7 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 32 | Osc 2 Brilliance | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 33 | Osc 3 Octave | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
 | 34 | Osc 3 Semitone | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
-| 35 | Osc 3 Detune | OscNFinePitch | ✅ direct | norm raw/127 |
+| 35 | Osc 3 Detune | OscNFinePitch | ⚠️ deviation | centered `0.5+(raw-64)/254` (was norm(); cent scale live-TODO) |
 | 36 | Osc 3 Bend Range | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 37 | Osc 3 Keytrack | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 38 | Osc 3 FM Source | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
@@ -51,9 +62,9 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 43 | Osc 3 PWM Amount | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 46 | Osc 3 Limit WT | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 48 | Osc 3 Brilliance | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
-| 49 | Osc 2 Sync to O3 | - | ❌ unmapped |  |
-| 50 | Osc Pitch Source | - | ❌ unmapped |  |
-| 51 | Osc Pitch Amount | - | ❌ unmapped |  |
+| 49 | Osc 2 Sync to O3 | Osc2WaveformSync | 🟡 approximation | 1.0 = Sync on (A071/A008) |
+| 50 | Osc Pitch Source | Matrix-Slot -> Pitch | 🟡 approximation | 2026-11-18: extra matrix slot (e.g. A008 LFO1*MW -> Wheel) |
+| 51 | Osc Pitch Amount | MatrixAmount | 🟡 approximation | amt_bipolar |
 | 53 | Glide | - | ❌ unmapped | Global/System/etc. |
 | 56 | Glide Mode | - | ❌ unmapped | Global/System/etc. |
 
@@ -88,8 +99,8 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 86 | Filter 1 Keytrack | Filter1Keytrack | ✅ direct | norm(raw): Blofeld 0..127 = -200%..+196% (offset binary, 64=0%), Iridium 0..1 = -200%..+200% (0.5=0%); old (kt-64)/64 gave -200% at 64 |
 | 87 | Filter 1 Env Amount | FilterNEnvAmount | ✅ direct | norm |
 | 88 | Filter 1 Env Velocity | FilterNVeloAmount | ✅ direct | norm |
-| 89 | Filter 1 Mod Source | Matrix-Slot -> Filter1/2 Cutoff | 🟡 approximation | direct filter mod as extra matrix slot |
-| 90 | Filter 1 Mod Amount | Matrix-Slot -> Filter1/2 Cutoff | 🟡 approximation | direct filter mod as extra matrix slot |
+| 89 | Filter 1 Mod Source | Matrix-Slot -> Filter1 Cutoff | 🟡 approximation | direct filter mod as extra matrix slot (dst 100) |
+| 90 | Filter 1 Mod Amount | MatrixAmount | 🟡 approximation | amt_bipolar |
 | 91 | Filter 1 FM Source | - | ❌ unmapped | Drive -> FX Drive possible, Pan -> DigiFormer PAN (CC78) |
 | 92 | Filter 1 FM Amount | - | ❌ unmapped | Drive -> FX Drive possible, Pan -> DigiFormer PAN (CC78) |
 | 93 | Filter 1 Pan | - | ❌ unmapped | Drive -> FX Drive possible, Pan -> DigiFormer PAN (CC78) |
@@ -103,8 +114,8 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 106 | Filter 2 Keytrack | Filter2Keytrack | ✅ direct | norm(raw) like F1 keytrack (see 86) |
 | 107 | Filter 2 Env Amount | FilterNEnvAmount | ✅ direct | norm |
 | 108 | Filter 2 Env Velocity | FilterNVeloAmount | ✅ direct | norm |
-| 109 | Filter 2 Mod Source | Matrix-Slot -> Filter1/2 Cutoff | 🟡 approximation | direct filter mod as extra matrix slot |
-| 110 | Filter 2 Mod Amount | Matrix-Slot -> Filter1/2 Cutoff | 🟡 approximation | direct filter mod as extra matrix slot |
+| 109 | Filter 2 Mod Source | Matrix-Slot -> DF Amount (serial) / Filter2 Cutoff (parallel) | 🟡 approximation | serial: F2 lives in the DigiFormer -> dst 95 (P1-2, 2026-11-18) |
+| 110 | Filter 2 Mod Amount | MatrixAmount | 🟡 approximation | amt_bipolar |
 | 111 | Filter 2 FM Source | - | ❌ unmapped |  |
 | 112 | Filter 2 FM Amount | - | ❌ unmapped |  |
 | 113 | Filter 2 Pan | - | ❌ unmapped |  |
@@ -118,45 +129,19 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 |---|---|---|---|---|
 | 121 | Amplifier Volume | MainVolume | ✅ direct | norm |
 | 122 | Amplifier Velocity | Matrix-Slot Velocity->Volume (AmpVeloAmount=0) | 🟡 approximation | AmpVelo barely works on the device (CC17 ~0.4 dB); Vel->Volume in matrix, amount bipolar |
-| 123 | Amplifier Mod Source | - | ❌ unmapped | Global/System/etc. |
-| 124 | Amplifier Mod Amount | - | ❌ unmapped | Global/System/etc. |
+| 123 | Amplifier Mod Source | Matrix-Slot -> Volume | 🟡 approximation | 2026-11-18: extra matrix slot (A008 AmpEnv, others LFO3) |
+| 124 | Amplifier Mod Amount | MatrixAmount | 🟡 approximation | amt_bipolar |
 
 ## Effect parameters (SDATA 128-159)
 
 | SDATA | Blofeld parameter | Iridium qpat target | Status | Deviation / Notes |
 |---|---|---|---|---|
-| 128 | Effect 1 Type | FX1Type/FX2Type | 🟡 approximation | Enum v14; Triple FX -> Chorus; watch enum shift (v8 vs v14 vs v15) |
-| 129 | Effect 1 Mix | ChorusDryWet / DelayDryWet | ✅ direct | only for Chorus/Delay; other FX types without mix key |
-| 130 | Effect 1 Parameter 1 | - | ❌ unmapped | Global/System/etc. |
-| 131 | Effect 1 Parameter 2 | - | ❌ unmapped | Global/System/etc. |
-| 132 | Effect 1 Parameter 3 | - | ❌ unmapped | Global/System/etc. |
-| 133 | Effect 1 Parameter 4 | - | ❌ unmapped | Global/System/etc. |
-| 134 | Effect 1 Parameter 5 | - | ❌ unmapped | Global/System/etc. |
-| 135 | Effect 1 Parameter 6 | - | ❌ unmapped | Global/System/etc. |
-| 136 | Effect 1 Parameter 7 | - | ❌ unmapped | Global/System/etc. |
-| 137 | Effect 1 Parameter 8 | - | ❌ unmapped | Global/System/etc. |
-| 138 | Effect 1 Parameter 9 | - | ❌ unmapped | Global/System/etc. |
-| 139 | Effect 1 Parameter 10 | - | ❌ unmapped | Global/System/etc. |
-| 140 | Effect 1 Parameter 11 | - | ❌ unmapped | Global/System/etc. |
-| 141 | Effect 1 Parameter 12 | - | ❌ unmapped | Global/System/etc. |
-| 142 | Effect 1 Parameter 13 | - | ❌ unmapped | Global/System/etc. |
-| 143 | Effect 1 Parameter 14 | - | ❌ unmapped | Global/System/etc. |
-| 144 | Effect 2 Type | FX1Type/FX2Type | 🟡 approximation | Enum v14; Triple FX -> Chorus; watch enum shift (v8 vs v14 vs v15) |
-| 145 | Effect 2 Mix | ChorusDryWet / DelayDryWet | ✅ direct | only for Chorus/Delay; other FX types without mix key |
-| 146 | Effect 2 Parameter 1 | - | ❌ unmapped | Global/System/etc. |
-| 147 | Effect 2 Parameter 2 | - | ❌ unmapped | Global/System/etc. |
-| 148 | Effect 2 Parameter 3 | - | ❌ unmapped | Global/System/etc. |
-| 149 | Effect 2 Parameter 4 | - | ❌ unmapped | Global/System/etc. |
-| 150 | Effect 2 Parameter 5 | - | ❌ unmapped | Global/System/etc. |
-| 151 | Effect 2 Parameter 6 | - | ❌ unmapped | Global/System/etc. |
-| 152 | Effect 2 Parameter 7 | - | ❌ unmapped | Global/System/etc. |
-| 153 | Effect 2 Parameter 8 | - | ❌ unmapped | Global/System/etc. |
-| 154 | Effect 2 Parameter 9 | - | ❌ unmapped | Global/System/etc. |
-| 155 | Effect 2 Parameter 10 | - | ❌ unmapped | Global/System/etc. |
-| 156 | Effect 2 Parameter 11 | - | ❌ unmapped | Global/System/etc. |
-| 157 | Effect 2 Parameter 12 | - | ❌ unmapped | Global/System/etc. |
-| 158 | Effect 2 Parameter 13 | - | ❌ unmapped | Global/System/etc. |
-| 159 | Effect 2 Parameter 14 | - | ❌ unmapped | Global/System/etc. |
+| 128 | Effect 1 Type | FX1Type | 🟡 approximation | Enum v14; Triple FX -> Chorus; watch enum shift (v8/v14/v15, enum scan) |
+| 129 | Effect 1 Mix | DryWet key of the MAPPED type | ✅ direct | 2026-11-18: by type not slot (Chorus->ChorusDryWet, Delay->DelayDryWet, Phaser/Flanger/Drive likewise; Reverb -> matrix slot Constant->FX DryWet) |
+| 130-143 | Effect 1 Parameter 1-14 | per-FX keys | 🟡 approximation | 2026-11-18 per spec 5.2-5.9: Chorus Speed/Depth (p1/p2), Flanger +Feedback p5, Phaser +p5/p6 Center, Overdrive Drive p2/PostGain p3 -> DriveAmount/DriveGain, Clk.Delay Feedback p5/Cutoff p6/Length p11 -> DelayFeed/DelayHiCut/DelaySync+Sync, Reverb Shape/Decay -> ReverbColor/ReverbTime |
+| 144 | Effect 2 Type | FX2Type | 🟡 approximation | as FX1 |
+| 145 | Effect 2 Mix | DryWet key of the MAPPED type | ✅ direct | as 129 |
+| 146-159 | Effect 2 Parameter 1-14 | per-FX keys | 🟡 approximation | as 130-143 (Delay: Length p4 free time not mapped; Reverb params unmapped) |
 
 ## LFO 1-3 (SDATA 160-194)
 
@@ -246,6 +231,13 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 260 | Modifier 4 Constant | - | ❌ unmapped |  |
 
 ## Modulation (16 slots) (SDATA 261-308)
+
+2026-11-18 notes for all rows: src "After Touch" = **17.0** (Poly AT decision, see header); in serial
+routing dst "F2 Cutoff"/"F2 Reson." are remapped to **DF Amount (95)** / **DF Color (96)** (P1-2);
+new dsts mapped: "AE Attack" -> AmpEnv Attack (109), "LFO1-3Speed" -> LFO1-3 Speed (145-147).
+Still unmapped dsts (need live `param-info 2480` for v14 enum values): AE Decay/Sustain/Release,
+FE Release, F1/F2 Drive/Pan/FM, RMod Level/Bal., NoiseLevel/Bal., O1-3 FM/Balance, M1-4 Amount;
+srcs without equivalent: Control W-Z, Unisono V., Modifier 1-4, Sustain/Foot/Breath.
 
 | SDATA | Blofeld parameter | Iridium qpat target | Status | Deviation / Notes |
 |---|---|---|---|---|

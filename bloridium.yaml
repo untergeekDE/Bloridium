@@ -5,19 +5,17 @@
 # Audio channels are 0-based input numbers on the audio interface.
 midi:
   blofeld:
-    out_port: Launchpad Pro MK3 LPProMK3 DIN
-    in_port: Launchpad Pro MK3 LPProMK3 DIN
+    out_port: Blofeld
+    in_port: Blofeld
     channel: 4
   iridium:
-    out_port: Launchpad Pro MK3 LPProMK3 DIN
-    in_port: Launchpad Pro MK3 LPProMK3 DIN
+    out_port: Iridium Keyboard (MIDI 2.0) MIDI 2.0
+    in_port: Iridium Keyboard (MIDI 2.0) MIDI 2.0
     channel: 5
   fallback_out_ports:
     blofeld:
-    - Launchpad Pro MK3 LPProMK3 DIN
     - Blofeld
     iridium:
-    - Launchpad Pro MK3 LPProMK3 DIN
     - Iridium Keyboard (MIDI 2.0) MIDI 2.0
     - Iridium Keyboard (MIDI 2.0) Synth
 audio:
