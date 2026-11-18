@@ -1,0 +1,146 @@
+"""prognose.py – Random Forest SNDD→Score (TDD Task 1: Kern, Task 2: CLI)."""
+
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from bloridium import blofeld_dump, prognose
+
+REPO = Path(__file__).resolve().parent.parent
+A043_DUMP = REPO / "dumps" / "blofeld_sndd_A043_20261108_135516.bin"
+
+
+def _synth_dump_bytes(loc: str, sdata: bytes) -> bytes:
+    """Komplette SysEx-Bytes (mit F0/F7) fuer eine Location."""
+    bb = ord(loc[0]) - 65
+    nn = int(loc[1:]) - 1
+    body = blofeld_dump.build_sndd(sdata, bb=bb, nn=nn)
+    return bytes([0xF0] + body + [0xF7])
+
+
+def _sdata(seed: int, cutoff_idx: int = None, cutoff_val: int = None) -> bytes:
+    rng = np.random.default_rng(seed)
+    sd = rng.integers(0, 128, size=blofeld_dump.SDATA_SIZE, dtype=np.uint8)
+    if cutoff_idx is not None:
+        sd[cutoff_idx] = cutoff_val
+    return bytes(sd)
+
+
+def _write_log(path: Path, rows: list[dict]):
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows))
+
+
+def _log_row(loc, combined=None, score=None, verdict="nahe"):
+    res = {"score": score, "combined": combined, "verdict": verdict,
+           "embed_score": None, "error": None}
+    return {"ts": "20261118_000000", "meta": {"mode": "checkpoint", "blofeld": loc,
+                                              "note": 72, "wheel_pct": 0.0},
+            "result": res}
+
+
+# --- Features / IO ---
+
+def test_feature_vector_real_dump():
+    if not A043_DUMP.exists():
+        pytest.skip("A043-Dump lokal nicht vorhanden")
+    parsed = blofeld_dump.parse_sndd(A043_DUMP.read_bytes())
+    x = prognose.feature_vector(parsed)
+    assert x.shape == (len(prognose.FEATURE_IDX),)
+    assert len(prognose.FEATURE_IDX) == 367          # 383 minus 16 Namens-Bytes
+    assert not any(363 <= i < 379 for i in prognose.FEATURE_IDX)
+    assert 0.0 <= x.min() and x.max() <= 1.0
+    names = prognose.param_names()
+    assert len(names) == 367
+    assert any("Osc 1" in n for n in names)
+
+
+def test_loc_from_header_and_find_dump(tmp_path):
+    if not A043_DUMP.exists():
+        pytest.skip("A043-Dump lokal nicht vorhanden")
+    data = A043_DUMP.read_bytes()
+    assert prognose.loc_from_header(data) == "A043"
+    assert prognose.find_dump(REPO / "dumps", "A043").exists()
+    with pytest.raises(FileNotFoundError):
+        prognose.find_dump(REPO / "dumps", "ZZZ9")
+    # synthetischer Dump in tmp
+    d = tmp_path / "dumps"
+    d.mkdir()
+    (d / "blofeld_sndd_B007_20261118_000000.bin").write_bytes(
+        _synth_dump_bytes("B007", _sdata(1)))
+    assert prognose.loc_from_header((d / "blofeld_sndd_B007_20261118_000000.bin")
+                                    .read_bytes()) == "B007"
+    assert prognose.find_dump(d, "B007").name == "blofeld_sndd_B007_20261118_000000.bin"
+
+
+def test_load_training_rows_aggregates_and_skips(tmp_path):
+    if not A043_DUMP.exists():
+        pytest.skip("A043-Dump lokal nicht vorhanden")
+    log = tmp_path / "log.jsonl"
+    _write_log(log, [
+        _log_row("A043", combined=80.0, score=90.0),
+        _log_row("A043", combined=90.0, score=95.0),
+        _log_row("A043", combined=None, score=70.0),          # Fallback auf score
+        _log_row("A043", score=None, verdict="fehler"),       # stumm -> skip
+        _log_row("ZZZ9", combined=50.0, score=50.0),          # kein Dump -> skip
+    ])
+    X, y, locs, skipped = prognose.load_training_rows(log, REPO / "dumps")
+    assert X.shape == (1, 367)
+    assert locs == ["A043"]
+    assert y[0] == pytest.approx(np.mean([80.0, 90.0, 70.0]))  # Aggregation pro Loc
+    assert len(skipped) == 2 and any("fehler" in s for s in skipped)
+
+
+# --- Train / Predict ---
+
+def test_train_model_synthetic_recovers_signal():
+    rng = np.random.default_rng(7)
+    n = 100
+    X = rng.random((n, 367))
+    i_cut = prognose.FEATURE_IDX.index(20)   # beliebiger Parameter-Index
+    i_osc = prognose.FEATURE_IDX.index(0)
+    y = 100.0 * (0.6 * X[:, i_cut] + 0.4 * X[:, i_osc]) + rng.normal(0, 1, n)
+    bundle = prognose.train_model(X, y, seed=42, n_estimators=40)
+    assert bundle["metrics"]["r2"] > 0.5          # Holdout-R²: Signal gefunden
+    top = [name for name, _ in bundle["importances"][:2]]
+    assert prognose.param_names()[i_cut] in top or prognose.param_names()[i_osc] in top
+    pred = bundle["model"].predict(X[:1])[0]
+    assert abs(pred - y[0]) < 15.0
+
+
+def test_train_model_tiny_n_no_crash():
+    X = np.random.default_rng(1).random((3, 367))
+    y = np.array([50.0, 70.0, 90.0])
+    bundle = prognose.train_model(X, y, seed=1, n_estimators=20)
+    assert bundle["metrics"]["r2_cv"] is None      # keine CV bei n<10
+    assert bundle["metrics"]["r2"] is not None      # Train-R² trotzdem da
+    assert bundle["n"] == 3
+
+
+def test_save_load_roundtrip(tmp_path):
+    X = np.random.default_rng(3).random((30, 367))
+    y = 50 + 40 * X[:, 5]
+    bundle = prognose.train_model(X, y, seed=5, n_estimators=30)
+    p = tmp_path / "m.joblib"
+    prognose.save_model(bundle, p)
+    b2 = prognose.load_model(p)
+    assert np.allclose(bundle["model"].predict(X[:3]), b2["model"].predict(X[:3]))
+    assert b2["target"] == bundle["target"]
+
+
+def test_predict_loc_uses_saved_model(tmp_path):
+    if not A043_DUMP.exists():
+        pytest.skip("A043-Dump lokal nicht vorhanden")
+    rng = np.random.default_rng(11)
+    X = rng.random((40, 367))
+    y = 100.0 * X[:, 10] + rng.normal(0, 1, 40)
+    bundle = prognose.train_model(X, y, seed=9, n_estimators=50)
+    mp = tmp_path / "m.joblib"
+    prognose.save_model(bundle, mp)
+    r = prognose.predict_loc("A043", REPO / "dumps", mp)
+    assert r["loc"] == "A043"
+    assert 0.0 <= r["predicted"] <= 100.0 or isinstance(r["predicted"], float)
+    assert r["std"] >= 0.0
+    assert r["model"] == "m.joblib"
