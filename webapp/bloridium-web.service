@@ -1,0 +1,33 @@
+# Klassische systemd-User-Unit (rootless) fuer Podman < 4.4 (kein Quadlet),
+# z.B. Debian 12 mit podman 4.3. Installieren:
+#   podman build -f webapp/Containerfile -t localhost/bloridium-web:latest .   # im Repo-Root
+#   cp webapp/bloridium-web.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now bloridium-web.service
+# Update: neu bauen, dann systemctl --user restart bloridium-web.service
+# (Linger muss fuer den User aktiv sein: loginctl enable-linger)
+[Unit]
+Description=Bloridium Web-App (Blofeld-Dump -> Iridium-.qpat Upload/Konvert/ZIP)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=10
+ExecStartPre=/usr/bin/mkdir -p %h/bloridium-web-data
+ExecStartPre=-/usr/bin/podman rm -f bloridium-web
+# Nur lokal gebunden – oeffentlich via Apache-vhost (webapp/deploy/bloridium.conf)
+ExecStart=/usr/bin/podman run \
+  --name bloridium-web \
+  --rm \
+  -p 127.0.0.1:8000:8000 \
+  -v %h/bloridium-web-data:/data \
+  -e DATA_DIR=/data \
+  -e DATA_TTL_HOURS=24 \
+  --health-cmd "curl -fsS http://127.0.0.1:8000/health || exit 1" \
+  --health-interval 30s \
+  localhost/bloridium-web:latest
+ExecStop=/usr/bin/podman stop bloridium-web
+
+[Install]
+WantedBy=default.target

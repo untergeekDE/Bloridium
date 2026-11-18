@@ -15,15 +15,26 @@ podman build -f webapp/Containerfile -t localhost/bloridium-web:latest .
 
 Then one of the two variants:
 
-**A) systemd Quadlet (recommended on the server, rootless):**
+**A) systemd user unit (what runs on frankruft.de, rootless):**
+
+Podman < 4.4 (e.g. Debian 12 ships 4.3.1) has no Quadlet support, so the
+server uses a classic user unit that binds the container to `127.0.0.1:8000`
+only; Apache publishes it as `https://bloridium.frankruft.de`.
 
 ```bash
-mkdir -p ~/.config/containers/systemd
-cp webapp/bloridium-web.container ~/.config/containers/systemd/
+cp webapp/bloridium-web.service ~/.config/systemd/user/
 systemctl --user daemon-reload
-systemctl --user enable --now bloridium-web.container
-# App: http://<server>:8000   Logs: journalctl --user -u bloridium-web.container
+systemctl --user enable --now bloridium-web.service
+# Update after a rebuild: systemctl --user restart bloridium-web.service
+# Logs: journalctl --user -u bloridium-web.service
 ```
+
+Reverse proxy (needs sudo, DNS A record first): see the header of
+`webapp/deploy/bloridium.conf` (a2ensite + `certbot --apache`).
+
+**A') systemd Quadlet (Podman >= 4.4):** `webapp/bloridium-web.container`
+into `~/.config/containers/systemd/`, then
+`systemctl --user enable --now bloridium-web.service`.
 
 **B) podman compose:**
 
@@ -39,7 +50,7 @@ podman run -d --name bloridium-web -p 8000:8000 \
 ```
 
 App reachable at `http://<server>:8000` (healthcheck: `GET /health`;
-with variant A the Quadlet takes over the healthcheck via `HealthCmd`,
+with variant A the unit passes `--health-cmd`, the Quadlet uses `HealthCmd`,
 `podman healthcheck bloridium-web`). Note: Podman ignores the `HEALTHCHECK`
 from the image (OCI format) – if you want it in the image, build with
 `podman build --format docker ...`.
@@ -85,7 +96,9 @@ python3 -m pytest tests/test_webapp.py -q
 - `Containerfile` – image (python:3.12-slim-bookworm, gunicorn); `.containerignore`
   at the repo root keeps the build context small
 - `compose.yaml` – `podman compose`
-- `bloridium-web.container` – systemd Quadlet (rootless)
+- `bloridium-web.service` – systemd user unit (rootless, Podman < 4.4)
+- `bloridium-web.container` – systemd Quadlet (rootless, Podman >= 4.4)
+- `deploy/bloridium.conf` – Apache reverse-proxy vhost for bloridium.frankruft.de
 - `app.py` / `convert.py` / `matching.py` – the app
 
 ## Env variables

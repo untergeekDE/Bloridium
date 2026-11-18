@@ -12,7 +12,8 @@ After=network-online.target
 
 [Container]
 Image=localhost/bloridium-web:latest
-PublishPort=8000:8000
+# Nur lokal – oeffentlich via Apache-vhost bloridium.frankruft.de
+PublishPort=127.0.0.1:8000:8000
 Volume=%h/bloridium-web-data:/data
 Environment=DATA_DIR=/data
 Environment=DATA_TTL_HOURS=24
