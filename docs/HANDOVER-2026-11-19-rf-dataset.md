@@ -64,7 +64,7 @@ Predict-Spotchecks: A091 → 90.4±3.0 (Ist 87.8), A024 → 95.2 (Ist 98.0), A01
 - **A097** nur bei Note 72 silent (Blofeld-Seite), Note 60 = 87.94 → hat Score.
 - `embed_score` ist in allen rf-dataset-Zeilen `null` (ohne `--embed` gemessen). Wer Embed als Label will, muss neu messen mit `--embed` (siehe §6).
 - Frischer Clone: `dumps/`, `recordings/`, `models/` sind gitignored → von diesem Mac kopieren (oder neu erzeugen, §6).
-- `load_training_rows` liest ALLE Zeilen mit `meta.blofeld` (auch alte Modi). Für den sauberen 100-Sound-Datensatz optional auf `meta.mode == "rf-dataset"` filtern; mit `--target score` ist das Mischen harmlos (score ist überall Phase A).
+- `load_training_rows` liest ALLE Zeilen mit `meta.blofeld`. **Achtung seit 2026-11-19 12:00:** das Log enthält jetzt auch `mode=="optimize"`-Zeilen (Tweak-Loop, Phasen before/trial*/after — teils Duplikate, teils verrauscht). Für den sauberen Datensatz **auf `meta.mode == "rf-dataset"` filtern** (202 Zeilen, 197 scored, 99 locs). Alte Modi (`live`, `pc_sweep`, …) nur mit `--target score` mischen (deren `combined` ist embed-depressiv).
 - 9 locs (A001, A008, A010, A019, A022, A039, A043, A071, A073) haben Vertrag-Dumps von 11-08 — sha256-identisch zur heutigen Bank (geprüft 11-19), also keine Stale-Features.
 
 ## 6. Workflow: neue Daten → re-train
@@ -78,6 +78,16 @@ python3 tools/quir_rf_dataset.py measure --config recordings/quir_rf_dataset_con
 cd ../Bloridium && python3 -m bloridium prognose train --target score   # re-train
 ```
 Tweak-Loop: Ausreißer (loc-mean) **A091 87.78, A097 87.94, A043 89.55, A044 89.59, A025 90.47** — Parameter per `tools/quir_tweak.py` (codesearch) auf den Slots 200–299 ändern (Top-Importances aus §4 zuerst), dann Re-Sweep einzelner Sounds (`tools/quir_ab_sweep.py --config … --notes 72,60 --allow-write`) und re-train.
+
+## 6b. Tweak-Loop-Ergebnis 2026-11-19 12:00 (codesearch)
+
+- `quir_optimize.py` (CLI, voll remote): lädt `2:rf100/<sd_name>.qpat`, Bulk-Readback,
+  Hill-Climbing in Geräte-Skala. **Negativ-Ergebnis:** hartes Setzen auf qpat-Readback-Werte
+  (`--mode fix`, deprecated) schadet — qpat-Loader und QUIR-Readback rechnen in
+  unterschiedlichen Skalen (A091/A097 stumm, A043 90.8→80.3). Hill-Climbing bei delta 0.05
+  liegt unter dem Messrauschen (±1–3); "Gewinne" waren Artefakte (pid 3779 LastNotePlayed).
+  → Zuverlässiges Tweaken braucht Mehrfachmessung pro Trial oder `--embed` als Ziel.
+  Phase-B-Diagnose der Ausreißer (A091 A043 A044 A025 A097): `recordings/quir_ab_sweep_rf_outliers_phaseb.jsonl` + PNGs in `../bloridium-codesearch/recordings/spec_rf/`.
 
 ## 7. Stand 2026-11-19
 
