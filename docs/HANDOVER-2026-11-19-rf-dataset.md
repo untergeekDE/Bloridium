@@ -89,7 +89,16 @@ Tweak-Loop: Ausreißer (loc-mean) **A091 87.78, A097 87.94, A043 89.55, A044 89.
   → Zuverlässiges Tweaken braucht Mehrfachmessung pro Trial oder `--embed` als Ziel.
   Phase-B-Diagnose der Ausreißer (A091 A043 A044 A025 A097): `recordings/quir_ab_sweep_rf_outliers_phaseb.jsonl` + PNGs in `../bloridium-codesearch/recordings/spec_rf/`.
 
-## 7. Stand 2026-11-19
+## 7. Stand 2026-11-19 (finaler Tweak-Loop-Abschluss 12:20)
+
+Phase-B-Diagnose der Ausreißer (A091 A043 A044 A025 A097, `--embed --llm --norm-pegel
+--spec-png-dir`): LLM meldet überall „very similar, dezenter Higher-Frequency-Edge auf der
+Iridium-Seite" → **systematische Timbre-Differenz** (Oszillator/Wavetable), kein
+Per-Sound-Param-Problem. Gerichteter EqHighGain-Test (A091, pid 2836: 0.5→0.3) ergab
++1.1 Score — unter dem Messrauschen (±1–3). Hill-Climbing bei delta 0.05 ebenfalls unter
+Rauschen; hartes Setzen auf qpat-Readback-Werte schadet (Skalen-Diff). Fazit: mean 93.9
+(99 locs) ist nahe am Machbaren; RF-Modell MAE 1.29 bleibt gültig (Training nur auf
+`mode=="rf-dataset"` filtern!). Details: `../bloridium-codesearch/TODO_FIX.md` 11-19 11:05–12:20.
 
 Datensatz komplett (100 Dumps, 202 rf-Messungen, 197 scored, 99 locs), Modell trainiert
 (MAE 1.29). Nächster Schritt: Prognose-Funktion um das Modell herum bauen
