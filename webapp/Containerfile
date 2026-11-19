@@ -18,10 +18,12 @@ WORKDIR /app
 COPY webapp/requirements.txt ./
 RUN pip install -r requirements.txt
 
-# App + nur die pure-python-Core-Module (kein numpy/mido/rtmidi noetig)
+# App + pure-python core modules (no mido/rtmidi; prognose needs numpy only).
+# The RF model is NOT baked in (models/ is gitignored) -> mount at runtime:
+#   -v <repo>/models:/app/models:ro   and env BLORIDIUM_MODEL=/app/models/prognose_rf.pkl
 COPY webapp/app.py webapp/convert.py webapp/matching.py ./
 COPY webapp/static ./static
-COPY bloridium/blofeld_dump.py bloridium/qpat.py bloridium/qpat_map.py bloridium/waldorf.py ./core/
+COPY bloridium/blofeld_dump.py bloridium/qpat.py bloridium/qpat_map.py bloridium/waldorf.py bloridium/prognose.py ./core/
 COPY docs/refs/qpat/template_waveform.qpat ./template_waveform.qpat
 
 RUN mkdir -p /data

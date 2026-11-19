@@ -1,8 +1,9 @@
 """Upload -> parse -> convert -> ZIP/report (offline, without MIDI hardware).
 
 Uses the pure-Python modules from the bloridium package (blofeld_dump, qpat,
-qpat_map, waldorf) via file path – so the Docker container needs neither
-numpy nor mido/python-rtmidi (bloridium/__init__.py would import them).
+qpat_map, waldorf, prognose) via file path as a synthetic package – so the
+container needs no mido/python-rtmidi (bloridium/__init__.py would import them
+via audio/midi); prognose needs numpy only.
 """
 
 from __future__ import annotations
@@ -31,16 +32,43 @@ class UploadError(ValueError):
 
 
 def load_core() -> SimpleNamespace:
-    """Load blofeld_dump/qpat/qpat_map/waldorf as modules (without the package __init__)."""
+    """Load the core modules under the real package name "bloridium" (without
+    executing bloridium/__init__.py, which would pull in audio/midi -> mido).
+
+    The package name MUST be "bloridium": prognose.py does `from . import
+    blofeld_dump`, and the pickled RF model references bloridium.prognose.*
+    classes, so unpickling only works under the real package name.
+    prognose is optional – without it the RF prognosis is off.
+    """
+    import sys
+    import types
+
     env = os.environ.get("BLORIDIUM_CORE_DIR")
     candidates = [Path(env)] if env else []
     candidates += [WEBAPP / "core", REPO / "bloridium"]
     for d in candidates:
         if (d / "blofeld_dump.py").exists():
+            pkg = sys.modules.get("bloridium")
+            if pkg is None or not hasattr(pkg, "__path__"):
+                pkg = types.ModuleType("bloridium")
+                pkg.__path__ = [str(d)]
+                sys.modules["bloridium"] = pkg
+            elif str(d) not in pkg.__path__:
+                pkg.__path__.append(str(d))
             mods = {}
-            for name in ("blofeld_dump", "qpat", "qpat_map", "waldorf"):
-                spec = importlib.util.spec_from_file_location(name, d / f"{name}.py")
+            for name in ("blofeld_dump", "qpat", "qpat_map", "waldorf", "prognose"):
+                full = f"bloridium.{name}"
+                if full in sys.modules:  # real package already imported -> reuse
+                    mods[name] = sys.modules[full]
+                    continue
+                f = d / f"{name}.py"
+                if not f.exists():
+                    if name == "prognose":
+                        continue  # optional: RF prognosis disabled without it
+                    raise RuntimeError(f"core module missing: {f}")
+                spec = importlib.util.spec_from_file_location(full, f)
                 mod = importlib.util.module_from_spec(spec)
+                sys.modules[full] = mod
                 spec.loader.exec_module(mod)
                 mods[name] = mod
             return SimpleNamespace(**mods)
@@ -125,8 +153,11 @@ def convert_sound(core, template: dict, parsed: dict, loc: str) -> dict:
             "mapped": len(overrides), "unmapped": unmapped}
 
 
-def process_upload(filename: str, data: bytes, data_dir) -> dict:
+def process_upload(filename: str, data: bytes, data_dir, model_path=None) -> dict:
     """Full pipeline. Writes <data_dir>/<token>/{result.zip,report.json}.
+
+    model_path: RF model for the score prognosis (None -> auto-detect via
+    matching.resolve_model_path; missing model -> deterministic placeholder).
 
     Returns: report dict (incl. token, zip_name, sounds with score + features).
     Raises UploadError on invalid/empty upload.
@@ -135,6 +166,7 @@ def process_upload(filename: str, data: bytes, data_dir) -> dict:
         raise UploadError("empty file")
     core = load_core()
     template = core.qpat.load(default_template_path())
+    bundle, resolved_model = matching.load_model_bundle(core, model_path)
     parsed_up = parse_upload(filename, data)
     if not parsed_up["sounds"]:
         detail = "; ".join(f"Msg {e['index']}: {e['error']}" for e in parsed_up["errors"][:3])
@@ -147,6 +179,10 @@ def process_upload(filename: str, data: bytes, data_dir) -> dict:
     tdir = Path(data_dir) / token
     tdir.mkdir(parents=True, exist_ok=True)
 
+    matcher_desc = (f"rf-prognose-v{matching.SIMILARITY_VERSION}" if bundle is not None
+                    else f"deterministic-placeholder-v{matching.PLACEHOLDER_VERSION}")
+    sim_version = matching.SIMILARITY_VERSION if bundle is not None else matching.PLACEHOLDER_VERSION
+
     zip_buf = io.BytesIO()
     manifest_lines = [
         f"# Bloridium upload package – {filename}",
@@ -155,8 +191,8 @@ def process_upload(filename: str, data: bytes, data_dir) -> dict:
         f"skipped: {parsed_up['skipped']}",
         "",
         "On the Iridium: USB stick/SD -> Load > Actions > Import (Favorites Bank 6, CC0=6 + PC).",
-        f"Conversion v{CONVERSION_VERSION}; Score = similarity v{matching.SIMILARITY_VERSION} "
-        "(deterministic placeholder, see webapp/matching.py).",
+        f"Conversion v{CONVERSION_VERSION}; Score = {matcher_desc}"
+        + (f" (model: {resolved_model.name})" if resolved_model else ""),
         "",
         "| Location | Name | qpat file | mapped | unmapped | Score |",
         "|---|---|---|---|---|---|",
@@ -166,7 +202,7 @@ def process_upload(filename: str, data: bytes, data_dir) -> dict:
         for parsed in parsed_up["sounds"]:
             loc = location_str(parsed["bb"], parsed["nn"])
             conv = convert_sound(core, template, parsed, loc)
-            est = matching.estimate_match(parsed, conv["unmapped"], core.qpat_map)
+            est = matching.score_sound(parsed, conv["unmapped"], core.qpat_map, core, bundle)
             fname = f"{loc}_{safe_name(conv['name'], loc)}.qpat"
             zf.writestr(fname, conv["qpat_bytes"])
             manifest_lines.append(
@@ -177,9 +213,9 @@ def process_upload(filename: str, data: bytes, data_dir) -> dict:
                 "category": str(parsed["params"].get("Category", "")),
                 "chk_ok": parsed["chk_ok"], "qpat_file": fname,
                 "mapped": conv["mapped"], "unmapped": conv["unmapped"],
-                "score": est["score"], "score_parts": est["parts"],
-                "penalties": est["penalties"],
-                # Feature vector for the later (learned) matching function:
+                "score": est["score"], "std": est.get("std"), "matcher": est["matcher"],
+                "score_parts": est.get("parts"), "penalties": est.get("penalties"),
+                # Feature vector for (re-)training the RF prognosis:
                 "features": {"params": parsed["params"]},
             })
         zf.writestr("MANIFEST.md", "\n".join(manifest_lines) + "\n")
@@ -187,8 +223,9 @@ def process_upload(filename: str, data: bytes, data_dir) -> dict:
             "source_file": filename, "token": token,
             "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "conversion_version": f"v{CONVERSION_VERSION}",
-            "similarity_version": f"v{matching.SIMILARITY_VERSION}",
-            "matcher": f"deterministic-placeholder-v{matching.SIMILARITY_VERSION} (webapp/matching.py)",
+            "similarity_version": f"v{sim_version}",
+            "matcher": f"{matcher_desc} (webapp/matching.py)",
+            "model": str(resolved_model) if bundle is not None else None,
             "num_sounds": len(sounds_report), "num_errors": len(parsed_up["errors"]),
             "skipped_messages": parsed_up["skipped"],
             "avg_score": round(sum(s["score"] for s in sounds_report) / len(sounds_report), 1)

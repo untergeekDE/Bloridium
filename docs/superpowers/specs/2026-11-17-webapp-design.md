@@ -34,12 +34,20 @@ stats) per sound in `report.json` – that is the later training datum.
 - Versioning (2026-11-17): conversion tool **v0.3** (`convert.CONVERSION_VERSION`,
   UI title like webpage.pdf, `conversion_version` in report.json/MANIFEST),
   similarity tool **v0.2** (`matching.SIMILARITY_VERSION`)
+- Update 2026-11-19: similarity tool now **v0.3 = RF prognosis**
+  (`bloridium/prognose.py`, model `models/prognose_rf.pkl` via `BLORIDIUM_MODEL`,
+  dataset: docs/HANDOVER-2026-11-19-rf-dataset.md); without a model, fallback to
+  the deterministic placeholder **v0.2**. Core modules are loaded under the real
+  package name `bloridium` (the model pickle references `bloridium.prognose.*`
+  classes). The container needs numpy for this, still no mido/rtmidi; the model is
+  mounted as a volume (models/ is gitignored).
 - UI like `webpage.pdf` (repo root): English copy, title/upload form/NOTE box/
   footer, background image `bloridium-scaled.jpg` (webapp/static/)
 - Container image based on `python:3.12-slim-bookworm` (Debian), build context = repo root (`podman build -f webapp/Containerfile .`)
 - Only the pure-python modules from `bloridium/` are copied into the container
-  (`blofeld_dump.py`, `qpat.py`, `qpat_map.py`, `waldorf.py`) – `bloridium/__init__.py`
-  imports audio/midi (numpy/mido) and is therefore bypassed (loading via file path)
+  (`blofeld_dump.py`, `qpat.py`, `qpat_map.py`, `waldorf.py`, `prognose.py`) –
+  `bloridium/__init__.py` imports audio/midi (mido) and is therefore bypassed
+  (loading via file path under the package name `bloridium`)
 - Upload limit 8 MB (largest known dump ~456 KB); artifacts under `DATA_DIR/<token>/`
   with TTL (default 24 h)
 

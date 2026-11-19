@@ -1,7 +1,8 @@
 # Bloridium Web-App (Podman)
 
 Small web app: **upload Blofeld MIDI dump -> convert to Iridium `.qpat` ->
-download ZIP**, including a deterministic match estimate (score 0-100) per sound.
+download ZIP**, including a predicted match score (0-100) per sound
+(RF prognosis when a model is available, deterministic placeholder otherwise).
 Runs as a Podman container (e.g. on the Debian server).
 
 ## Deployment on the Debian server (Podman)
@@ -35,8 +36,16 @@ podman compose -f webapp/compose.yaml up -d --build    # or podman-compose ...
 
 ```bash
 podman run -d --name bloridium-web -p 8000:8000 \
-  -v "$HOME/bloridium-web-data:/data" localhost/bloridium-web:latest
+  -v "$HOME/bloridium-web-data:/data" \
+  -v "$PWD/models/prognose_rf.pkl:/app/models/prognose_rf.pkl:ro" \
+  -e BLORIDIUM_MODEL=/app/models/prognose_rf.pkl \
+  localhost/bloridium-web:latest
 ```
+
+The RF model (`models/prognose_rf.pkl`) is gitignored, so it is **not** baked into
+the image – mount it read-only at runtime (variants A/B do this via the
+`models` volume in compose.yaml / Quadlet). Without a model the app falls back
+to the deterministic placeholder (similarity v0.2).
 
 App reachable at `http://<server>:8000` (healthcheck: `GET /health`;
 with variant A the Quadlet takes over the healthcheck via `HealthCmd`,
@@ -50,8 +59,8 @@ from the image (OCI format) – if you want it in the image, build with
    `bloridium-scaled.jpg` from `webapp/static/`)
 2. Upload a `.syx` bank backup (e.g. `bank-a-2019-06-17.syx` from the SysEx
    backups – 128 SNDD messages; a single sound also works as `.bin`/`.hex`)
-3. The results page shows per sound: location, name, **score** (placeholder),
-   mapped/unmapped parameters
+3. The results page shows per sound: location, name, **predicted score** (RF
+   prognosis ± std, or placeholder), mapped/unmapped parameters
 4. **ZIP download**: one `<LOC>_<Name>.qpat` per sound + `MANIFEST.md` + `report.json`
    - On the Iridium: USB stick/SD -> `Load > Actions > Import` (Favorites Bank 6,
      then `CC0=6` + PC; mido PC = MIDI number - 2)
@@ -60,17 +69,28 @@ from the image (OCI format) – if you want it in the image, build with
 
 - **Conversion tool: v0.3** (`convert.CONVERSION_VERSION`) – UI title
   "Bloridium Tool v0.3", `conversion_version` in `report.json` and `MANIFEST.md`
-- **Similarity tool: v0.2** (`matching.SIMILARITY_VERSION`) – `similarity_version`
-  in `report.json`, score note on the results page
+- **Similarity tool: v0.3** (`matching.SIMILARITY_VERSION`, RF prognosis) when a
+  model is available, else **v0.2** (`matching.PLACEHOLDER_VERSION`, deterministic
+  fallback) – `similarity_version` + `matcher` + `model` in `report.json`
 
-## Match estimate
+## Score / conversion-quality prognosis
 
-`webapp/matching.py` (`estimate_match`) is a **deterministic placeholder v0.2**:
-same dump -> same score, weighted from osc/filter/FX/env-mod/arp with
-deductions for approximations (wavetable without bridge, BP/Notch/Comb, triple FX, arp).
-We will construct the real matching function later from the A/B comparisons
-(`recordings/sim_log.jsonl`) – that's why the feature vector
-(parsed parameters, unmapped, mapped) lands in `report.json` in the ZIP per sound.
+`webapp/matching.py` has two matchers:
+
+- **rf-prognose v0.3** (active as soon as a model is found): the numpy-only random
+  forest from `bloridium/prognose.py`, trained on the A/B measurements in
+  `recordings/sim_log.jsonl` (target=score, MAE 1.29 – see
+  `docs/HANDOVER-2026-11-19-rf-dataset.md`). Feature vector = the 367 SNDD bytes
+  (without the name bytes) / 127 – computed directly from the upload, no dump file
+  needed. Returns score 0-100 **plus the std over the trees** (± uncertainty).
+- **deterministic-placeholder v0.2** (fallback without model): purely
+  deterministic, weighted from osc/filter/FX/env-mod/arp with deductions for
+  approximations (wavetable without bridge, BP/Notch/Comb, triple FX, arp).
+
+Model path: `BLORIDIUM_MODEL` (default: auto-detect – `models/prognose_rf.pkl` in
+the repo, `/app/models/prognose_rf.pkl` in the container via volume mount).
+Per sound, the feature vector (parsed parameters, unmapped, mapped) also lands
+in `report.json` in the ZIP – that is the training data for re-training.
 
 ## Local development (without container)
 
@@ -96,5 +116,6 @@ python3 -m pytest tests/test_webapp.py -q
 | `DATA_TTL_HOURS` | `24` | Retention of the artifacts |
 | `MAX_UPLOAD_MB` | `8` | Upload limit |
 | `PORT` | `8000` | local dev server only |
-| `BLORIDIUM_CORE_DIR` | `/app/core` in the container | pure-python bloridium modules |
+| `BLORIDIUM_CORE_DIR` | `/app/core` in the container | pure-python bloridium modules (incl. `prognose.py`) |
 | `BLORIDIUM_TEMPLATE` | `/app/template_waveform.qpat` | qpat template |
+| `BLORIDIUM_MODEL` | `/app/models/prognose_rf.pkl` (mounted) | RF model for the prognosis; if missing -> fallback v0.2 |

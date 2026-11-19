@@ -62,9 +62,12 @@ def test_parse_upload_rejects_garbage():
     assert res["sounds"] == [] and res["skipped"] == 1
 
 
+NO_MODEL = "/nonexistent/prognose_rf.pkl"  # force the placeholder matcher
+
+
 def test_process_upload_zip(core, sample_sdata, tmp_path):
     syx = b"".join(_sndd_bytes(0, i, sample_sdata) for i in range(3))
-    report = convert.process_upload("bank-a-2019-06-17.syx", syx, tmp_path)
+    report = convert.process_upload("bank-a-2019-06-17.syx", syx, tmp_path, model_path=NO_MODEL)
     assert report["num_sounds"] == 3
     assert 0 <= report["avg_score"] <= 100
     zp = tmp_path / report["token"] / "result.zip"
@@ -91,11 +94,34 @@ def test_process_upload_zip(core, sample_sdata, tmp_path):
 
 def test_process_upload_deterministic(sample_sdata, tmp_path):
     syx = _sndd_bytes(0, 42, sample_sdata)
-    r1 = convert.process_upload("a.syx", syx, tmp_path)
-    r2 = convert.process_upload("a.syx", syx, tmp_path)
+    r1 = convert.process_upload("a.syx", syx, tmp_path, model_path=NO_MODEL)
+    r2 = convert.process_upload("a.syx", syx, tmp_path, model_path=NO_MODEL)
     s1 = [(s["location"], s["score"], s["penalties"]) for s in r1["sounds"]]
     s2 = [(s["location"], s["score"], s["penalties"]) for s in r2["sounds"]]
     assert s1 == s2  # same input -> same scores (deterministic)
+
+
+RF_MODEL = REPO / "models" / "prognose_rf.pkl"
+
+
+@pytest.mark.skipif(not RF_MODEL.exists(), reason="RF model models/prognose_rf.pkl not present (gitignored)")
+def test_rf_prognose(sample_sdata, tmp_path):
+    """With a trained model, the score comes from the RF (similarity v0.3)."""
+    syx = _sndd_bytes(0, 42, sample_sdata)  # A043 "SH Power"
+    r1 = convert.process_upload("a043.syx", syx, tmp_path, model_path=RF_MODEL)
+    r2 = convert.process_upload("a043.syx", syx, tmp_path, model_path=RF_MODEL)
+    s = r1["sounds"][0]
+    assert r1["matcher"].startswith("rf-prognose-v0.3")
+    assert r1["similarity_version"] == "v0.3"
+    assert r1["model"] == str(RF_MODEL)
+    assert 0.0 <= s["score"] <= 100.0 and s["std"] is not None and s["std"] >= 0
+    assert s["score"] == r2["sounds"][0]["score"]  # deterministic
+    # A043 measured mean label was 89.55 (HANDOVER-2026-11-19) -> prediction sane
+    assert 80.0 <= s["score"] <= 100.0
+    with zipfile.ZipFile(r1["zip_path"]) as zf:
+        rep = json.loads(zf.read("report.json"))
+        assert rep["matcher"].startswith("rf-prognose-v0.3")
+        assert "rf-prognose" in zf.read("MANIFEST.md").decode()
 
 
 def test_estimate_match_range_and_determinism(core, sample_sdata):
@@ -136,6 +162,7 @@ def test_estimate_prefers_exact_over_approx(core, sample_sdata):
 
 def test_flask_routes(core, sample_sdata, tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)  # placeholder path for stable assertions
     app = create_app()
     app.data_dir = tmp_path
     client = app.test_client()

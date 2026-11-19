@@ -26,10 +26,11 @@ import matching
 
 TOKEN_RE = re.compile(r"[0-9a-f]{32}")
 
-FOOTER = ('<footer>Info on <a href="https://untergeek.de">untergeek.de</a> &middot; '
-          'Repository of conversion tools: '
-          '<a href="https://github.com/untergeekDE/Bloridium">github.com/untergeekDE/Bloridium</a>'
-          f' &middot; conversion v{convert.CONVERSION_VERSION} / similarity v{matching.SIMILARITY_VERSION}</footer>')
+def footer(sim_ver: str) -> str:
+    return ('<footer>Info on <a href="https://untergeek.de">untergeek.de</a> &middot; '
+            'Repository of conversion tools: '
+            '<a href="https://github.com/untergeekDE/Bloridium">github.com/untergeekDE/Bloridium</a>'
+            f' &middot; conversion v{convert.CONVERSION_VERSION} / similarity v{sim_ver}</footer>')
 
 PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -60,7 +61,8 @@ PAGE = """<!doctype html>
 {body}
 </div></body></html>"""
 
-INDEX_BODY = f"""
+def index_body(score_note: str) -> str:
+    return f"""
 <h1>Bloridium Tool v{convert.CONVERSION_VERSION}</h1>
 <p class="sub"><b>Convert Blofeld Sound Banks for the Iridium</b></p>
 <p>Upload a Blofeld Midi Dump File (.SYX bank, e.g. from Sysex Librarian,
@@ -73,11 +75,24 @@ INDEX_BODY = f"""
 <p class="note"><b>NOTE:</b> Due to a host of technical issues, the converted sound is a very
   crude approximation on what you get on the Blofeld. Use it as a starting point,
   not as a 1:1 representation.</p>
-<p class="note">The match score shown after conversion is similarity
-  v{matching.SIMILARITY_VERSION} (deterministic placeholder &ndash; refined later from A/B
-  comparison results).</p>
-{FOOTER}
+<p class="note">The predicted match score shown after conversion is {score_note}.</p>
+{footer(_active_sim_version())}
 """
+
+
+def _active_sim_version() -> str:
+    mpath = matching.resolve_model_path(os.environ.get("BLORIDIUM_MODEL"))
+    return matching.SIMILARITY_VERSION if mpath else matching.PLACEHOLDER_VERSION
+
+
+def _score_note() -> str:
+    mpath = matching.resolve_model_path(os.environ.get("BLORIDIUM_MODEL"))
+    if mpath:
+        return (f'similarity v{matching.SIMILARITY_VERSION} &ndash; random-forest prognosis '
+                f'(model <code>{escape(mpath.name)}</code>, trained on A/B measurements, '
+                'see docs/HANDOVER-2026-11-19-rf-dataset.md)')
+    return (f'similarity v{matching.PLACEHOLDER_VERSION} &ndash; deterministic placeholder '
+            '(no trained model found; set BLORIDIUM_MODEL to enable the RF prognosis)')
 
 
 def create_app() -> Flask:
@@ -110,7 +125,7 @@ def create_app() -> Flask:
 
     @app.get("/")
     def index():
-        return page(INDEX_BODY)
+        return page(index_body(_score_note()))
 
     @app.get("/health")
     def health():
@@ -123,7 +138,8 @@ def create_app() -> Flask:
             return page('<p class="err">No file selected.</p><p><a href="/">back</a></p>'), 400
         data = f.read()
         try:
-            report = convert.process_upload(f.filename, data, app.data_dir)
+            report = convert.process_upload(f.filename, data, app.data_dir,
+                                            model_path=os.environ.get("BLORIDIUM_MODEL"))
         except convert.UploadError as e:
             return page(f'<p class="err">Invalid upload: {escape(str(e))}</p>'
                         '<p><a href="/">back</a></p>'), 400
@@ -162,7 +178,9 @@ def _zip_name(tdir: Path) -> str:
 def _results_html(report: dict) -> str:
     rows = []
     for s in report["sounds"]:
-        pens = "; ".join(s["penalties"]) or "–"
+        pens = "; ".join(s.get("penalties") or []) or "–"
+        if s.get("std") is not None:
+            pens = f"±{s['std']} (RF tree std); " + pens
         width = max(2, round(s["score"]))
         rows.append(
             f"<tr><td><code>{escape(s['location'])}</code></td>"
@@ -172,13 +190,15 @@ def _results_html(report: dict) -> str:
             f"<td>{s['mapped']}</td><td>{len(s['unmapped'])}</td></tr>")
     errs = "".join(f'<li>Message {e["index"]}: {escape(e["error"])}</li>'
                    for e in report.get("errors", []))
+    matcher = escape(report.get("matcher") or "")
+    model = f", model <code>{escape(Path(report['model']).name)}</code>" if report.get("model") else ""
     return f"""
 <h1>Bloridium Tool v{convert.CONVERSION_VERSION}</h1>
 <p class="sub">Results for <code>{escape(report['source_file'])}</code>:
   {report['num_sounds']} sounds converted, {report['num_errors']} errors,
   {report['skipped_messages']} non-sound messages skipped &ndash;
-  avg score <b>{report['avg_score']:.1f}</b> (similarity v{matching.SIMILARITY_VERSION},
-  deterministic placeholder)</p>
+  avg predicted score <b>{report['avg_score']:.1f}</b>
+  (similarity {escape(report.get('similarity_version', ''))}, {matcher}{model})</p>
 <p><a href="/download/{report['token']}"><button>Download ZIP ({escape(report['zip_name'])})</button></a>
    <a href="/report/{report['token']}">report.json</a></p>
 <table><tr><th>Loc</th><th>Name</th><th>Category</th><th>Score</th><th></th>
@@ -187,7 +207,7 @@ def _results_html(report: dict) -> str:
 </table>
 {('<p class="err"><b>Errors:</b></p><ul>' + errs + '</ul>') if errs else ''}
 <p><a href="/">Convert another file</a></p>
-{FOOTER}
+{footer(report.get('similarity_version', '').lstrip('v'))}
 """
 
 
