@@ -65,7 +65,9 @@ def test_convert_parsed_writes_qpat(repo, tmp_path):
     out_path, mapped, unmapped = workflow.convert_parsed(
         parsed, "A043", tmp_path, repo / TEMPLATE)
     assert out_path.exists() and out_path.suffix == ".qpat"
-    assert out_path.name == "SH Power_A043.qpat"  # legacy naming convention from step3
+    # SD-sicherer Name per Konversion (qpat.sd_filename, 2026-11-20)
+    assert out_path.name == "A043_SH_Power.qpat"
+    assert " " not in out_path.name
     assert mapped > 0
     assert isinstance(unmapped, list) and len(unmapped) > 0
     q = qpat.load(out_path)

@@ -103,6 +103,20 @@ def load(path) -> dict:
     return parse_qpat(Path(path).read_bytes())
 
 
+def sd_filename(loc: str, name: str) -> str:
+    """SD-sicherer qpat-Dateiname `<LOC>_<Name>.qpat` — keine Leerzeichen, nur
+    [A-Za-z0-9-_.], damit QUIR-Shell-Pfade (`load-patch 2:<dir>/<file>`) nie brechen.
+
+    Leerzeichen -> '_', Sonderzeichen gestrichen, fuehrende/abschliessende '.'/'_'
+    entfernt; leer -> loc als Fallback ('JMX jun.' -> 'A001_JMX_jun.qpat').
+    (2026-11-20: Conversion schreibt Dateien direkt mit diesem Namen, plain cp
+    auf die SD reicht; identisch zum bisherigen quir_rf_dataset.sd_name.)"""
+    base = (name or "").strip().replace(" ", "_")
+    base = "".join(c for c in base if c.isalnum() or c in "-_")
+    base = base.strip("._") or loc
+    return f"{loc}_{base}.qpat"
+
+
 def build_qpat(name: str, params: dict, creator: str = "bloridium",
                 description: str = "", categories: list | None = None,
                 version: int = PRESET_VERSION, sample_maps: list | None = None,

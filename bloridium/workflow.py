@@ -138,8 +138,9 @@ def convert_parsed(parsed: dict, loc: str, out_dir, template_path=None) -> tuple
     merged = qpat_map.apply_to_template(template, overrides, name=parsed["name"])
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    safe = "".join(c if c.isalnum() or c in "-_ " else "_" for c in parsed["name"]).strip() or loc
-    out_path = out_dir / f"{safe}_{loc}.qpat"
+    # SD-sicherer Name per Konversion (qpat.sd_filename): plain cp auf die SD
+    # reicht, QUIR-load-patch-Pfade haben nie Leerzeichen (2026-11-20).
+    out_path = out_dir / qpat.sd_filename(loc, parsed["name"])
     out_path.write_bytes(qpat.build_qpat(
         merged["name"], merged["params"], creator=merged["creator"],
         description=merged["description"], categories=merged["categories"],
