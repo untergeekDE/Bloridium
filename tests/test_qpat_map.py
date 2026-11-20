@@ -529,3 +529,94 @@ def test_reverb_fx2_mix_via_matrix_slot_and_params():
     amt = ov[dw[0].replace("Dst", "Amount")][0]
     assert amt == pytest.approx(0.5 + 0.5 * 64 / 127)
     assert not any("Mix for Reverb" in u for u in unmapped)
+
+
+# --- Task 3 (2026-11-20): LFO Shape/Delay/Phase + Mixer Noise -> freier Osc -----
+
+def _parsed_with(param_fixes: dict, sdata_fixes: dict | None = None):
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMP))
+    parsed["params"].update(param_fixes)
+    if sdata_fixes:
+        sd = bytearray(parsed["sdata"])
+        for i, v in sdata_fixes.items():
+            sd[i] = v
+        parsed["sdata"] = bytes(sd)
+    return parsed
+
+
+def test_lfo_shape_delay_phase_mapped():
+    parsed = _parsed_with({"LFO 1 Shape": "Saw", "LFO 1 Delay": 30,
+                           "LFO 1 Start Phase": 64})
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Lfo1Shape"][0] == 4.0                       # Saw -> Saw (up)
+    assert ov["Lfo1Delay"][0] == pytest.approx(30 / 127)
+    assert ov["Lfo1Phase"][0] == pytest.approx(64 / 127)
+    assert not any(u.startswith("LFO 1") and "Shape" in u for u in un)
+
+
+def test_lfo_shape_enum_covers_all_blofeld_shapes():
+    # Enum aus 1186 Factory-qpats (Quantum_Factories.zip): 0 Sine, 1 Triangle,
+    # 2 Square, 3 Saw(down), 4 Saw(up), 5 S&H. Blofeld "Random" -> S&H (Naeherung).
+    expect = {"Sine": 0.0, "Triangle": 1.0, "Square": 2.0,
+              "Saw": 4.0, "Random": 5.0, "S&H": 5.0}
+    for label, val in expect.items():
+        parsed = _parsed_with({"LFO 2 Shape": label})
+        ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+        assert ov["Lfo2Shape"][0] == val, label
+
+
+def test_noise_on_free_osc3_white():
+    # Osc 3 freimachen (Shape raw 40 = 0 -> Off) und Noise einschalten
+    parsed = _parsed_with({"Mixer Noise Level": 40, "Mixer Noise Balance": 96,
+                           "Mixer Noise Colour": 100, "Osc 3 Shape": "Off"},
+                          {40: 0})
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc3Type"][0] == qpat_map.OSC_TYPE["Waveform"]
+    assert ov["Osc3WaveformShape"][0] == 5.0               # Colour > 64 -> White Noise
+    assert ov["Osc3Vol"][0] == pytest.approx(40 / 127)
+    assert ov["Osc3Pan"][0] == pytest.approx(96 / 127)     # Balance bipolar -> Pan
+    assert ov["Osc3Destination"][0] == 2.0                 # wie die anderen Oscs ins Filter
+    assert not any("Noise" in u for u in un)
+
+
+def test_noise_colour_dark_maps_pink():
+    parsed = _parsed_with({"Mixer Noise Level": 20, "Mixer Noise Colour": 10,
+                           "Osc 3 Shape": "Off"}, {40: 0})
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc3WaveformShape"][0] == 4.0               # Pink Noise
+
+
+def test_noise_without_free_osc_stays_unmapped_and_keeps_oscs():
+    # alle 3 Oscs belegt -> Noise kann nicht untergebracht werden, Oscs duerfen
+    # NICHT ueberschrieben werden
+    parsed = _parsed_with({"Mixer Noise Level": 40, "Osc 1 Shape": "Saw",
+                           "Osc 2 Shape": "Saw", "Osc 3 Shape": "Saw"},
+                          {8: 1, 24: 1, 40: 1})
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    for n in (1, 2, 3):
+        assert ov[f"Osc{n}Type"][0] == qpat_map.OSC_TYPE["Waveform"]
+    assert any("Noise" in u for u in un)
+
+
+def test_noise_level_zero_leaves_oscs_untouched():
+    parsed = _parsed_with({"Mixer Noise Level": 0, "Osc 3 Shape": "Off"}, {40: 0})
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc3Type"][0] == qpat_map.OSC_TYPE["Off"]
+    assert not any("Noise" in u for u in un)
+
+
+def test_noise_uses_muted_osc_and_noise_mod_dst():
+    # Osc 3 Level 0 (stumm) -> darf als Noise-Osc verwendet werden; Mod-Dst
+    # NoiseLevel/Noise Bal. -> Osc3 Mix/Pan
+    parsed = _parsed_with({"Mixer Noise Level": 30, "Mixer Noise Colour": 100,
+                           "Mixer Osc 3 Level": 0,
+                           "Modulation 1 Source": "LFO 1", "Modulation 1 Destination": "NoiseLevel",
+                           "Modulation 1 Amount": 64,
+                           "Modulation 2 Source": "AmpEnv", "Modulation 2 Destination": "Noise Bal.",
+                           "Modulation 2 Amount": 64})
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc3WaveformShape"][0] == 5.0
+    assert ov["Osc3Vol"][0] == pytest.approx(30 / 127)
+    assert ov["MatrixDst1"][1] == "Osc3 Mix"
+    assert ov["MatrixDst2"][1] == "Osc3 Pan"
+    assert not any("Noise" in u for u in un)

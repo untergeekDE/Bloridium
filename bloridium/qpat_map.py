@@ -93,6 +93,12 @@ BLOFELD_FX_TO_IRIDIUM = {
 
 # ---- Iridium routing/matrix enums (values from dumps/export-001 = own OS4 exports, qpat v14) ----
 OSC_DESTINATION = {"Main": 0.0, "VCA": 1.0, "DF 0 Fil 100": 2.0, "DF 100 Fil 0": 22.0}
+# Blofeld LFO shape -> Iridium LfoNShape. Enum aus 1186 Factory-qpats
+# (docs/refs/Quantum_Factories.zip, Histogramm): 0 Sine, 1 Triangle, 2 Square,
+# 3 Saw (down), 4 Saw (up), 5 S&H. Blofeld "Saw" -> Saw (up); Blofeld "Random"
+# hat kein Iridium-Pendant -> S&H als Naeherung (2026-11-20).
+BLO_LFO_SHAPE_TO_IRIDIUM = {"Sine": 0.0, "Triangle": 1.0, "Square": 2.0,
+                           "Saw": 4.0, "S&H": 5.0, "Random": 5.0}
 FILTER_FORMER_ROUTING = {"Former > Filter": 0.0, "Filter > Former": 1.0, "Parallel": 2.0}
 FILTER_LINK = {"Single": 0.0, "Boost": 1.0, "Independent": 6.0, "Linked": 7.0}
 # Filter2State (v14/v15 same values: 0=Active, 1=Bypass, 2=Off).
@@ -368,6 +374,32 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # (A071/A008 had sync=1 and landed unmapped -> "no sync on the Iridium").
     if p.get("Osc 2 Sync to O3"):
         setp("Osc2WaveformSync", 1.0, "Sync on")
+    # --- Mixer-Noise -> freier Iridium-Osc als Noise-Quelle (2026-11-20) ---
+    # Blofeld "Mixer Noise Level/Balance/Colour" hat keinen direkten qpat-Key; der
+    # Iridium hat keinen eigenen Noise-Mixer-Eintrag, aber ein Osc KANN Noise sein
+    # (OscNType=Waveform + WaveformShape White/Pink). Nur einen FREIEN Osc-Slot
+    # verwenden (bevorzugt Osc3) - einen klingenden Osc nie ueberschreiben.
+    # Colour: <=64 dunkler -> Pink, >64 -> White. Balance bipolar um 64 -> Pan.
+    noise_level = p.get("Mixer Noise Level", 0)
+    noise_osc = None
+    if noise_level:
+        # frei = Osc aus (Shape off) ODER stumm (Mixer Osc N Level == 0)
+        free = next((n for n in (3, 2, 1)
+                     if ov.get(f"Osc{n}Type", (None,))[0] == OSC_TYPE["Off"]
+                     or p.get(f"Mixer Osc {n} Level", 127) == 0), None)
+        noise_osc = free
+        if free is None:
+            unmapped.append("Mixer Noise Level (all 3 oscillators in use - "
+                            "no free Iridium osc slot)")
+        else:
+            colour = p.get("Mixer Noise Colour", 64)
+            white = colour > 64
+            setp(f"Osc{free}Type", OSC_TYPE["Waveform"], "Waveform (noise)")
+            setp(f"Osc{free}WaveformShape", 5.0 if white else 4.0,
+                 "White Noise" if white else "Pink Noise")
+            setp(f"Osc{free}Vol", norm(noise_level))
+            setp(f"Osc{free}Pan", norm(p.get("Mixer Noise Balance", 64)))
+            setp(f"Osc{free}Destination", OSC_DESTINATION["DF 0 Fil 100"], "DF 0 Fil 100")
     # (Osc Pitch Source/Amount now mapped as matrix slot -> Pitch, see below)
 
     # --- glide / unisono ---
@@ -389,7 +421,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # --- mixer extras ---
     # key is called "RingModOsc1ToOsc2" in the template/device (not "RingmodOsc12"!)
     setp("RingModOsc1ToOsc2", norm(p.get("Mixer RingMod Level", 0)))
-    unmapped += ["Mixer Noise Level/Balance/Colour (no direct qpat key)"]
+    # Mixer Noise wird unten behandelt (freier Osc als Noise-Quelle, 2026-11-20)
 
     # --- Filter ---
     f1_label = p["Filter 1 Type"]
@@ -485,7 +517,13 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             setp(f"Lfo{n}Speed", norm(raw))
         else:
             setp(f"Lfo{n}Speed", norm(raw))
-        unmapped.append(f"LFO {n} Shape/Delay/Fade/Keytrack")
+        shape = p.get(f"LFO {n} Shape")
+        if isinstance(shape, str) and shape in BLO_LFO_SHAPE_TO_IRIDIUM:
+            setp(f"Lfo{n}Shape", BLO_LFO_SHAPE_TO_IRIDIUM[shape], shape)
+        setp(f"Lfo{n}Phase", norm(p.get(f"LFO {n} Start Phase", 64)))
+        setp(f"Lfo{n}Delay", norm(p.get(f"LFO {n} Delay", 0)))
+        # Fade/Keytrack haben kein Iridium-LFO-Pendant (verbleiben unmapped)
+        unmapped.append(f"LFO {n} Fade/Keytrack")
 
     # --- routing: Blofeld Osc->Mixer->F1->F2->Amp corresponds to Iridium
     #     Osc Destination 'DF 0 Fil 100' (100 % into the filter; Former share 0 -
@@ -511,6 +549,9 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         slot += 1
         s_disp = BLOFELD_MOD_SRC.get(src)
         d_disp = BLOFELD_MOD_DST.get(dst)
+        if d_disp is None and noise_osc and dst in ("NoiseLevel", "Noise Bal."):
+            # Blofeld-Modulation auf den Noise-Mixer -> Iridium Osc-Mix/Pan des Noise-Osc
+            d_disp = f"Osc{noise_osc} Mix" if dst == "NoiseLevel" else f"Osc{noise_osc} Pan"
         if d_disp is None and isinstance(dst, str) and dst.endswith("PW/Wave"):
             # Blofeld "O1 PW/Wave": wavetable position for a wavetable osc, else WF warp (PW)
             try:
