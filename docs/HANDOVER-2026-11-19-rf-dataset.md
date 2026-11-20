@@ -89,6 +89,26 @@ Tweak-Loop: Ausreißer (loc-mean) **A091 87.78, A097 87.94, A043 89.55, A044 89.
   → Zuverlässiges Tweaken braucht Mehrfachmessung pro Trial oder `--embed` als Ziel.
   Phase-B-Diagnose der Ausreißer (A091 A043 A044 A025 A097): `recordings/quir_ab_sweep_rf_outliers_phaseb.jsonl` + PNGs in `../bloridium-codesearch/recordings/spec_rf/`.
 
+## 6c. Migration auf Score v2 (2026-11-20) — Modelle sind jetzt v2-trainiert
+
+- `sim.py` rechnet seit 2026-11-20 mit **SCORE_VERSION 2** (`70 % spec_mad + 30 % env_dtw`);
+  jede neue Zeile trägt `result.score_version: 2`. v1-Zeilen (gesättigt ~94–97) sind im
+  `sim_log.jsonl` weiterhin vorhanden, werden aber von `prognose train` per Default
+  übersprungen (`--min-score-version 2`; `0` = alle, nie mischen!).
+- v2-Datensatz: 200 Messungen A001–A100 (notes 72,60, neue Konversion rf200 auf SD),
+  188 gescored, **mean 50.5, range 22.4–81.3** — `recordings/sim_log_v2_rf.jsonl`
+  (gefiltert: v2 + mode=rf-dataset; das Roh-Log `sim_log.jsonl` enthält v1+v2 gemischt).
+- Retrain: `bloridium prognose train --log recordings/sim_log_v2_rf.jsonl --target score`
+  → n=99, MAE 10.47, **R²=+0.064 / R²_cv=+0.132** (v1-Modell: R²<0). Alte Modelle:
+  `models/prognose_rf_v1.pkl`, `prognose_rf_combined_v1.pkl`.
+- Entropy-Check (`bloridium prognose entropy --log recordings/sim_log_v2_rf.jsonl`):
+  H(y)=3.14 bits; **embed_score partielle IG 0.63 bits gegeben spec_mad_db** (d1-profile
+  0.60, llm konstant). embed/d1 sind post-hoc (Leakage als Input-Feature) → nur als
+  Label/diagnostisch, nicht für die Dump→Score-Vorhersage.
+- Conversion 2026-11-20: LFO Shape/Phase/Delay + Mixer-Noise (freier/stummer Osc als
+  White/Pink Noise) + Sync (bereits gedeckt) gemappt; qpat-Dateinamen sind per Konversion
+  SD-sicher (`qpat.sd_filename`) — plain cp auf die SD reicht.
+
 ## 7. Stand 2026-11-19 (finaler Tweak-Loop-Abschluss 12:20)
 
 Phase-B-Diagnose der Ausreißer (A091 A043 A044 A025 A097, `--embed --llm --norm-pegel

@@ -127,10 +127,10 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
 `recordings/quir_rf_dataset_config_v2.json` (remote `2:rf200/...`, slots 200–299)
 
 - [x] Step 1: `verify-sd` 100/100 auf `2:rf200` (nach Iridium-Reboot — QUIR war nach SD-Wechsel tot, Reboot hat geholfen) (nach SD-Kopie) grün — sonst STOP vor Recording
-- [~] Step 2: `measure` läuft (Hintergrund rf_v2_measure.log): alle 100 × notes 72,60, v2 + --embed --norm-pegel; danach 24-Loc-Subset mit --llm --profile (d1) (notes 72,60) mit `--allow-write`, Scoring v2
+- [x] Step 2: `measure` durch: FULL 200 rows/100 locs (188 scored, v2 mean 50.5), Subset 48 rows mit llm+d1; ffmpeg-Timeout-Bug gefixt (audio.py) und via --resume fortgesetzt (Hintergrund rf_v2_measure.log): alle 100 × notes 72,60, v2 + --embed --norm-pegel; danach 24-Loc-Subset mit --llm --profile (d1) (notes 72,60) mit `--allow-write`, Scoring v2
   (automatisch), `--embed` für alle, `--llm --profile` (d1) auf Subset (5 Outlier + ~25
   Zufall) wegen Laufzeit; Zeilen in `recordings/sim_log.jsonl` mit `score_version: 2`
-- [ ] Step 3: Nach Lauf: quick entropy-report auf den neuen v2-Zeilen
+- [x] Step 3: entropy auf n=99 v2: H=3.14 bits, embed partielle IG 0.63 bits > spec_mad hinaus; llm konstant
 
 ### Task 6: Retrain + Ship
 
@@ -142,9 +142,7 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
 - Output: `models/prognose_rf.pkl` (v2, ersetzt v1 nach Vergleich; alt als `prognose_rf_v1.pkl`
   behalten — Pattern `prognose_rf*.pkl` ist getrackt)
 
-- [ ] Step 1: `prognose train --log recordings/sim_log.jsonl --target score` (v2-Default) →
-  neue Metriken vs. alt (n=99 MAE 1.29 R²<0) loggen
-- [ ] Step 2: Entscheidung Extra-Features anhand entropy-report; ggf. retrain mit
-  `--extra-features`
-- [ ] Step 3: Modell speichern, `predict_loc` Smoke-Test auf A091/A043
-- [ ] Step 4: Doku aktualisieren, Tests gesamt grün, commit + push (Bloridium + codesearch)
+- [x] Step 1: `prognose train --log recordings/sim_log_v2_rf.jsonl --target score` → n=99 MAE 10.47 R²=+0.064 R²_cv=+0.132 (alt v1: MAE 1.29 R²<0; MAE nicht vergleichbar — v2-Labels streuen 22–84)
+- [x] Step 2: Entscheidung: embed/d1 haben partielle IG, sind aber post-hoc (Leakage) → KEINE Extra-Features; `score` als Label shippen (combined bleibt R²<0)
+- [x] Step 3: Modell speichern, `predict_loc` Smoke-Test auf A091/A043
+- [x] Step 4: Doku aktualisieren, Tests gesamt grün, commit + push (Bloridium + codesearch)

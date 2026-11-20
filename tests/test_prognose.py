@@ -90,7 +90,7 @@ def test_load_training_rows_aggregates_and_skips(tmp_path):
     assert X.shape == (1, 367)
     assert locs == ["A043"]
     assert y[0] == pytest.approx(np.mean([80.0, 90.0, 70.0]))  # Aggregation pro Loc
-    assert len(skipped) == 2 and any("fehler" in s for s in skipped)
+    assert len(skipped) == 2 and any("error/silent" in s for s in skipped)
 
 
 # --- Train / Predict ---
