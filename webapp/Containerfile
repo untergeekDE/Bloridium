@@ -1,6 +1,6 @@
 # Bloridium Web-App – Blofeld-Dump -> Iridium-.qpat (Upload, ZIP, Match-Schaetzung)
 # Build-Kontext ist das Repo-Root:
-#   docker build -f webapp/Dockerfile -t bloridium-web .
+#   podman build -f webapp/Containerfile -t bloridium-web .   (docker build -f … works the same)
 FROM python:3.12-slim-bookworm
 
 ENV PYTHONUNBUFFERED=1 \
@@ -18,11 +18,15 @@ WORKDIR /app
 COPY webapp/requirements.txt ./
 RUN pip install -r requirements.txt
 
-# App + nur die pure-python-Core-Module (kein numpy/mido/rtmidi noetig)
+# App + pure-python core modules (no mido/rtmidi; prognose needs numpy only).
+# The RF model (models/prognose_rf.pkl, ~0.9 MB, git-tracked since 64c73e3) is baked in
+# at /app/models/, where matching.resolve_model_path() finds it. To use another model,
+# mount over it: -v <dir>:/app/models:ro  or set BLORIDIUM_MODEL=/path/to/model.pkl
 COPY webapp/app.py webapp/convert.py webapp/matching.py ./
 COPY webapp/static ./static
-COPY bloridium/blofeld_dump.py bloridium/qpat.py bloridium/qpat_map.py bloridium/waldorf.py ./core/
+COPY bloridium/blofeld_dump.py bloridium/qpat.py bloridium/qpat_map.py bloridium/waldorf.py bloridium/prognose.py bloridium/version.py ./core/
 COPY docs/refs/qpat/template_waveform.qpat ./template_waveform.qpat
+COPY models/prognose_rf.pkl ./models/prognose_rf.pkl
 
 RUN mkdir -p /data
 VOLUME ["/data"]

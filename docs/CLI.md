@@ -124,7 +124,7 @@ bloridium explore [--csv PATH] [--log PATH] [--port NAME] [--channel N] [--liste
 - `scripts/sim_compare.py --npy A.npy B.npy` – offline from .npy takes
 - `scripts/sim_compare.py --live [--note 60] [--blofeld A043] [--iridium-slot 207]` – measure live
 - `scripts/sim_live.py --param "Filter1 Cutoff" --value 90 [--ref ref.npy]` – turn CC + measure
-- Score 0-100 (70 % spectrogram cosine + 30 % envelope DTW) + band deltas; log: `recordings/sim_log.jsonl`
+- Score 0-100 (score_version 2: 70 % level-aligned band deviation `1 - spec_mad_db/20 dB` + 30 % envelope DTW) + band deltas; the v1 cosine is kept as `spec_cos`; log: `recordings/sim_log.jsonl`
 - CC/pid resolution: `bloridium/ccmap.py` (`docs/midi-maps/iridium_pid_map.csv`)
 
 ## Tests

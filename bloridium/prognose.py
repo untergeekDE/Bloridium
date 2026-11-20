@@ -1,15 +1,18 @@
-"""prognose.py – Random Forest (numpy-only, CPU): Blofeld-SNDD-Parameter -> erwartete
-Konvertierguete (0-100).
+"""prognose.py – random forest (numpy-only, CPU): Blofeld SNDD parameters -> expected
+conversion quality (0-100).
 
-Warum kein sklearn: scipy ist in dieser Env defekt (libgfortran fehlt) und der
-Repo-Kern ist numpy-only – daher ein kompakter eigener RandomForestRegressor
-(CART-Regression, Bootstrap, mtry=sqrt(p), Gini-aehnliche SSE-Gewinnmetrik).
-Persistenz via stdlib pickle (kein joblib noetig).
+Why no sklearn: scipy was broken in the author's env (libgfortran missing) and the
+repo core is numpy-only – hence a compact own RandomForestRegressor
+(CART regression, bootstrap, mtry=p//3, SSE gain metric).
+Persistence via stdlib pickle (no joblib needed). Only load model files you trust.
 
-Features: SDATA-Bytes der SNDD (Indizes 0..382 ohne Namens-Bytes 363..378) / 127.
-Label: sim_log.jsonl – pro Location (meta.blofeld) das Mittel ueber result[target]
-(Default "combined", Fallback "score"). Dumps: dumps/blofeld_sndd_<LOC>_<ts>.bin
-(Location steht auch im SysEx-Header bb/nn).
+Caveat (2026-11-20): the shipped model (n=99) has R² < 0 on held-out data, and its
+label (sim.compare "score") saturates – see FIXES_TODO.md before relying on it.
+
+Features: SDATA bytes of the SNDD (indices 0..382 without name bytes 363..378) / 127.
+Label: sim_log.jsonl – per location (meta.blofeld) the mean over result[target]
+(default "combined", fallback "score"). Dumps: dumps/blofeld_sndd_<LOC>_<ts>.bin
+(the location is also in the SysEx header bb/nn).
 """
 
 from __future__ import annotations
@@ -37,7 +40,7 @@ FEATURE_IDX = [i for i in range(SDATA_SIZE) if i not in NAME_IDX]   # 367 Featur
 # --------------------------------------------------------------------------
 
 class _Tree:
-    """CART-Regressionbaum: bester SSE-Split ueber mtry zufaellige Features."""
+    """CART regression tree: best SSE split over mtry random features."""
 
     def __init__(self, mtry: int, max_depth: int, min_samples_leaf: int, rng):
         self.mtry = mtry
@@ -67,7 +70,7 @@ class _Tree:
 
     def _best_split(self, X, y):
         n, p = X.shape
-        # Split-Finden auf max. 64 Zeilen subsamplen (Speed; Partition selbst auf allen)
+        # subsample split search to max. 64 rows (speed; the partition itself uses all rows)
         if n > 64:
             sub = self.rng.choice(n, size=64, replace=False)
             X, y = X[sub], y[sub]
@@ -84,7 +87,7 @@ class _Tree:
             ys = y[order]
             c1 = np.cumsum(ys)
             c2 = np.cumsum(ys * ys)
-            # Schwellen an eindeutigen Mittelwerten, auf max_thr begrenzt
+            # thresholds at unique midpoints, capped at max_thr
             uniq = np.unique(cs)
             if uniq.size < 2:
                 continue
@@ -137,8 +140,8 @@ class RandomForestRegressor:
         y = np.asarray(y, dtype=np.float64).ravel()
         n, p = X.shape
         self.n_features_ = p
-        # Regression: p//3 wie sklearn-Regression-Default – bei wenigen
-        # informativen Features unter 367 wuerde sqrt(p) das Signal verpassen
+        # regression: p//3 like the sklearn regression default – with few
+        # informative features among 367, sqrt(p) would miss the signal
         mtry = max(1, p // 3) if self.max_features == "third" else p
         rng = np.random.default_rng(self.random_state)
         self.estimators_ = []
@@ -162,7 +165,7 @@ class RandomForestRegressor:
 # --------------------------------------------------------------------------
 
 def param_names() -> list[str]:
-    """Blofeld-Parameternamen parallel zu FEATURE_IDX (aus blofeld_dump.SDATA)."""
+    """Blofeld parameter names parallel to FEATURE_IDX (from blofeld_dump.SDATA)."""
     out = []
     for i in FEATURE_IDX:
         entry = blofeld_dump.SDATA.get(i)
@@ -171,13 +174,13 @@ def param_names() -> list[str]:
 
 
 def feature_vector(parsed: dict) -> np.ndarray:
-    """SNDD-Parametervektor (367,) in [0,1] aus parse_sndd-Ergebnis."""
+    """SNDD parameter vector (367,) in [0,1] from a parse_sndd result."""
     sd = parsed["sdata"]
     return np.array([sd[i] for i in FEATURE_IDX], dtype=np.float64) / 127.0
 
 
 def loc_from_header(data: bytes) -> str:
-    """Location ('A043') aus den SysEx-Header-Bytes (bb/nn), mit/ohne F0/F7."""
+    """Location ('A043') from the SysEx header bytes (bb/nn), with/without F0/F7."""
     d = list(data)
     if d and d[0] == 0xF0:
         d = d[1:]
@@ -188,7 +191,7 @@ def loc_from_header(data: bytes) -> str:
 
 
 def find_dump(dumps_dir, loc: str) -> Path:
-    """Neuester SNDD-Dump (*.bin) mit passender Location im Header."""
+    """Newest SNDD dump (*.bin) with a matching location in the header."""
     dumps_dir = Path(dumps_dir)
     best = None
     for p in sorted(dumps_dir.glob("*.bin")):
@@ -199,15 +202,20 @@ def find_dump(dumps_dir, loc: str) -> Path:
         except Exception:
             continue
     if best is None:
-        raise FileNotFoundError(f"kein SNDD-Dump fuer {loc} in {dumps_dir}")
+        raise FileNotFoundError(f"no SNDD dump for {loc} in {dumps_dir}")
     return best
 
 
-def load_training_rows(log_path, dumps_dir, target: str = "combined"):
-    """JSONL-Log + Dumps -> (X, y, locs, skipped).
+def load_training_rows(log_path, dumps_dir, target: str = "combined",
+                       min_score_version: int | None = None):
+    """JSONL log + dumps -> (X, y, locs, skipped).
 
-    Aggregation pro Location (Mittel ueber alle Target-Werte dieser Loc).
-    fehler/stille Eintraege und Locs ohne validen Dump landen in `skipped`.
+    Aggregated per location (mean over all target values of that loc).
+    error/silent entries and locs without a valid dump end up in `skipped`.
+
+    min_score_version: skip rows whose result.score_version is lower (rows
+    without the field count as version 1, i.e. the saturating pre-2026-11-20
+    score). None = no filter (library default, keeps old behaviour).
     """
     log_path = Path(log_path)
     per_loc: dict[str, list[float]] = {}
@@ -220,21 +228,26 @@ def load_training_rows(log_path, dumps_dir, target: str = "combined"):
             try:
                 e = json.loads(line)
             except json.JSONDecodeError:
-                skipped.append("ungueltige JSON-Zeile im Log")
+                skipped.append("invalid JSON line in the log")
                 continue
             meta, res = e.get("meta") or {}, e.get("result") or {}
             loc = meta.get("blofeld")
             if not loc:
-                skipped.append("Eintrag ohne meta.blofeld")
+                skipped.append("entry without meta.blofeld")
                 continue
-            if res.get("verdict") == "fehler" or res.get("score") is None:
-                skipped.append(f"{loc}: fehler/stumm ({res.get('error')})")
+            if res.get("verdict") in ("error", "fehler") or res.get("score") is None:
+                skipped.append(f"{loc}: error/silent ({res.get('error')})")
+                continue
+            if min_score_version is not None and \
+                    int(res.get("score_version") or 1) < min_score_version:
+                skipped.append(f"{loc}: score_version {res.get('score_version') or 1} "
+                               f"< {min_score_version}")
                 continue
             v = res.get(target)
             if v is None:
                 v = res.get("score")
             if v is None:
-                skipped.append(f"{loc}: weder '{target}' noch 'score' vorhanden")
+                skipped.append(f"{loc}: neither '{target}' nor 'score' present")
                 continue
             per_loc.setdefault(loc, []).append(float(v))
     X, y, locs = [], [], []
@@ -242,7 +255,7 @@ def load_training_rows(log_path, dumps_dir, target: str = "combined"):
         try:
             dump = find_dump(dumps_dir, loc)
         except FileNotFoundError:
-            skipped.append(f"{loc}: kein Dump in {dumps_dir}")
+            skipped.append(f"{loc}: no dump in {dumps_dir}")
             continue
         parsed = blofeld_dump.parse_sndd(dump.read_bytes())
         if not parsed["chk_ok"]:
@@ -270,7 +283,7 @@ def train_model(X, y, seed: int = 42, n_estimators: int = 200, test_size: float 
     """RF trainieren -> Bundle {model, metrics, importances, …}.
 
     Holdout-Metriken (MAE/RMSE/R²) wenn n gross genug, sonst Train-Metriken;
-    5-fold-CV-R² nur bei n >= 10. Deterministisch via seed.
+    5-fold CV R² only for n >= 10. Deterministic via seed.
     """
     X = np.asarray(X, dtype=np.float64)
     y = np.asarray(y, dtype=np.float64).ravel()
@@ -327,9 +340,9 @@ def load_model(path) -> dict:
 
 
 def predict_loc(loc: str, dumps_dir, model_path) -> dict:
-    """Vorhersage fuer eine Blofeld-Location mit gespeichertem Modell.
+    """Predict one Blofeld location with a saved model.
 
-    std = Standardabweichung ueber die einzelnen Baume (Unsicherheit der Prognose).
+    std = standard deviation over the individual trees (prediction uncertainty).
     """
     bundle = load_model(model_path)
     dump = find_dump(dumps_dir, loc)

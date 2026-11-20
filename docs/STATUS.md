@@ -1,5 +1,7 @@
 # STATUS – Bloridium (handoff for the new session; supersedes the earlier handover notes, see docs/HANDOVER-2026-11-*.md)
 
+> **Note (2026-11-20):** sections 1-8 reflect the state of 2026-11-08 and are partly outdated (e.g. sections 7/8). Current entry points: `README.md`, `docs/CLI.md`, `docs/CONFIG.md`, `FIXES_TODO.md`.
+
 As of: 2026-11-08. Everything below was empirically verified on the real setup (Mac + Scarlett 18i8 + Blofeld + Iridium Keyboard OS4/SOM2), unless explicitly marked as "open".
 
 ## 1. Goal
@@ -86,7 +88,7 @@ Transfer synth programs **Blofeld -> Iridium**: read dumps, compare parameter st
 ## 6. Workflows (copy-paste)
 
 ```bash
-cd /Users/jan/Code/Bloridium
+cd Bloridium   # repo root
 # read + parse Blofeld dump
 python3 scripts/step2_read_blofeld_dump.py A043
 python3 scripts/step2_parse_blofeld_dump.py dumps/blofeld_sndd_A043_*.bin

@@ -163,3 +163,27 @@ Helpers: `bloridium/waldorf.py` (`build_sysex`, `parse_sysex`, `identity_reply_i
 - After reboot (preset 0039 "Stepping Out" = SPLIT): ch6 note36 = -26 dBFS,
   note60 = -59 (split at C4); ch7 note60 = -36 dBFS. => For A/B use a lower note
   (36) or address all part channels 6-9.
+
+## Similarity score saturation (2026-11-20)
+
+- **The v1 `sim.compare()["score"]` could not tell timbres apart.** Its spectral part (70 %) was the
+  cosine of two frame-averaged log spectra in raw dB. Those vectors are almost entirely
+  negative (-40..-120 dB, empty bands at the -240 dB floor), so the cosine stays near 1.0
+  for unrelated sounds. Synthetic check (same envelope, 2 s @ 48 kHz):
+
+  | A | B | score v1 | score v2 | spec_mad_db |
+  |---|---|---|---|---|
+  | saw 110 Hz | saw 110 Hz | 100.0 | 100.0 | 0.0 |
+  | saw 110 Hz | square 110 Hz | 99.3 | 77.5 | 6.4 |
+  | saw 110 Hz | white noise | 99.3 | 64.1 | 10.2 |
+  | sine 220 Hz | sine 3000 Hz | 91.4 | 30.0 | 20.6 |
+  | sine 3000 Hz | percussive saw 110 Hz | 89.8 | 55.3 | 11.1 |
+
+  Consequence: the measured scores in `sim_log.jsonl` (86.8–98, mean 93.9) mostly reflect
+  envelope differences, and the RF prognosis trained on them inherits that.
+- **Fix (score_version 2, replaces v1):** `score = 70 % · (1 − spec_mad_db/20) + 30 % · (1 − env_dtw)`.
+  `spec_mad_db` = mean |ΔdB| over bands active in either signal (clamped to 60 dB below
+  each peak, level offset removed via the median). The v1 cosine is still returned as the
+  diagnostic `spec_cos`. Every result carries `score_version: 2`; log rows without it are
+  v1. `prognose train` skips them by default (`--min-score-version 2`). The 20 dB scale is
+  a heuristic and still needs calibration against user ratings (like specdiff).

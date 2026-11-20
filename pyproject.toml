@@ -4,25 +4,33 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bloridium"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Utilities for transferring synth programs from the Waldorf Blofeld to the Waldorf Iridium"
 readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "GPL-3.0-only"}
+classifiers = ["License :: OSI Approved :: GNU General Public License v3 (GPLv3)"]
 dependencies = [
     "mido>=1.3",
     "python-rtmidi>=1.5",
     "numpy>=1.26",
     "pyyaml>=6.0",
+    "requests>=2.31",   # imported at module level by sim_embed (-> cli); ollama HTTP API
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
+embed = ["pillow>=10"]                      # spectrogram PNGs (sim_embed, specdiff vision)
+web = ["flask>=3.0,<4.0", "gunicorn>=22.0"] # webapp/
+dev = ["pytest>=8", "pillow>=10", "flask>=3.0,<4.0"]
 
 [project.scripts]
 bloridium = "bloridium.cli:main"
 
 [tool.setuptools]
 packages = ["bloridium"]
+
+[tool.setuptools.dynamic]
+version = {attr = "bloridium.version.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

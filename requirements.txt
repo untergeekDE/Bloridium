@@ -2,6 +2,8 @@ mido>=1.3
 python-rtmidi>=1.5
 numpy>=1.26
 pyyaml>=6.0
+requests>=2.31
+# optional: pillow>=10 (spectrogram PNGs), flask/gunicorn (webapp/)
 
 # System dependency (not via pip): ffmpeg with AVFoundation
 #   brew install ffmpeg

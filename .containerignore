@@ -14,6 +14,7 @@ dumps
 recordings
 transfer
 models
+!models/prognose_rf.pkl
 tests
 webapp/data
 docs/refs/*.zip
