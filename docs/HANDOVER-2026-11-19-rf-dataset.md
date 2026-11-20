@@ -63,7 +63,7 @@ Predict-Spotchecks: A091 → 90.4±3.0 (Ist 87.8), A024 → 95.2 (Ist 98.0), A01
 - **A050 „Wakey Wakey" ist auf dem Blofeld selbst silent** (solo gemessen: −76,5 dBFS @ Note 72) → kein Konvertierungsfehler, hat keinen Score; `load_training_rows` skippt es automatisch.
 - **A097** nur bei Note 72 silent (Blofeld-Seite), Note 60 = 87.94 → hat Score.
 - `embed_score` ist in allen rf-dataset-Zeilen `null` (ohne `--embed` gemessen). Wer Embed als Label will, muss neu messen mit `--embed` (siehe §6).
-- Frischer Clone: `dumps/`, `recordings/`, `models/` sind gitignored → von diesem Mac kopieren (oder neu erzeugen, §6).
+- Frischer Clone: `dumps/`, `recordings/` und die GGUF-Downloads in `models/` sind gitignored → von diesem Mac kopieren (oder neu erzeugen, §6). **Die RF-Modelle `models/prognose_rf*.pkl` (~0,9 MB) sind dagegen git-tracked** (`.gitignore`: `models/*` + `!models/prognose_rf*.pkl`) und kommen mit dem Clone mit.
 - `load_training_rows` liest ALLE Zeilen mit `meta.blofeld`. **Achtung seit 2026-11-19 12:00:** das Log enthält jetzt auch `mode=="optimize"`-Zeilen (Tweak-Loop, Phasen before/trial*/after — teils Duplikate, teils verrauscht). Für den sauberen Datensatz **auf `meta.mode == "rf-dataset"` filtern** (202 Zeilen, 197 scored, 99 locs). Alte Modi (`live`, `pc_sweep`, …) nur mit `--target score` mischen (deren `combined` ist embed-depressiv).
 - 9 locs (A001, A008, A010, A019, A022, A039, A043, A071, A073) haben Vertrag-Dumps von 11-08 — sha256-identisch zur heutigen Bank (geprüft 11-19), also keine Stale-Features.
 
