@@ -259,3 +259,25 @@ def test_cli_prognose_entropy(tmp_path, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert "H(y)" in out and "embed_score" in out and "best feature" in out
+
+
+def test_entropy_report_partial_ig_given_base(tmp_path):
+    # y wird vollstaendig durch base (spec_mad_db) bestimmt; embed addiert nichts
+    rows = []
+    n = 12
+    for i in range(n):
+        y = 50.0 + 45.0 * i / (n - 1)
+        rows.append({"meta": {"mode": "npy-v2", "blofeld": f"A{i+1:03d}", "note": 72},
+                     "result": {"score": y, "verdict": "close", "score_version": 2,
+                                "spec_mad_db": 20.0 * (1 - (y - 50) / 45),   # perfekt anti-korreliert
+                                "embed_score": float((i * 37) % n)}})        # unordentlich
+    log = tmp_path / "log.jsonl"
+    log.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    rep = prognose.entropy_report(log, min_score_version=2)
+    base = rep["features"]["spec_mad_db"]
+    emb = rep["features"]["embed_score"]
+    assert base["ig_bits"] > 0.9 * rep["h_y_bits"]
+    # embed bringt GEGEN spec_mad_db nichts mehr -> partielle IG ~ 0
+    assert emb["ig_given_base_bits"] == pytest.approx(0.0, abs=1e-9)
+    # rohe IG von embed ist trotzdem hoch (unordentlich, aber gebinnt passt es sich an)
+    assert emb["ig_bits"] is not None

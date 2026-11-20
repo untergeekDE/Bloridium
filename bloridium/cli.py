@@ -672,12 +672,16 @@ def cmd_prognose_entropy(args) -> int:
         return 2
     print(f"entropy: n={rep['n']} locs, target={rep['target']}, "
           f"H(y)={rep['h_y_bits']:.3f} bits ({rep['bins']} bins)")
-    print(f"{'feature':<16} {'n':>4} {'IG bits':>8} {'pearson':>8} {'spearman':>9}")
+    base = rep.get("base_feature", "spec_mad_db")
+    print(f"{'feature':<16} {'n':>4} {'IG bits':>8} {'IG|f_base':>10} {'pearson':>8} {'spearman':>9}")
     for f, r in rep["features"].items():
         ig = f"{r['ig_bits']:.3f}" if r["ig_bits"] is not None else "n/a"
+        igb = f"{r['ig_given_base_bits']:.3f}" if r.get("ig_given_base_bits") is not None else "n/a"
         pe = f"{r['pearson']:.3f}" if r["pearson"] is not None else "n/a"
         sp = f"{r['spearman']:.3f}" if r["spearman"] is not None else "n/a"
-        print(f"{f:<16} {r['n']:>4} {ig:>8} {pe:>8} {sp:>9}")
+        print(f"{f:<16} {r['n']:>4} {ig:>8} {igb:>10} {pe:>8} {sp:>9}")
+    print(f"(f_base = {base}: partielle IG = H(y|base) - H(y|base,f) — "
+          f"'senkt das Feature die Entropie WEITER?')")
     best = max((r for r in rep["features"].values() if r["ig_bits"] is not None),
                key=lambda r: r["ig_bits"], default=None)
     if best:

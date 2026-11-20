@@ -324,6 +324,22 @@ def _cond_entropy(y, f, bins: int) -> float:
     return total / y.size if y.size else 0.0
 
 
+def _cond_entropy2(y, f1, f2, bins: int) -> float:
+    """H(y|f1,f2): 2D-Binning ueber (f1,f2), gewichtetes Mittel der bedingten
+    Entropien -> fuer partielle Information Gain IG(f2 | f1)."""
+    y = np.asarray(y, dtype=np.float64)
+    i1 = _bin_index(f1, bins)
+    i2 = _bin_index(f2, bins)
+    yi = _bin_index(y, bins)
+    total = 0.0
+    for a in range(bins):
+        for b in range(bins):
+            m = (i1 == a) & (i2 == b)
+            if m.any():
+                total += m.sum() * _h(np.bincount(yi[m], minlength=bins))
+    return total / y.size if y.size else 0.0
+
+
 def _rank(x) -> np.ndarray:
     x = np.asarray(x, dtype=np.float64)
     r = np.empty(x.size, dtype=np.float64)
@@ -342,7 +358,8 @@ def _corr(a, b, spearman: bool = False) -> float | None:
 
 def entropy_report(log_path, target: str = "score", min_score_version: int | None = None,
                    bins: int = 10,
-                   features=DEFAULT_FEATURE_CANDIDATES) -> dict:
+                   features=DEFAULT_FEATURE_CANDIDATES,
+                   base_feature: str = "spec_mad_db") -> dict:
     """Log -> pro Loc Label (Mittel ueber result[target]) + Kandidaten-Features.
 
     Report: H(y) in bits und pro Feature Information Gain IG = H(y|f-subset) -
@@ -389,20 +406,32 @@ def entropy_report(log_path, target: str = "score", min_score_version: int | Non
     y = np.array([np.mean(per_loc_label[l]) for l in locs], dtype=np.float64)
     hy = _entropy(y, bins) if y.size >= 2 else 0.0
     rep = {"n": len(locs), "target": target, "bins": bins, "h_y_bits": hy,
-           "locs": locs, "skipped": skipped[:20], "features": {}}
+           "base_feature": base_feature, "locs": locs, "skipped": skipped[:20],
+           "features": {}}
     for f in features:
         flocs = [l for l in locs if l in per_loc_feat[f]]
         if len(flocs) < 3:
             rep["features"][f] = {"n": len(flocs), "ig_bits": None,
-                                  "pearson": None, "spearman": None}
+                                  "pearson": None, "spearman": None,
+                                  "ig_given_base_bits": None}
             continue
         fv = np.array([np.mean(per_loc_feat[f][l]) for l in flocs])
         yf = np.array([np.mean(per_loc_label[l]) for l in flocs])
         hy_sub = _entropy(yf, bins)
-        rep["features"][f] = {"n": len(flocs),
-                              "ig_bits": float(hy_sub - _cond_entropy(yf, fv, bins)),
+        ig = float(hy_sub - _cond_entropy(yf, fv, bins))
+        # partielle IG: senkt f die Entropie WEITER, gegeben das Basis-Feature
+        # (bei v2-Label = spec_mad_db, das selbst ~70% des Labels ist)?
+        ig_given = None
+        if f != base_feature and base_feature in per_loc_feat and \
+                all(l in per_loc_feat[base_feature] for l in flocs):
+            bv = np.array([np.mean(per_loc_feat[base_feature][l]) for l in flocs])
+            h_given_base = _cond_entropy(yf, bv, bins)
+            h_given_both = _cond_entropy2(yf, bv, fv, bins)
+            ig_given = float(h_given_base - h_given_both)
+        rep["features"][f] = {"n": len(flocs), "ig_bits": ig,
                               "pearson": _corr(fv, yf),
-                              "spearman": _corr(fv, yf, spearman=True)}
+                              "spearman": _corr(fv, yf, spearman=True),
+                              "ig_given_base_bits": ig_given}
     return rep
 
 
