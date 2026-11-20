@@ -269,6 +269,144 @@ def load_training_rows(log_path, dumps_dir, target: str = "combined",
 
 
 # --------------------------------------------------------------------------
+# Entropy / Feature-Check (vor dem Training: senkt ein Log-Feature die
+# Entropie des Labels weiter? -> Information Gain H(y) - H(y|f))
+# --------------------------------------------------------------------------
+
+DEFAULT_FEATURE_CANDIDATES = ("embed_score", "llm_score", "profile_score",
+                              "spec_mad_db", "spec_dtw", "env_dtw")
+
+
+def _feature_value(res: dict, feat: str):
+    """Feature-Wert aus einer result-Zeile; llm/profile sind verschachtelt."""
+    if feat == "llm_score":
+        return (res.get("llm") or {}).get("score")
+    if feat == "profile_score":
+        return (res.get("profile") or {}).get("score")
+    return res.get(feat)
+
+
+def _h(counts) -> float:
+    p = np.asarray(counts, dtype=np.float64)
+    p = p[p > 0] / p.sum()
+    return float(-(p * np.log2(p)).sum())
+
+
+def _bin_index(vals, bins: int) -> np.ndarray:
+    vals = np.asarray(vals, dtype=np.float64)
+    lo, hi = float(vals.min()), float(vals.max())
+    if hi - lo < 1e-12:
+        return np.zeros(vals.size, dtype=int)
+    edges = np.linspace(lo, hi, bins + 1)
+    return np.clip(np.digitize(vals, edges[1:-1]), 0, bins - 1)
+
+
+def _entropy(vals, bins: int) -> float:
+    vals = np.asarray(vals, dtype=np.float64)
+    if vals.size < 2:
+        return 0.0
+    return _h(np.bincount(_bin_index(vals, bins), minlength=bins))
+
+
+def _cond_entropy(y, f, bins: int) -> float:
+    """H(y|f): y und f gleichmaessig gebinnt, dann gewichtetes Mittel der
+    bedingten Entropien pro f-Bin."""
+    y = np.asarray(y, dtype=np.float64)
+    f = np.asarray(f, dtype=np.float64)
+    yi = _bin_index(y, bins)
+    fi = _bin_index(f, bins)
+    total = 0.0
+    for fb in range(bins):
+        m = fi == fb
+        if not m.any():
+            continue
+        total += m.sum() * _h(np.bincount(yi[m], minlength=bins))
+    return total / y.size if y.size else 0.0
+
+
+def _rank(x) -> np.ndarray:
+    x = np.asarray(x, dtype=np.float64)
+    r = np.empty(x.size, dtype=np.float64)
+    r[np.argsort(x, kind="stable")] = np.arange(x.size)
+    return r
+
+
+def _corr(a, b, spearman: bool = False) -> float | None:
+    a, b = np.asarray(a, float), np.asarray(b, float)
+    if a.size < 3 or a.std() < 1e-12 or b.std() < 1e-12:
+        return None
+    if spearman:
+        a, b = _rank(a), _rank(b)
+    return float(np.corrcoef(a, b)[0, 1])
+
+
+def entropy_report(log_path, target: str = "score", min_score_version: int | None = None,
+                   bins: int = 10,
+                   features=DEFAULT_FEATURE_CANDIDATES) -> dict:
+    """Log -> pro Loc Label (Mittel ueber result[target]) + Kandidaten-Features.
+
+    Report: H(y) in bits und pro Feature Information Gain IG = H(y|f-subset) -
+    H(y|f-subset, f) plus Pearson/Spearman gegen das Label. Nur Locs ohne Dump-
+    Pflicht (reine Log-Auswertung). min_score_version analog load_training_rows.
+    """
+    log_path = Path(log_path)
+    per_loc_label: dict[str, list[float]] = {}
+    per_loc_feat: dict[str, dict[str, list[float]]] = {f: {} for f in features}
+    skipped: list[str] = []
+    if log_path.exists():
+        for line in log_path.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                e = json.loads(line)
+            except json.JSONDecodeError:
+                skipped.append("invalid JSON line")
+                continue
+            meta, res = e.get("meta") or {}, e.get("result") or {}
+            loc = meta.get("blofeld")
+            if not loc:
+                continue
+            if res.get("verdict") in ("error", "fehler") or res.get("score") is None:
+                skipped.append(f"{loc}: error/silent")
+                continue
+            if min_score_version is not None and \
+                    int(res.get("score_version") or 1) < min_score_version:
+                skipped.append(f"{loc}: score_version < {min_score_version}")
+                continue
+            v = res.get(target)
+            if v is None:
+                v = res.get("score")
+            if v is None:
+                skipped.append(f"{loc}: no label '{target}'")
+                continue
+            per_loc_label.setdefault(loc, []).append(float(v))
+            for f in features:
+                fv = _feature_value(res, f)
+                if isinstance(fv, (int, float)) and not isinstance(fv, bool):
+                    per_loc_feat[f].setdefault(loc, []).append(float(fv))
+    locs = sorted(per_loc_label)
+    y = np.array([np.mean(per_loc_label[l]) for l in locs], dtype=np.float64)
+    hy = _entropy(y, bins) if y.size >= 2 else 0.0
+    rep = {"n": len(locs), "target": target, "bins": bins, "h_y_bits": hy,
+           "locs": locs, "skipped": skipped[:20], "features": {}}
+    for f in features:
+        flocs = [l for l in locs if l in per_loc_feat[f]]
+        if len(flocs) < 3:
+            rep["features"][f] = {"n": len(flocs), "ig_bits": None,
+                                  "pearson": None, "spearman": None}
+            continue
+        fv = np.array([np.mean(per_loc_feat[f][l]) for l in flocs])
+        yf = np.array([np.mean(per_loc_label[l]) for l in flocs])
+        hy_sub = _entropy(yf, bins)
+        rep["features"][f] = {"n": len(flocs),
+                              "ig_bits": float(hy_sub - _cond_entropy(yf, fv, bins)),
+                              "pearson": _corr(fv, yf),
+                              "spearman": _corr(fv, yf, spearman=True)}
+    return rep
+
+
+# --------------------------------------------------------------------------
 # Train / Persist / Predict
 # --------------------------------------------------------------------------
 

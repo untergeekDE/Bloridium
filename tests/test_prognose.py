@@ -210,3 +210,52 @@ def test_load_training_rows_filters_old_score_version(tmp_path):
                                                       min_score_version=2)
     assert not any("score_version" in s for s in skipped_all)
     assert any("score_version 1 < 2" in s for s in skipped_v2)
+
+
+# --- entropy / feature check (Task 2) -----------------------------------------
+
+def _entropy_log(path: Path, n: int = 12, embed_is_label: bool = True,
+                 version: int = 2) -> Path:
+    rows = []
+    for i in range(n):
+        loc = f"A{i+1:03d}"
+        y = 50.0 + 45.0 * i / (n - 1)                    # 50..95 linear
+        emb = y if embed_is_label else float((i * 37) % n)  # nutzlos ohne Signal
+        rows.append({"meta": {"mode": "npy-v2", "blofeld": loc, "note": 72},
+                     "result": {"score": y, "verdict": "close", "score_version": version,
+                                "embed_score": emb, "spec_mad_db": 5.0 if i % 2 == 0 else 20.0,
+                                "env_dtw": 0.01 * i, "llm": {"score": 80},
+                                "profile": {"score": 70}}})
+    path.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    return path
+
+
+def test_entropy_report_perfect_vs_useless_feature(tmp_path):
+    log = _entropy_log(tmp_path / "log.jsonl", embed_is_label=True)
+    rep = prognose.entropy_report(log, target="score", min_score_version=2)
+    assert rep["n"] == 12 and rep["h_y_bits"] > 0
+    emb = rep["features"]["embed_score"]
+    mad = rep["features"]["spec_mad_db"]
+    assert emb["ig_bits"] > 0.9 * rep["h_y_bits"]      # perfekte Ordnung -> fast volle IG
+    assert emb["pearson"] == pytest.approx(1.0, abs=1e-9)
+    assert emb["spearman"] == pytest.approx(1.0, abs=1e-9)
+    assert mad["ig_bits"] < 0.5 * rep["h_y_bits"]       # lineares MAD traegt kaum bei
+    assert rep["features"]["llm_score"]["ig_bits"] is not None  # konstant -> IG 0
+    assert rep["features"]["llm_score"]["pearson"] is None      # zero variance
+
+
+def test_entropy_report_respects_min_score_version(tmp_path):
+    log = _entropy_log(tmp_path / "log.jsonl", n=6, version=1)
+    rep = prognose.entropy_report(log, min_score_version=2)
+    assert rep["n"] == 0
+    rep = prognose.entropy_report(log, min_score_version=0)
+    assert rep["n"] == 6
+
+
+def test_cli_prognose_entropy(tmp_path, capsys):
+    from bloridium import cli
+    log = _entropy_log(tmp_path / "log.jsonl")
+    rc = cli.main(["prognose", "entropy", "--log", str(log)])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "H(y)" in out and "embed_score" in out and "best feature" in out

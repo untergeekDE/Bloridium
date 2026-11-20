@@ -141,6 +141,14 @@ def build_parser() -> argparse.ArgumentParser:
     pp.add_argument("--dumps", default=str(prognose.DEFAULT_DUMPS))
     pp.add_argument("--model", default=str(prognose.DEFAULT_MODEL))
     pp.set_defaults(func=cmd_prognose_predict)
+    pe = psub.add_parser("entropy", help="feature check: H(y) and information gain of "
+                                         "log features (embed/llm/d1/…) against the label")
+    pe.add_argument("--log", default=str(sim.DEFAULT_LOG))
+    pe.add_argument("--target", default="score", help="label: score|combined|embed_score")
+    pe.add_argument("--min-score-version", type=int, default=sim.SCORE_VERSION,
+                    help=f"default {sim.SCORE_VERSION}; 0 = all")
+    pe.add_argument("--bins", type=int, default=10)
+    pe.set_defaults(func=cmd_prognose_entropy)
 
     sd = sub.add_parser("specdiff", help="interpret the spectral diff (DSP + optional "
                                          "vision model d1-omni/gemma4)")
@@ -651,6 +659,30 @@ def cmd_prognose_predict(args) -> int:
         return 2
     print(f"predicted {r['loc']}: {r['predicted']:.1f} ± {r['std']:.1f} "
           f"(target={r['target']}, model={r['model']}, dump={r['dump']})")
+    return 0
+
+
+def cmd_prognose_entropy(args) -> int:
+    rep = prognose.entropy_report(args.log, target=args.target,
+                                  min_score_version=args.min_score_version or None,
+                                  bins=args.bins)
+    if rep["n"] < 2:
+        print(f"ERROR: need >= 2 locs, got {rep['n']} (log={args.log}); "
+              f"skipped: {rep['skipped'][:5]}", file=sys.stderr)
+        return 2
+    print(f"entropy: n={rep['n']} locs, target={rep['target']}, "
+          f"H(y)={rep['h_y_bits']:.3f} bits ({rep['bins']} bins)")
+    print(f"{'feature':<16} {'n':>4} {'IG bits':>8} {'pearson':>8} {'spearman':>9}")
+    for f, r in rep["features"].items():
+        ig = f"{r['ig_bits']:.3f}" if r["ig_bits"] is not None else "n/a"
+        pe = f"{r['pearson']:.3f}" if r["pearson"] is not None else "n/a"
+        sp = f"{r['spearman']:.3f}" if r["spearman"] is not None else "n/a"
+        print(f"{f:<16} {r['n']:>4} {ig:>8} {pe:>8} {sp:>9}")
+    best = max((r for r in rep["features"].values() if r["ig_bits"] is not None),
+               key=lambda r: r["ig_bits"], default=None)
+    if best:
+        name = [f for f, r in rep["features"].items() if r is best][0]
+        print(f"best feature by information gain: {name} ({best['ig_bits']:.3f} bits)")
     return 0
 
 
