@@ -61,11 +61,11 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
   meta={"mode": "npy-v2", "blofeld": loc, "note": note, "src": basename})`
 - CLI: `--rec-dir`, `--log`, `--no-embed`, `--no-llm`, `--no-d1`, `--models-dir`, `--limit`
 
-- [ ] Step 1: Test für `discover_pairs` (tmp dir mit synthetischen Dateinamen, npy/wav-Mix, unvollständige Paare werden ignoriert, loc/note geparst)
-- [ ] Step 2: Test läuft rot
-- [ ] Step 3: `scripts/rescore_v2.py` implementieren (Backends einmal bauen, dann alle Paare)
-- [ ] Step 4: Tests grün; echter Lauf: 18 Paare → `recordings/sim_log_v2.jsonl`, jede Zeile mit `score_version: 2`, `embed_score`, `llm`, `profile`
-- [ ] Step 5: Commit
+- [x] Step 1: Test für `discover_pairs` (tmp dir mit synthetischen Dateinamen, npy/wav-Mix, unvollständige Paare werden ignoriert, loc/note geparst)
+- [x] Step 2: Test läuft rot
+- [x] Step 3: `scripts/rescore_v2.py` implementieren (Backends einmal bauen, dann alle Paare)
+- [x] Step 4: Tests grün; echter Lauf: 45 Paare → `recordings/sim_log_v2.jsonl`, jede Zeile mit `score_version: 2`, `embed_score`, `llm`, `profile`
+- [x] Step 5: Commit `94930b3`
 
 ### Task 2: Entropie-/Feature-Check (`prognose entropy`)
 
@@ -81,11 +81,11 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
   (gleiche Bins) + Pearson/Spearman r. JSON-Report + Print.
 - CLI: `bloridium prognose entropy --log recordings/sim_log_v2.jsonl [--target score] [--bins 10]`
 
-- [ ] Step 1: Tests: synthetisches Log mit 2 Locs, perfekter Prädiktor-Feature (IG = H(y)) und nutzlosem Feature (IG ≈ 0)
-- [ ] Step 2: rot
-- [ ] Step 3: implementieren
-- [ ] Step 4: grün + echter Lauf auf `sim_log_v2.jsonl` (9 Locs) → Report in `docs/FINDINGS.md` anhängen
-- [ ] Step 5: Commit
+- [x] Step 1: Tests: synthetisches Log (+ partielle IG) mit 2 Locs, perfekter Prädiktor-Feature (IG = H(y)) und nutzlosem Feature (IG ≈ 0)
+- [x] Step 2: rot
+- [x] Step 3: implementieren (inkl. partieller IG gegen spec_mad_db)
+- [x] Step 4: grün + Lauf auf sim_log_v2.jsonl auf `sim_log_v2.jsonl` (9 Locs) → Report in `docs/FINDINGS.md` anhängen
+- [x] Step 5: Commit
 
 ### Task 3: qpat_map — Sync / Noise / LFO ergänzen (TDD)
 
@@ -95,19 +95,19 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
 
 **Interfaces:** `blofeld_to_qpat_params(parsed) -> (overrides, unmapped)` — Signatur bleibt.
 
-- [ ] Step 1: Enum-Werte checken: Blofeld LFO-Shapes aus allen 102 Dumps sammeln; Iridium
+- [x] Step 1: Enum aus 1186 Factory-qpats: Sine0 Tri1 Sqr2 SawDown3 SawUp4 SH5: Blofeld LFO-Shapes aus allen 102 Dumps sammeln; Iridium
   `LfoNShape`-Enum aus codesearch `recordings/quir_param_info_enums2.txt` / OS4-Export
-- [ ] Step 2: Tests: synthetisches SNDD (via `blofeld_dump.build_sndd`) mit Noise Level>0 +
+- [x] Step 2: Tests: synthetisches SNDD (via `blofeld_dump.build_sndd`) mit Noise Level>0 +
   Osc3=Off → erwartet `Osc3Type`=Waveform, `Osc3WaveformShape`=White/Pink (Colour), `Osc3Vol`,
   `Osc3Pan` bipolar; Noise mit allen 3 Oscs belegt → bleibt unmapped, kein Override eines
   belegten Osc; LFO Shape=Saw → `Lfo1Shape` enum; LFO Start Phase → `Lfo1Phase`; LFO Delay →
   `Lfo1Delay`; Sync-Shapes (SawSync…) landen in `BLOFELD_WAVETABLE_TO_IRIDIUM` falls fehlend
-- [ ] Step 3: rot
-- [ ] Step 4: implementieren (Noise nur auf freiem Osc-Slot, bevorzugt Osc3 dann Osc2 dann
+- [x] Step 3: rot
+- [x] Step 4: implementieren (Noise nur auf freiem Osc-Slot, bevorzugt Osc3 dann Osc2 dann
   Osc1; Colour raw<64→Pink, ≥64→White; Balance (raw−64)/64→Pan 0..1; Level→OscNVol)
-- [ ] Step 5: grün + Lauf über alle 102 Dumps: unmapped-Anteil für sync/noise/lfo-Kategorien
+- [x] Step 5: grün (49 Tests) + 102-Dump-Scan: LFO Shape/Phase/Delay + Noise (A065) gemappt, Rest dokumentiert unmapped: unmapped-Anteil für sync/noise/lfo-Kategorien
   auf 0 (abgesehen von dokumentiert unmapped: LFO Fade/Keytrack, Noise bei vollem Mixer)
-- [ ] Step 6: Commit
+- [x] Step 6: Commit `4919c18`
 
 ### Task 4: A001–A100 neu konvertieren → transfer/rf100_v2 + MANIFEST (SD `rf200`)
 
@@ -116,9 +116,9 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
   CLI checken, bevorzugt wiederverwenden)
 - Output: `transfer/rf100_v2/<LOC>_<Name>.qpat` + `MANIFEST.json` (sd_dirname `rf200`)
 
-- [ ] Step 1: 100 qpats gebaut aus den 100 rf-Dumps mit neuem Mapping; jeder qpat roundtrip-parsebar,
+- [x] Step 1: 100 qpats in transfer/rf100_v2, alle roundtrip-parsebar, sd_names ok aus den 100 rf-Dumps mit neuem Mapping; jeder qpat roundtrip-parsebar,
   Namen ohne Spaces, MANIFEST-Einträge mit `sd_name`
-- [ ] Step 2: Vergleich alt vs. neu: Diff-Statistik (welche Keys kamen neu dazu) in Log
+- [x] Step 2: Diff = nur neue LFO/Noise-Keys: Diff-Statistik (welche Keys kamen neu dazu) in Log
 - [ ] Step 3: Commit; **User-Aktion:** `transfer/rf100_v2/*` auf SD-Karte als `rf200/` kopieren
 
 ### Task 5: verify-sd + Live-Neu-Recording (v2 + embed + d1) — Hintergrund
