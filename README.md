@@ -8,6 +8,42 @@ An exact transfer is impossible, although those two synths are related and have 
 
 To close the gap, Bloridium provides tools to **measure and track the differences** between the original and the converted sound (A/B recordings over a Focusrite Scarlett 18i8, similarity score 0–100 from log-spectrogram + envelope comparison) and to **optimise parameters** until the Iridium patch matches the Blofeld as closely as possible.
 
+### What you can do with it
+
+- Read sounds from a Blofeld: single sounds or whole banks. The dumps are kept in a SQLite database.
+- Convert a Blofeld sound to the Iridium format and create a `.qpat` file for transfer to SD card/USB stick
+- Edit Iridium parameters in the `.qpat` file
+- Edit Iridium parameters via MIDI CC, using a customised MIDI map for the Iridium
+- A/B comparison: Both synth play the same notes with Modwheel variations, which are recorded for comparison
+- Mathematical comparison of the spectra and the envelopes for a coarse similarity score
+- AI-based comparison via embeddings, and via a local decision model running on ollama
+- Prognostics: Based on the comparison, a very crude Random Forest model has been trained to predict how close a converted file is to the original
+- Web app for conversion: find a demo on [bloridium.frankruft.de](https://bloridium.frankruft.de)
+  
+### Limitations
+
+- **Limited Iridium control:** To read back sounds from the Iridium, you have to copy them from the transfer medium
+- **No fully automatic tweaking - yet** - but all the tools are there for an AI agent to use, see below.
+- **Many things are ignored in conversion**: 
+    - Wavetables unique to the Blofeld
+    - Osc FM and Sync
+    - Balance, Brilliance, Noise mixer
+    - LFO: Waveform, Delay, Fade, Keytrack
+    - Filter Drive and Curve
+    - Parts of the Modulation Matrix
+    - Arpeggiator
+
+**Basically, what you get is a first starting point for tweaking**. Keeps the fun in it, after all!
+
+## Using bloridium
+
+### Optimised for agentic use
+
+The code has been produced, and optimised, with the [Opencode agent](https://opencode.ai) using [Mistral-Large-4 and Deepseek-V4.1-flash models via mistral.ai](https://docs.mistral.ai/inference/pricing) (which comes cheap at €18 a month.) It is meant to be used by AI: 
+
+- Point your coding agent (Claude Code, Codex, Opencode, Hermes...) at this repository and tell it to install the `bloridium` skill from the `skills/` folder.
+- Once loaded, the agent knows how to load and convert sounds, to tweak a sound in the Iridium, and how to measure the distance between the original and the recreation. 
+
 ### Hardware
 
 The test hardware used: 
@@ -16,6 +52,10 @@ The test hardware used:
 - both synths connected directly via USB (**MIGHT CAUSE DIGITAL NOISE BY GROUND LOOP**)
 - Focusrite Scarlett 18i8 Audio interface
 - Blofeld on inputs 3/4 (MIDI channel 5), Iridium on inputs 5/6 (MIDI channels 6–9, Parts 1–4).
+
+Important note: 
+
+- My Iridium features **OS4.1.0beta** as well as the **SOM2** extension board. The code should keep only to those features that are available on every version of the Iridium but there may be occasional incompatibilities. Update to the [most recent OS4 version](https://waldorfmusic.com/iridium-os-update/) of the firmware is strongly encouraged.
 
 ### Configuration: `bloridium.yaml`
 
@@ -55,7 +95,7 @@ cd tools && clang -framework CoreMIDI -framework Foundation -o ump_send ump_send
 
 Optionally, without the package: `pip install -r requirements.txt` + the ffmpeg/ump_send steps above, then use the scripts in `scripts/`.
 
-## Usage
+## Using the code
 
 Python library:
 
