@@ -21,8 +21,7 @@ suite is run on the measurement machine (item 11).
    - ✅ `prognose train` skips log rows scored with v1 by default
      (`--min-score-version 2`, `0` = all). Old and new scores can no longer be mixed silently.
    - ✅ `docs/CLI.md` and `docs/FINDINGS.md` are updated.
-   - ⬜ `README.md` line "Similarity score … log-spectrogram cosine (70 %) …" still describes
-     v1. Left alone because the README is being edited by hand.
+   - ✅ `README.md` describes the v2 score.
    - 🖥 Re-score the existing recordings with v2. `sim compare --npy` works on the
      stored `.npy`/`.wav` pairs, so no re-recording should be needed.
    - 🖥 Calibrate the 20 dB scale (`_MAD_SCALE`) against user ratings, as was done for
@@ -76,7 +75,7 @@ suite is run on the measurement machine (item 11).
     gnu.org, and `pyproject.toml` declares `GPL-3.0-only` plus the classifier.
     The webapp footer shows "GPL-3.0".
     - ⬜ Change to `GPL-3.0-or-later` if "or any later version" is intended.
-    - ⬜ Mention the license in the README.
+    - ✅ The README has a License section.
 
 ## Tests & CI
 
