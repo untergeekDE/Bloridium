@@ -20,7 +20,8 @@ Map format (16 TSV columns, "3:" = internal memory):
   "3:/samples/CP70/<file>.wav"  pitch  note_lo  note_hi  gain  vel_lo  vel_hi
   NN(0.5)  start(0)  end(1)  dir(0)  loop_start(0)  loop_end(1)  loop_mode(0)  xfade(0.5)  track_pitch(1)
 
-Run:  python3 scripts/build_cp70_iridium.py
+Run:  python3 scripts/build_cp70_iridium.py [PATH/TO/CP70-Exs24-v1.2.zip]
+      (or set $BLORIDIUM_CP70_ZIP; default: ./CP70-Exs24-v1.2.zip)
 """
 
 from __future__ import annotations
@@ -37,7 +38,8 @@ from pathlib import Path
 import numpy as np
 
 REPO = Path(__file__).resolve().parent.parent
-ZIP_PATH = Path("/Users/jan/Nextcloud/AAA Musik/01 Sounds/SAMPLES/CP70-Exs24-v1.2.zip")
+# Sample pack location: CLI argument > $BLORIDIUM_CP70_ZIP > ./CP70-Exs24-v1.2.zip
+DEFAULT_ZIP = Path("CP70-Exs24-v1.2.zip")
 TEMPLATE = REPO / "dumps/export-001/00000-NotSoGrand.qpat"  # v14 device export with Particle OSC + maps
 OUT_DIR = REPO / "transfer/cp70"
 SAMPLE_DIR = OUT_DIR / "samples/CP70"          # USB-stick layout: <stick>/samples/CP70/
@@ -162,10 +164,24 @@ def map_line(fname: str, root: float, klo: int, khi: int, vlo: int, vhi: int) ->
             f'0.00000000\t1.00000000\t0\t0.50000000\t1')
 
 
-def main() -> None:
+def resolve_zip_path(argv: list[str] | None = None) -> Path:
+    import argparse
+    import os
+    ap = argparse.ArgumentParser(description="CP70 EXS24 pack -> Iridium .qpat + samples")
+    ap.add_argument("zip", nargs="?", help="path to CP70-Exs24-v1.2.zip "
+                    "(default: $BLORIDIUM_CP70_ZIP or ./CP70-Exs24-v1.2.zip)")
+    args = ap.parse_args(argv)
+    return Path(args.zip or os.environ.get("BLORIDIUM_CP70_ZIP") or DEFAULT_ZIP).expanduser()
+
+
+def main(argv: list[str] | None = None) -> None:
     from bloridium import qpat
 
-    zf = zipfile.ZipFile(ZIP_PATH)
+    zip_path = resolve_zip_path(argv)
+    if not zip_path.exists():
+        raise SystemExit(f"sample pack not found: {zip_path} "
+                         "(pass the path as argument or set $BLORIDIUM_CP70_ZIP)")
+    zf = zipfile.ZipFile(zip_path)
     zones = select_zones(parse_exs(zf.read("CP70.exs")))
     print(f"Zones selected: {len(zones)}")
 

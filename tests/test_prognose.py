@@ -35,7 +35,7 @@ def _write_log(path: Path, rows: list[dict]):
 
 def _log_row(loc, combined=None, score=None, verdict="nahe"):
     res = {"score": score, "combined": combined, "verdict": verdict,
-           "embed_score": None, "error": None}
+           "embed_score": None, "error": None, "score_version": 2}
     return {"ts": "20261118_000000", "meta": {"mode": "checkpoint", "blofeld": loc,
                                               "note": 72, "wheel_pct": 0.0},
             "result": res}
@@ -197,3 +197,16 @@ def test_cli_train_no_data_exit2(tmp_path, capsys):
                    "--model", str(tmp_path / "m.pkl")])
     assert rc == 2
     assert capsys.readouterr().err  # Fehlermeldung auf stderr
+
+
+def test_load_training_rows_filters_old_score_version(tmp_path):
+    log = tmp_path / "log.jsonl"
+    old = _log_row("A001", score=95.0)
+    del old["result"]["score_version"]           # pre-2026-11-20 row = v1
+    new = _log_row("A001", score=60.0)
+    log.write_text(json.dumps(old) + "\n" + json.dumps(new) + "\n")
+    _, _, _, skipped_all = prognose.load_training_rows(log, tmp_path, "score")
+    _, _, _, skipped_v2 = prognose.load_training_rows(log, tmp_path, "score",
+                                                      min_score_version=2)
+    assert not any("score_version" in s for s in skipped_all)
+    assert any("score_version 1 < 2" in s for s in skipped_v2)

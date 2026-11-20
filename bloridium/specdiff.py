@@ -1,18 +1,18 @@
-"""specdiff.py – Interpretation des Spektral-Diffs (A | B | delta dB) einer
-Blofeld-vs-Iridium-Messung.
+"""specdiff.py – interpretation of the spectral diff (A | B | delta dB) of a
+Blofeld-vs-Iridium measurement.
 
-Zwei Ebenen (hybrid, Spec 2026-11-18):
-- DSP (numpy-only, deterministisch, Fallback): diff_matrix -> dsp_features ->
+Two layers (hybrid, spec 2026-11-18):
+- DSP (numpy-only, deterministic, fallback): diff_matrix -> dsp_features ->
   classify_dsp -> specdiff_score.  Labels: severity light/medium/heavy,
   spread even/punctual, temporal even/periodical/single/multiple/
   increasing/decreasing, bands low/mid/high.
-- Vision-Decision-Model (optional, ollama lokal): SystemOneBackend
-  (d1-omni via /v1/systemone, choice/noul-Fragen auf dem PNG) oder
+- vision decision model (optional, local ollama): SystemOneBackend
+  (d1-omni via /v1/systemone, choice/noul questions on the PNG) or
   OllamaChatBackend (gemma4 via /api/chat, think:false, JSON-Prompt).
-  Liefert die Labels auf dem gerenderten PNG; bei Ausfall -> DSP-Labels.
+  Returns the labels on the rendered PNG; on failure -> DSP labels.
 
-Score ist immer numerisch aus DSP: specdiff_score = clip(100 - 4*severity_db), severity_db = median |delta| ueber aktive Bins (peak-40 dB).
-Pad-Spalten (unterschiedliche Laenge) sind 0 dB / nicht aktiv (grau wie im PNG).
+The score is always numeric from DSP: specdiff_score = clip(100 - 4*severity_db), severity_db = median |delta| over active bins (peak-40 dB).
+Pad columns (different length) are 0 dB / inactive (gray as in the PNG).
 """
 
 from __future__ import annotations
@@ -29,18 +29,18 @@ from . import sim
 DEFAULT_OLLAMA_HOST = "http://localhost:11434"
 DEFAULT_SPECDIFF_MODEL = "d1-omni:2b"
 
-# Schwellen (Spec 2026-11-18)
-SEV_LIGHT_DB = 5.0        # median |delta| aktiv < 5 dB -> light (kalibriert 2026-11-18,
-SEV_HEAVY_DB = 15.0       # < 15 dB -> medium, sonst heavy; Eval: User-Ratings 90er bei 6-11 dB)
+# thresholds (spec 2026-11-18)
+SEV_LIGHT_DB = 5.0        # active median |delta| < 5 dB -> light (calibrated 2026-11-18,
+SEV_HEAVY_DB = 15.0       # < 15 dB -> medium, else heavy; eval: user ratings in the 90s at 6-11 dB
 SEV_SCALE = 4.0           # specdiff_score = clip(100 - SEV_SCALE * median|delta|)
-SPREAD_THR_DB = 3.0       # Bin "Fehler" ab |delta| > 3 dB
-SPREAD_EVEN_FRAC = 0.25   # aktiver Anteil mit Fehler >= 0.25 -> even
-BAND_THR_DB = 3.0         # Band betroffen ab Mittel |delta| > 3 dB
+SPREAD_THR_DB = 3.0       # bin counts as "error" from |delta| > 3 dB
+SPREAD_EVEN_FRAC = 0.25   # active share with error >= 0.25 -> even
+BAND_THR_DB = 3.0         # band affected from mean |delta| > 3 dB
 LOW_HZ = 250.0
 MID_HZ = 2000.0
-SLOPE_THR_DB = 1.5        # |Gesamt-Slope| der e(t)-Geraden -> increasing/decreasing
-ACORR_THR = 0.5           # Autokorrelation lag 2..n/2 -> periodical
-PEAK_THR_DB = 3.0         # Peak in e(t) ab Mittel + 3 dB
+SLOPE_THR_DB = 1.5        # |overall slope| of the e(t) line -> increasing/decreasing
+ACORR_THR = 0.5           # autocorrelation lag 2..n/2 -> periodical
+PEAK_THR_DB = 3.0         # peak in e(t) from mean + 3 dB
 ACTIVE_PEAK_DB = 40.0     # Bin aktiv ab max(sa,sb) >= global_peak - 40 dB
                           # (nahe Rauschbins liefern riesige, irrelevante dB-Deltas)
 
@@ -84,8 +84,8 @@ def index_wavs(rec_dir) -> dict:
 
 
 def pick_wav_pair(idx: dict, loc: str, ts: str | None, note, wheel_pct=None):
-    """Passendes Paar aus dem Index: gleiche loc/note/wtag, ts moeglichst nah am Log-ts.
-    -> (path_a, path_b) oder None."""
+    """Matching pair from the index: same loc/note/wtag, ts as close as possible to the log ts.
+    -> (path_a, path_b) or None."""
     wtag = f"_w{float(wheel_pct):.0f}" if wheel_pct is not None else ""
     cands = idx.get((loc, str(note), wtag)) or idx.get((loc, str(note), "")) \
         or idx.get((loc, "", ""))
@@ -105,7 +105,7 @@ def pick_wav_pair(idx: dict, loc: str, ts: str | None, note, wheel_pct=None):
 
 
 def load_pair(pa, pb, sr: int = 48000):
-    """WAV- oder NPY-Paar laden -> (a, b, sr)."""
+    """Load a WAV or NPY pair -> (a, b, sr)."""
     pa, pb = Path(pa), Path(pb)
     if pa.suffix == ".npy":
         a = np.asarray(np.load(pa), dtype=np.float64)
@@ -140,13 +140,13 @@ def read_wav(path) -> tuple[np.ndarray, int]:
 
 
 def diff_matrix(x_a, x_b, sr: int = 48000) -> dict:
-    """Delta-Spektrogram (dB) aus zwei Signalen via sim.features.
+    """Delta spectrogram (dB) from two signals via sim.features.
 
     -> {"delta": (n_bands, n_frames), "band_edges", "active": bool-Maske,
         "peak_db"}. Laengere Seite bestimmt n_frames; Pad-Spalten der
     kuerzeren Seite: delta = 0, active = False (grau wie im PNG).
     aktiv = max(sa,sb) >= peak - ACTIVE_PEAK_DB (peak = global max beider Specs).
-    Raises ValueError bei zu kurzen Signalen (wie sim.features).
+    Raises ValueError for too-short signals (like sim.features).
     """
     fa = sim.features(np.asarray(x_a, dtype=np.float64), sr=sr)
     fb = sim.features(np.asarray(x_b, dtype=np.float64), sr=sr)
@@ -183,11 +183,11 @@ def dsp_features(delta: np.ndarray, band_edges: np.ndarray, active: np.ndarray) 
     d = np.abs(delta)
     n_bands, n_frames = delta.shape
     if active.any():
-        severity_db = float(np.median(d[active]))   # median: robust gegen Extrem-Bins
+        severity_db = float(np.median(d[active]))   # median: robust against extreme bins
         spread_frac = float((d[active] > SPREAD_THR_DB).mean())
     else:
         severity_db, spread_frac = 0.0, 0.0
-    # temporale Serie: pro Frame Mittel |delta| ueber aktive Baender
+    # temporal series: per frame mean |delta| over active bands
     e = np.zeros(n_frames)
     for t in range(n_frames):
         col = active[:, t]
@@ -206,13 +206,13 @@ def dsp_features(delta: np.ndarray, band_edges: np.ndarray, active: np.ndarray) 
                 r = float(np.sum(z[:-lag] * z[lag:]) / denom)
                 if r > acorr_r:
                     acorr_lag, acorr_r = lag, r
-    # Peaks in e(t): lokale Maxima mit Prominenz
+    # peaks in e(t): local maxima with prominence
     thr = float(e.mean()) + PEAK_THR_DB
     n_peaks = 0
     for i in range(1, n_frames - 1):
         if e[i] > e[i - 1] and e[i] >= e[i + 1] and e[i] > thr:
             n_peaks += 1
-    # Baender: Mittel |delta| ueber aktive Bins im Frequenzbereich
+    # bands: mean |delta| over active bins in the frequency range
     centers = np.sqrt(band_edges[:-1] * band_edges[1:])
     band_mean_db = {}
     for name, lo, hi in (("low", 0.0, LOW_HZ), ("mid", LOW_HZ, MID_HZ),
@@ -228,7 +228,7 @@ def dsp_features(delta: np.ndarray, band_edges: np.ndarray, active: np.ndarray) 
 
 
 def classify_dsp(feat: dict) -> dict:
-    """Deterministische Labels aus dsp_features (Schwellen s. Modulkonstanten)."""
+    """Deterministic labels from dsp_features (thresholds: see module constants)."""
     sev_db = feat["severity_db"]
     if sev_db < SEV_LIGHT_DB:
         severity = "light"
@@ -254,12 +254,12 @@ def classify_dsp(feat: dict) -> dict:
 
 
 def specdiff_score(severity_db: float) -> float:
-    """Score 0-100 aus der medianen aktiven Abweichung: clip(100 - 4 dB, 0, 100)."""
+    """Score 0-100 from the median active deviation: clip(100 - 4 dB, 0, 100)."""
     return float(np.clip(100.0 - SEV_SCALE * float(severity_db), 0.0, 100.0))
 
 
 # --------------------------------------------------------------------------
-# Vision-Decision-Model (optional; ollama lokal)
+# vision decision model (optional; local ollama)
 # --------------------------------------------------------------------------
 
 SPECDIFF_STATE = ("Spectrogram comparison of one synthesizer note, three panels "
@@ -343,7 +343,7 @@ class SystemOneBackend:
 
 class OllamaChatBackend:
     """Vision-Model via /api/chat (z. B. gemma4:12b-it-qat) – braucht think:false,
-    antwortet mit JSON (Schema wie SPECDIFF_QUESTIONS)."""
+    answers with JSON (schema like SPECDIFF_QUESTIONS)."""
 
     def __init__(self, model: str = "gemma4:12b-it-qat", host: str = DEFAULT_OLLAMA_HOST):
         self.model = model
@@ -384,7 +384,7 @@ class OllamaChatBackend:
                 "model": self.model, "summary": parsed.get("summary", "")}
 
     def _parse_chat(self, txt: str) -> dict:
-        """JSON aus roher Modellantwort extrahieren (Fences/Prosa tolerant) + Labels validieren."""
+        """Extract JSON from the raw model answer (tolerates fences/prose) + validate labels."""
         js = json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
         labels = {"severity": js["severity"], "spread": js["spread"],
                   "temporal": js["temporal"],
@@ -397,7 +397,7 @@ class OllamaChatBackend:
 
 def build_backend(want: bool = True, model: str = DEFAULT_SPECDIFF_MODEL,
                   kind: str = "systemone"):
-    """SystemOneBackend/OllamaChatBackend or None (want=False oder Modell fehlt -> WARNING)."""
+    """SystemOneBackend/OllamaChatBackend or None (want=False or model missing -> WARNING)."""
     if not want:
         return None
     b = SystemOneBackend(model) if kind == "systemone" else OllamaChatBackend(model)
@@ -413,7 +413,7 @@ def interpret_pair(x_a, x_b, sr: int = 48000, backend=None, png_path=None) -> di
 
     -> {"labels", "probs", "confidence", "dsp", "vision", "score", "source", "spec_png"}.
     Labels vom Vision-Model wenn es klappt (source="vision"), sonst DSP ("dsp");
-    Score immer numerisch aus DSP. Vision-Fehler -> WARNING, nie Absturz.
+    Score always numeric from DSP. Vision errors -> WARNING, never a crash.
     """
     from . import sim_embed
 
@@ -438,8 +438,8 @@ def interpret_pair(x_a, x_b, sr: int = 48000, backend=None, png_path=None) -> di
                 probs = vision["probs"]
                 conf = vision["confidence"]
                 source = "vision"
-                # bands = Union Vision+DSP: das PNG oben (low) wird vom Model leicht
-                # unterlesen; DSP-Bänder sind zuverlaessiger (Eval 2026-11-18: 7/7 Text-Hits)
+                # bands = union vision+DSP: the model tends to under-read the top of the PNG (low);
+                # DSP bands are more reliable (eval 2026-11-18: 7/7 text hits)
                 dsp_labels = classify_dsp(feat)
                 labels["bands"] = sorted(set(labels["bands"]) | set(dsp_labels["bands"]))
         except Exception as e:

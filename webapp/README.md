@@ -42,10 +42,10 @@ podman run -d --name bloridium-web -p 8000:8000 \
   localhost/bloridium-web:latest
 ```
 
-The RF model (`models/prognose_rf.pkl`) is gitignored, so it is **not** baked into
-the image – mount it read-only at runtime (variants A/B do this via the
-`models` volume in compose.yaml / Quadlet). Without a model the app falls back
-to the deterministic placeholder (similarity v0.2).
+The RF model (`models/prognose_rf.pkl`) is git-tracked and **baked into** the image
+at `/app/models/`. The mount above (and the `models` volume in compose.yaml / Quadlet)
+is only needed to override it with a newer model. Without any model the app falls back
+to the deterministic placeholder.
 
 App reachable at `http://<server>:8000` (healthcheck: `GET /health`;
 with variant A the Quadlet takes over the healthcheck via `HealthCmd`,
@@ -67,28 +67,29 @@ from the image (OCI format) – if you want it in the image, build with
 
 ## Versioning
 
-- **Conversion tool: v0.3** (`convert.CONVERSION_VERSION`) – UI title
-  "Bloridium Tool v0.3", `conversion_version` in `report.json` and `MANIFEST.md`
-- **Similarity tool: v0.3** (`matching.SIMILARITY_VERSION`, RF prognosis) when a
-  model is available, else **v0.2** (`matching.PLACEHOLDER_VERSION`, deterministic
-  fallback) – `similarity_version` + `matcher` + `model` in `report.json`
+One version for the whole project: `__version__` in `bloridium/version.py`
+(currently 0.4.0). It is used for the package (`pyproject.toml`, `bloridium --version`),
+the UI title "Bloridium Tool v…", and `conversion_version` / `similarity_version` in
+`report.json` and `MANIFEST.md`. Which matcher produced the score is in `matcher`
+(`rf-prognose-v…` or `deterministic-placeholder-v…`) and `model`.
 
 ## Score / conversion-quality prognosis
 
 `webapp/matching.py` has two matchers:
 
-- **rf-prognose v0.3** (active as soon as a model is found): the numpy-only random
+- **rf-prognose** (active as soon as a model is found): the numpy-only random
   forest from `bloridium/prognose.py`, trained on the A/B measurements in
-  `recordings/sim_log.jsonl` (target=score, MAE 1.29 – see
-  `docs/HANDOVER-2026-11-19-rf-dataset.md`). Feature vector = the 367 SNDD bytes
+  `recordings/sim_log.jsonl` (target=score – see
+  `docs/HANDOVER-2026-11-19-rf-dataset.md`; the shipped model has R² < 0 and was
+  trained on the saturating v1 score, so treat it as a rough indication, see `FIXES_TODO.md`). Feature vector = the 367 SNDD bytes
   (without the name bytes) / 127 – computed directly from the upload, no dump file
   needed. Returns score 0-100 **plus the std over the trees** (± uncertainty).
-- **deterministic-placeholder v0.2** (fallback without model): purely
+- **deterministic-placeholder** (fallback without model): purely
   deterministic, weighted from osc/filter/FX/env-mod/arp with deductions for
   approximations (wavetable without bridge, BP/Notch/Comb, triple FX, arp).
 
 Model path: `BLORIDIUM_MODEL` (default: auto-detect – `models/prognose_rf.pkl` in
-the repo, `/app/models/prognose_rf.pkl` in the container via volume mount).
+the repo, `/app/models/prognose_rf.pkl` in the container – baked in, overridable by a mount).
 Per sound, the feature vector (parsed parameters, unmapped, mapped) also lands
 in `report.json` in the ZIP – that is the training data for re-training.
 
@@ -118,4 +119,4 @@ python3 -m pytest tests/test_webapp.py -q
 | `PORT` | `8000` | local dev server only |
 | `BLORIDIUM_CORE_DIR` | `/app/core` in the container | pure-python bloridium modules (incl. `prognose.py`) |
 | `BLORIDIUM_TEMPLATE` | `/app/template_waveform.qpat` | qpat template |
-| `BLORIDIUM_MODEL` | `/app/models/prognose_rf.pkl` (mounted) | RF model for the prognosis; if missing -> fallback v0.2 |
+| `BLORIDIUM_MODEL` | `/app/models/prognose_rf.pkl` (baked in) | RF model for the prognosis; if missing -> placeholder |

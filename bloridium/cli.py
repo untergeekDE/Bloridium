@@ -22,6 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .version import __version__
 from . import audio, blofeld_dump as bd, config, db, discover, editor, midi, prognose, qpat, sim, sim_embed, specdiff, workflow
 
 REPO = workflow.REPO
@@ -34,8 +35,9 @@ def default_db_path() -> Path:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="bloridium",
-        description="Blofeld -> Iridium Sound-Transfer (Terminal-Tool, Phase 1)",
+        description="Blofeld -> Iridium sound transfer (terminal tool)",
     )
+    p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     p.add_argument("--db", default=None,
                    help="path to the SQLite bank DB (default: $BLORIDIUM_DB or <repo>/bloridium.db)")
     p.add_argument("--json", action="store_true", help="output as JSON (where supported)")
@@ -113,41 +115,44 @@ def build_parser() -> argparse.ArgumentParser:
                     help="phase B: d1-omni noul profile (explanation layer) via /v1/systemone")
     sc.add_argument("--d1-model", default=sim_embed.DEFAULT_D1_MODEL)
     sc.add_argument("--specdiff", choices=["off", "dsp", "vision"], default="off",
-                    help="Spektral-Diff interpretieren: dsp = nur DSP, vision = + Modell")
+                    help="interpret the spectral diff: dsp = DSP only, vision = + model")
     sc.add_argument("--specdiff-backend", choices=["systemone", "chat"], default="systemone")
     sc.add_argument("--specdiff-model", default=specdiff.DEFAULT_SPECDIFF_MODEL)
     sc.add_argument("--strict", action="store_true", help="missing backend -> exit 3")
     sc.add_argument("--models-dir", default=str(sim_embed.DEFAULT_MODELS_DIR))
     sc.set_defaults(func=cmd_sim_compare)
 
-    pg = sub.add_parser("prognose", help="Prognose: RF aus Blofeld-SNDD-Parametern -> "
-                                         "erwartete Konvertierguete (0-100)")
+    pg = sub.add_parser("prognose", help="prognosis: RF from Blofeld SNDD parameters -> "
+                                         "expected conversion quality (0-100)")
     psub = pg.add_subparsers(dest="prognose_cmd", required=True)
-    pt = psub.add_parser("train", help="Modell trainieren aus sim-Log (JSONL) + SNDD-Dumps")
-    pt.add_argument("--log", default=str(sim.DEFAULT_LOG), help="sim_log.jsonl mit meta.blofeld + result")
-    pt.add_argument("--dumps", default=str(prognose.DEFAULT_DUMPS), help="DIR mit blofeld_sndd_<LOC>_*.bin")
+    pt = psub.add_parser("train", help="train the model from the sim log (JSONL) + SNDD dumps")
+    pt.add_argument("--log", default=str(sim.DEFAULT_LOG), help="sim_log.jsonl with meta.blofeld + result")
+    pt.add_argument("--dumps", default=str(prognose.DEFAULT_DUMPS), help="DIR with blofeld_sndd_<LOC>_*.bin")
     pt.add_argument("--target", default="combined", help="Label: combined|score|embed_score (Fallback score)")
-    pt.add_argument("--model", default=str(prognose.DEFAULT_MODEL), help="Output-Modell (pickle) in models/")
+    pt.add_argument("--model", default=str(prognose.DEFAULT_MODEL), help="output model (pickle) in models/")
+    pt.add_argument("--min-score-version", type=int, default=sim.SCORE_VERSION,
+                    help="skip log rows scored with an older formula "
+                         f"(default {sim.SCORE_VERSION}; rows without score_version = 1; 0 = all)")
     pt.add_argument("--seed", type=int, default=42)
     pt.add_argument("--n-estimators", type=int, default=200)
     pt.set_defaults(func=cmd_prognose_train)
-    pp = psub.add_parser("predict", help="Vorhersage fuer eine Blofeld-Location (z. B. A043)")
+    pp = psub.add_parser("predict", help="predict for one Blofeld location (e.g. A043)")
     pp.add_argument("loc")
     pp.add_argument("--dumps", default=str(prognose.DEFAULT_DUMPS))
     pp.add_argument("--model", default=str(prognose.DEFAULT_MODEL))
     pp.set_defaults(func=cmd_prognose_predict)
 
-    sd = sub.add_parser("specdiff", help="Spektral-Diff interpretieren (DSP + optional "
-                                         "Vision-Model d1-omni/gemma4)")
-    sd.add_argument("--wav", nargs=2, metavar=("A", "B"), help="einzelnes WAV-Paar")
-    sd.add_argument("--log", default=str(sim.DEFAULT_LOG), help="sim_log.jsonl (Batch-Modus)")
+    sd = sub.add_parser("specdiff", help="interpret the spectral diff (DSP + optional "
+                                         "vision model d1-omni/gemma4)")
+    sd.add_argument("--wav", nargs=2, metavar=("A", "B"), help="single WAV pair")
+    sd.add_argument("--log", default=str(sim.DEFAULT_LOG), help="sim_log.jsonl (batch mode)")
     sd.add_argument("--recordings", default=str(REPO / "recordings"),
-                    help="DIR mit ab_<LOC>_<ts>_n<note>[_w<pct>]_blo|irr.wav")
-    sd.add_argument("--png", default=None, help="Single-Modus: PNG speichern")
-    sd.add_argument("--only", default=None, help="Batch: nur eine Location (z. B. A043)")
+                    help="DIR with ab_<LOC>_<ts>_n<note>[_w<pct>]_blo|irr.wav")
+    sd.add_argument("--png", default=None, help="single mode: save PNG")
+    sd.add_argument("--only", default=None, help="batch: only one location (e.g. A043)")
     sd.add_argument("--write", action="store_true",
-                    help="Batch: specdiff + specdiff_score ins JSONL zurueckschreiben")
-    sd.add_argument("--no-vision", action="store_true", help="nur DSP, kein Vision-Model")
+                    help="batch: write specdiff + specdiff_score back into the JSONL")
+    sd.add_argument("--no-vision", action="store_true", help="DSP only, no vision model")
     sd.add_argument("--backend", choices=["systemone", "chat"], default="systemone",
                     help="systemone = d1-omni via /v1/systemone, chat = /api/chat (gemma4)")
     sd.add_argument("--model", default=specdiff.DEFAULT_SPECDIFF_MODEL)
@@ -611,9 +616,10 @@ def np_load_mono(p) -> np.ndarray:
 # ---- prognose (RF: SNDD-Parameter -> Konvertierguete) ----------------------
 
 def cmd_prognose_train(args) -> int:
-    X, y, locs, skipped = prognose.load_training_rows(args.log, args.dumps, args.target)
+    X, y, locs, skipped = prognose.load_training_rows(
+        args.log, args.dumps, args.target, min_score_version=args.min_score_version or None)
     if not locs:
-        print(f"FEHLER: keine Trainingsdaten (log={args.log}, dumps={args.dumps}); "
+        print(f"ERROR: no training data (log={args.log}, dumps={args.dumps}); "
               f"skipped: {skipped[:5]}", file=sys.stderr)
         return 2
     bundle = prognose.train_model(X, y, seed=args.seed, n_estimators=args.n_estimators,
@@ -621,10 +627,14 @@ def cmd_prognose_train(args) -> int:
     prognose.save_model(bundle, args.model)
     m = bundle["metrics"]
     r2cv = f"{m['r2_cv']:.3f}" if m["r2_cv"] is not None else "n/a"
-    print(f"trainiert: n={m['n']} target={args.target} holdout={m['holdout']} "
+    print(f"trained: n={m['n']} target={args.target} holdout={m['holdout']} "
           f"MAE={m['mae']:.2f} RMSE={m['rmse']:.2f} R2={m['r2']:.3f} R2_cv={r2cv}")
-    print(f"Modell gespeichert: {args.model}")
-    print("Top-10 Feature-Importances (Blofeld-Parameter):")
+    if m["r2"] is not None and m["r2"] < 0:
+        print(f"WARNING: R2={m['r2']:.3f} < 0 - the model does not beat predicting the "
+              "mean; treat its predictions as noise (small n / narrow label range?)",
+              file=sys.stderr)
+    print(f"model saved: {args.model}")
+    print("Top-10 feature importances (Blofeld parameters):")
     for name, imp in bundle["importances"][:10]:
         print(f"  {imp:.4f}  {name}")
     print("locs: " + ", ".join(locs))
@@ -644,7 +654,7 @@ def cmd_prognose_predict(args) -> int:
     return 0
 
 
-# ---- specdiff (Spektral-Diff interpretieren) --------------------------------
+# ---- specdiff (interpret the spectral diff) ------------------------------------
 
 def cmd_specdiff(args) -> int:
     backend = specdiff.build_backend(not args.no_vision, args.model, args.backend)
@@ -665,11 +675,11 @@ def cmd_specdiff(args) -> int:
                           "spec_png": r["spec_png"], "dsp": r["dsp"]},
                          indent=1, default=str))
         return 0
-    # Batch ueber sim_log.jsonl + WAV-Paare
+    # batch over sim_log.jsonl + WAV pairs
     log = Path(args.log)
     rec = Path(args.recordings)
     if not log.exists():
-        print(f"FEHLER: log nicht gefunden: {log}", file=sys.stderr)
+        print(f"ERROR: log not found: {log}", file=sys.stderr)
         return 2
     lines = log.read_text().splitlines()
     out_lines = list(lines)
@@ -689,7 +699,7 @@ def cmd_specdiff(args) -> int:
         w = meta.get("wheel_pct")
         wtag = f"_w{float(w):.0f}" if w is not None else ""
         pair = None
-        if meta.get("wav"):  # exakter Pfad aus der Messung (neuere Logs)
+        if meta.get("wav"):  # exact path from the measurement (newer logs)
             base = rec / meta["wav"]
             for suf_a, suf_b in (("_blo.wav", "_irr.wav"), ("_blofeld.npy", "_iridium.npy")):
                 if Path(str(base) + suf_a).exists() and Path(str(base) + suf_b).exists():
@@ -719,7 +729,7 @@ def cmd_specdiff(args) -> int:
         log.write_text("\n".join(out_lines) + "\n")
         print(f"geschrieben: {n_done} Eintraege -> {log}")
     if n_done == 0:
-        print(f"FEHLER: keine WAV-Paare gefunden (log={log}, recordings={rec})",
+        print(f"ERROR: no WAV pairs found (log={log}, recordings={rec})",
               file=sys.stderr)
         return 2
     return 0

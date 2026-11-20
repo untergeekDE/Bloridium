@@ -159,3 +159,43 @@ def test_compare_band_dtw_localizes_high_bands():
     b = 0.5 * np.sin(2 * np.pi * 220 * t)
     r = sim.compare(sim.features(a, sr), sim.features(b, sr))
     assert max(r["band_dtw"][-8:]) > max(r["band_dtw"][:8]) + 0.05
+
+
+# --- score_version 2 (2026-11-20): level-aligned band deviation instead of dB cosine ---
+
+def _saw(freq, dur=1.0, sr=SR, amp=0.3):
+    t = np.arange(int(dur * sr)) / sr
+    return amp * (2 * ((t * freq) % 1) - 1)
+
+
+def test_score_identical_is_100_and_versioned():
+    f = sim.features(_saw(110.0))
+    r = sim.compare(f, f)
+    assert r["score"] == 100.0
+    assert r["spec_mad_db"] == 0.0
+    assert r["verdict"] == "close"
+    assert r["score_version"] == sim.SCORE_VERSION == 2
+
+
+def test_score_separates_timbres_the_v1_cosine_saturated_on():
+    # v1 (dB cosine) called two sines 3.5 octaves apart "close" (91.4)
+    r = sim.compare(sim.features(sine(220.0)), sim.features(sine(3000.0)))
+    v1 = 100.0 * (0.7 * r["spec_cos"] + 0.3 * (1.0 - r["env_dtw"]))
+    assert v1 >= 85                 # the old formula is still saturated
+    assert r["score"] < 60
+    assert r["verdict"] == "far"
+
+
+def test_score_saw_vs_noise_not_close():
+    rng = np.random.default_rng(0)
+    noise = 0.3 * rng.standard_normal(SR)
+    r = sim.compare(sim.features(_saw(110.0)), sim.features(noise))
+    assert r["score"] < 85
+
+
+def test_score_spectral_part_level_independent():
+    fa = sim.features(_saw(110.0, amp=0.3))
+    fb = sim.features(_saw(110.0, amp=0.03))  # -20 dB
+    r = sim.compare(fa, fb)
+    assert r["spec_mad_db"] < 0.5
+    assert r["score"] > 95

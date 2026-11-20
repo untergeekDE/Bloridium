@@ -23,8 +23,8 @@ import matching
 WEBAPP = Path(__file__).resolve().parent
 REPO = WEBAPP.parent
 
-# Versioning of the conversion tool (UI title, report.json, MANIFEST)
-CONVERSION_VERSION = "0.3"
+# Versioning (UI title, report.json, MANIFEST): one version, see bloridium/version.py
+CONVERSION_VERSION = matching.VERSION
 
 
 class UploadError(ValueError):

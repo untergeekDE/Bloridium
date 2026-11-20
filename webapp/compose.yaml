@@ -11,7 +11,7 @@ services:
       - "8000:8000"
     volumes:
       - ./data:/data                  # Upload artifacts (ZIPs/reports), persistent
-      - ../models:/app/models:ro      # RF prognosis model (gitignored in repo)
+      - ../models:/app/models:ro      # optional: override the baked-in RF model
     environment:
       DATA_DIR: /data
       DATA_TTL_HOURS: "24"            # delete artifacts after 24 h

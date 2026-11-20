@@ -15,6 +15,8 @@ import convert  # noqa: E402
 import matching  # noqa: E402
 from app import create_app  # noqa: E402
 
+from bloridium.version import __version__ as V  # noqa: E402
+
 DUMP_BIN = REPO / "dumps" / "blofeld_sndd_A043_20261108_135516.bin"
 
 
@@ -83,10 +85,10 @@ def test_process_upload_zip(core, sample_sdata, tmp_path):
         assert q["version"] == core.qpat.PRESET_VERSION
         rep = json.loads(zf.read("report.json"))
         assert rep["num_sounds"] == 3
-        assert rep["conversion_version"] == "v0.3" and rep["similarity_version"] == "v0.2"
+        assert rep["conversion_version"] == f"v{V}" and rep["similarity_version"] == f"v{V}"
         assert all("features" in s and "params" in s["features"] for s in rep["sounds"])
         assert all("score" in s and "penalties" in s for s in rep["sounds"])
-        assert "v0.2" in zf.read("MANIFEST.md").decode()
+        assert "deterministic-placeholder" in zf.read("MANIFEST.md").decode()
     # report.json on disk identical to the ZIP content
     on_disk = json.loads((tmp_path / report["token"] / "report.json").read_text())
     assert on_disk["token"] == report["token"]
@@ -106,13 +108,13 @@ RF_MODEL = REPO / "models" / "prognose_rf.pkl"
 
 @pytest.mark.skipif(not RF_MODEL.exists(), reason="RF model models/prognose_rf.pkl not present (gitignored)")
 def test_rf_prognose(sample_sdata, tmp_path):
-    """With a trained model, the score comes from the RF (similarity v0.3)."""
+    """With a trained model, the score comes from the RF prognosis."""
     syx = _sndd_bytes(0, 42, sample_sdata)  # A043 "SH Power"
     r1 = convert.process_upload("a043.syx", syx, tmp_path, model_path=RF_MODEL)
     r2 = convert.process_upload("a043.syx", syx, tmp_path, model_path=RF_MODEL)
     s = r1["sounds"][0]
-    assert r1["matcher"].startswith("rf-prognose-v0.3")
-    assert r1["similarity_version"] == "v0.3"
+    assert r1["matcher"].startswith(f"rf-prognose-v{V}")
+    assert r1["similarity_version"] == f"v{V}"
     assert r1["model"] == str(RF_MODEL)
     assert 0.0 <= s["score"] <= 100.0 and s["std"] is not None and s["std"] >= 0
     assert s["score"] == r2["sounds"][0]["score"]  # deterministic
@@ -120,7 +122,7 @@ def test_rf_prognose(sample_sdata, tmp_path):
     assert 80.0 <= s["score"] <= 100.0
     with zipfile.ZipFile(r1["zip_path"]) as zf:
         rep = json.loads(zf.read("report.json"))
-        assert rep["matcher"].startswith("rf-prognose-v0.3")
+        assert rep["matcher"].startswith(f"rf-prognose-v{V}")
         assert "rf-prognose" in zf.read("MANIFEST.md").decode()
 
 
@@ -171,7 +173,7 @@ def test_flask_routes(core, sample_sdata, tmp_path, monkeypatch):
     r = client.get("/")
     assert r.status_code == 200 and b"upload" in r.data
     # layout like webpage.pdf + versioning + background image
-    assert b"Bloridium Tool v0.3" in r.data
+    assert f"Bloridium Tool v{V}".encode() in r.data
     assert b"Convert Blofeld Sound Banks for the Iridium" in r.data
     assert b"crude approximation" in r.data                      # NOTE box from the PDF
     assert b"github.com/untergeekDE/Bloridium" in r.data          # footer from the PDF
@@ -184,7 +186,7 @@ def test_flask_routes(core, sample_sdata, tmp_path, monkeypatch):
                     content_type="multipart/form-data")
     assert r.status_code == 200
     assert b"/download/" in r.data and b"Score" in r.data
-    assert b"similarity v0.2" in r.data
+    assert f"similarity v{V}".encode() in r.data
 
     token = None
     for line in r.data.decode().splitlines():
@@ -200,9 +202,9 @@ def test_flask_routes(core, sample_sdata, tmp_path, monkeypatch):
     assert r.status_code == 200
     rep = json.loads(r.data)
     assert rep["num_sounds"] == 1 and 0 <= rep["sounds"][0]["score"] <= 100
-    assert rep["conversion_version"] == "v0.3"
-    assert rep["similarity_version"] == "v0.2"
-    assert "v0.2" in rep["matcher"]
+    assert rep["conversion_version"] == f"v{V}"
+    assert rep["similarity_version"] == f"v{V}"
+    assert rep["matcher"].startswith("deterministic-placeholder")
 
     assert client.get("/download/../etc/passwd").status_code == 404
     assert client.get("/download/" + "0" * 32).status_code == 404
@@ -211,3 +213,39 @@ def test_flask_routes(core, sample_sdata, tmp_path, monkeypatch):
     r = client.post("/upload", data={"file": (io.BytesIO(b"\xF0\x7E\xF7"), "x.syx")},
                     content_type="multipart/form-data")
     assert r.status_code == 400
+
+
+def test_cleanup_removes_old_dirs_and_tolerates_races(tmp_path, monkeypatch):
+    import os
+    import time
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    app = create_app()
+    old = tmp_path / ("a" * 32)
+    old.mkdir()
+    (old / "result.zip").write_bytes(b"x")
+    fresh = tmp_path / ("b" * 32)
+    fresh.mkdir()
+    past = time.time() - (app.ttl_hours + 1) * 3600
+    os.utime(old, (past, past))
+
+    app.cleanup()
+    assert not old.exists() and fresh.exists()
+    app.cleanup()  # second worker: entry already gone -> no exception
+
+
+def test_cleanup_is_throttled(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("CLEANUP_INTERVAL_S", "3600")
+    app = create_app()
+    calls = []
+    app.cleanup = lambda: calls.append(1)
+    client = app.test_client()
+    for _ in range(3):
+        assert client.get("/health").status_code == 200
+    assert len(calls) == 1  # once per interval, not once per request
+
+
+def test_versions_are_unified():
+    from bloridium.version import __version__
+    assert convert.CONVERSION_VERSION == matching.SIMILARITY_VERSION == \
+        matching.PLACEHOLDER_VERSION == __version__

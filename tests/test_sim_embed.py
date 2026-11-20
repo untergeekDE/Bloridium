@@ -269,7 +269,7 @@ PAAR = ("check_20261108_152813_blofeld.npy", "check_20261108_152813_iridium.npy"
 SCHEMA_KEYS = {"score", "spec_cos", "env_dtw", "band_delta_db", "verdict", "error",
                "embed_cos", "embed_score", "combined", "llm", "backend_error", "peak_dbfs",
                "profile", "spec_dtw", "band_dtw", "frame_cos", "band_edges_hz", "spec_png",
-               "specdiff", "specdiff_score"}
+               "specdiff", "specdiff_score", "spec_mad_db", "score_version"}
 
 
 class _FakeClap:

@@ -57,7 +57,7 @@ def render_spec_png(x: np.ndarray, sr: int, path: Path) -> None:
     """
     from PIL import Image
 
-    f = sim.features(x, sr=sr)  # ValueError bei < 0.2 s
+    f = sim.features(x, sr=sr)  # ValueError for < 0.2 s
     spec = f["log_spec"]  # (n_bands, n_frames) in dB
     lo, hi = float(spec.min()), float(spec.max())
     if hi - lo < 1e-9:
@@ -103,7 +103,7 @@ def render_spec_pair_png(x_a: np.ndarray, x_b: np.ndarray, sr: int, path: Path,
         else:
             lut[i] = (int(128 + 128 * t), int(128 + 128 * t), int(128 - 127 * t))
     d = np.clip(sb - sa, -db_span, db_span)
-    # Pad-Spalten (Seite ohne Daten) nicht als Delta rendern, sondern 0 dB (grau)
+    # render pad columns (side without data) as 0 dB (gray), not as delta
     if na < n:
         d[:, na:] = 0.0
     if nb < n:
@@ -132,7 +132,7 @@ def _spec_png_name(meta: dict, spec_png_dir) -> Path:
                     fv = float(v)
                     v = f"w{int(fv) if fv == int(fv) else fv}"
                 except (TypeError, ValueError):
-                    v = f"w{v}"  # nicht-numerisch -> Roh-String, kein Fehler
+                    v = f"w{v}"  # non-numeric -> raw string, no error
             elif k == "note":
                 v = f"n{v}"
             parts.append(str(v))
@@ -524,6 +524,7 @@ def _fehler_result(error: str) -> dict:
     """Stable error schema: backend keys always present (null), never missing."""
     return {"score": None, "verdict": "error", "error": error,
             "spec_cos": None, "env_dtw": None, "band_delta_db": None,
+            "spec_mad_db": None, "score_version": sim.SCORE_VERSION,
             "embed_cos": None, "embed_score": None, "combined": None,
             "llm": None, "backend_error": None, "peak_dbfs": None, "profile": None,
             "spec_dtw": None, "band_dtw": None, "frame_cos": None, "band_edges_hz": None,

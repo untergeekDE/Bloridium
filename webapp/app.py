@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import time
 from html import escape
 from pathlib import Path
@@ -30,7 +31,7 @@ def footer(sim_ver: str) -> str:
     return ('<footer>Info on <a href="https://untergeek.de">untergeek.de</a> &middot; '
             'Repository of conversion tools: '
             '<a href="https://github.com/untergeekDE/Bloridium">github.com/untergeekDE/Bloridium</a>'
-            f' &middot; conversion v{convert.CONVERSION_VERSION} / similarity v{sim_ver}</footer>')
+            f' &middot; Bloridium v{convert.CONVERSION_VERSION} &middot; GPL-3.0</footer>')
 
 PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -90,7 +91,10 @@ def _score_note() -> str:
     if mpath:
         return (f'similarity v{matching.SIMILARITY_VERSION} &ndash; random-forest prognosis '
                 f'(model <code>{escape(mpath.name)}</code>, trained on A/B measurements, '
-                'see docs/HANDOVER-2026-11-19-rf-dataset.md)')
+                'see docs/HANDOVER-2026-11-19-rf-dataset.md). <b>Treat it as a rough '
+                'indication only:</b> the model was trained on 99 sounds, does not beat '
+                'a constant guess on held-out data (R&sup2; &lt; 0), and the underlying '
+                'similarity score is known to saturate (see FIXES_TODO.md)')
     return (f'similarity v{matching.PLACEHOLDER_VERSION} &ndash; deterministic placeholder '
             '(no trained model found; set BLORIDIUM_MODEL to enable the RF prognosis)')
 
@@ -105,17 +109,33 @@ def create_app() -> Flask:
     def page(body: str) -> str:
         return PAGE.format(conv=convert.CONVERSION_VERSION, body=body)
 
+    app.cleanup_interval_s = float(os.environ.get("CLEANUP_INTERVAL_S", "300"))
+    app._last_cleanup = 0.0
+
     def cleanup():
+        """Delete upload dirs older than the TTL.
+
+        Several gunicorn workers may run this at the same time, so every
+        filesystem step tolerates the other worker having deleted the entry
+        first (previously: FileNotFoundError -> HTTP 500 on a random request).
+        """
         cutoff = time.time() - app.ttl_hours * 3600
-        for d in app.data_dir.iterdir():
-            if d.is_dir() and d.stat().st_mtime < cutoff:
-                for f in d.iterdir():
-                    f.unlink(missing_ok=True)
-                d.rmdir()
+        for d in list(app.data_dir.iterdir()):
+            try:
+                if d.is_dir() and d.stat().st_mtime < cutoff:
+                    shutil.rmtree(d, ignore_errors=True)
+            except FileNotFoundError:
+                continue
 
     @app.before_request
     def _cleanup():
-        cleanup()
+        # at most once per interval per worker instead of on every request
+        now = time.time()
+        if now - app._last_cleanup >= app.cleanup_interval_s:
+            app._last_cleanup = now
+            app.cleanup()
+
+    app.cleanup = cleanup
 
     @app.errorhandler(413)
     def too_large(e):

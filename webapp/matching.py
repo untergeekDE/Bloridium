@@ -2,14 +2,14 @@
 
 Two matchers:
 
-- **rf-prognose v0.3** (active when a trained model is available): the numpy-only
+- **rf-prognose** (active when a trained model is available): the numpy-only
   Random Forest from `bloridium/prognose.py`, trained on the A/B measurements in
   `recordings/sim_log.jsonl` (target=score; dataset contract:
   docs/HANDOVER-2026-11-19-rf-dataset.md). Feature vector = the 367 SNDD bytes
   (without the name bytes 363-378) / 127, computed directly from the uploaded
   SNDD – no dump file needed. Returns predicted score 0-100 plus the std over
   the individual trees (uncertainty).
-- **deterministic-placeholder v0.2** (fallback when no model is found): pure
+- **deterministic-placeholder** (fallback when no model is found): pure
   function of the parsed parameters; same dump -> same score.
 
 The web app also writes the feature vector (parsed params, unmapped, mapped)
@@ -21,9 +21,28 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-# Versioning of the similarity tool (report.json, UI)
-SIMILARITY_VERSION = "0.3"    # RF prognosis (active matcher when a model exists)
-PLACEHOLDER_VERSION = "0.2"   # deterministic fallback
+
+
+def _read_core_version() -> str:
+    """__version__ from bloridium/version.py (repo) or core/version.py (container),
+    parsed as text so the package (mido/rtmidi) is never imported."""
+    import re
+    env = os.environ.get("BLORIDIUM_CORE_DIR")
+    for d in ([Path(env)] if env else []) + [Path(__file__).resolve().parent / "core",
+                                             Path(__file__).resolve().parent.parent / "bloridium"]:
+        f = d / "version.py"
+        if f.exists():
+            m = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', f.read_text())
+            if m:
+                return m.group(1)
+    return "0+unknown"
+
+
+# One version for everything (package, conversion, similarity, matchers) - see
+# bloridium/version.py. The matcher *name* tells RF prognosis from placeholder.
+VERSION = _read_core_version()
+SIMILARITY_VERSION = VERSION    # kept as aliases for report.json field names
+PLACEHOLDER_VERSION = VERSION
 
 WEBAPP = Path(__file__).resolve().parent
 REPO = WEBAPP.parent
@@ -115,7 +134,7 @@ FX_EXACT = {
 
 
 def estimate_match(parsed: dict, unmapped: list[str], qm) -> dict:
-    """Deterministic placeholder score 0-100 for a parse_sndd result (v0.2).
+    """Deterministic placeholder score 0-100 for a parse_sndd result.
 
     parsed: blofeld_dump.parse_sndd() result
     unmapped: list from qpat_map.blofeld_to_qpat_params()

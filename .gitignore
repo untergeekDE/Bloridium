@@ -1,36 +1,36 @@
-# Generiert
+# generated
 __pycache__/
 *.pyc
 bloridium.db
 
-# Phase-B-Modelle (GGUF ~208 MB, nie ins Repo)
+# phase B models (GGUF ~208 MB, never in the repo)
 models/*
-# RF-Prognosemodelle sollen mit ins Repo (klein, ~0.9 MB); GGUF-Downloads bleiben ignored:
+# RF prognosis models are tracked (small, ~0.9 MB); GGUF downloads stay ignored:
 !models/prognose_rf*.pkl
 
-# Große Fremd-Referenzdaten (Waldorf Factory-Zips, ~1,8 GB) – bei Bedarf entfernen
+# large third-party reference data (Waldorf factory zips, ~1.8 GB)
 .DS_Store
 docs/refs/*.zip
-# Referenz-Sounds nie ins Repo (nur das Tool-Template bleibt getrackt)
+# reference sounds never in the repo (only the tool template stays tracked)
 docs/refs/qpat/*.qpat
 !docs/refs/qpat/template_waveform.qpat
 
-# Build-Artefakte
+# build artifacts
 *.egg-info/
 .superpowers/
 
-# Web-App: lokale Upload-Artefakte
+# web app: local upload artifacts
 webapp/data/
 
-# Grundprinzip: nur Tools + Config + Midi-Maps im Repo.
-# Eigene Sounds / Fremd-Sample-Packs / Tool-Ergebnisse (nie ins Repo):
+# principle: only tools + config + MIDI maps in the repo.
+# own sounds / third-party sample packs / tool output (never in the repo):
 dumps/
 transfer/
 recordings/
 
-# Editor-/Backup-Cruft
+# editor/backup cruft
 .~lock.*#
 *.bak
 
-# Projekt-lokale Skills (z. B. Fernsteuer-Skill aus ../bloridium-codesearch) lokal halten
+# keep project-local skills local
 .opencode/skills/
