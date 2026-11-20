@@ -119,15 +119,15 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
 - [x] Step 1: 100 qpats in transfer/rf100_v2, alle roundtrip-parsebar, sd_names ok aus den 100 rf-Dumps mit neuem Mapping; jeder qpat roundtrip-parsebar,
   Namen ohne Spaces, MANIFEST-Einträge mit `sd_name`
 - [x] Step 2: Diff = nur neue LFO/Noise-Keys: Diff-Statistik (welche Keys kamen neu dazu) in Log
-- [ ] Step 3: Commit; **User-Aktion:** `transfer/rf100_v2/*` auf SD-Karte als `rf200/` kopieren
+- [x] Step 3: Commit `5012b9a`/`9d1e634` + push; SD-Kopie erledigt (plain cp, Namen per Konversion SD-sicher) `transfer/rf100_v2/*` auf SD-Karte als `rf200/` kopieren
 
 ### Task 5: verify-sd + Live-Neu-Recording (v2 + embed + d1) — Hintergrund
 
 **Files:** codesearch `tools/quir_rf_dataset.py` (verify-sd/measure), neue Config
 `recordings/quir_rf_dataset_config_v2.json` (remote `2:rf200/...`, slots 200–299)
 
-- [ ] Step 1: `verify-sd` gegen `2:rf200` (nach SD-Kopie) grün — sonst STOP vor Recording
-- [ ] Step 2: `measure` über alle 100 (notes 72,60) mit `--allow-write`, Scoring v2
+- [x] Step 1: `verify-sd` 100/100 auf `2:rf200` (nach Iridium-Reboot — QUIR war nach SD-Wechsel tot, Reboot hat geholfen) (nach SD-Kopie) grün — sonst STOP vor Recording
+- [~] Step 2: `measure` läuft (Hintergrund rf_v2_measure.log): alle 100 × notes 72,60, v2 + --embed --norm-pegel; danach 24-Loc-Subset mit --llm --profile (d1) (notes 72,60) mit `--allow-write`, Scoring v2
   (automatisch), `--embed` für alle, `--llm --profile` (d1) auf Subset (5 Outlier + ~25
   Zufall) wegen Laufzeit; Zeilen in `recordings/sim_log.jsonl` mit `score_version: 2`
 - [ ] Step 3: Nach Lauf: quick entropy-report auf den neuen v2-Zeilen

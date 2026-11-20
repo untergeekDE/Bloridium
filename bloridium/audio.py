@@ -69,8 +69,14 @@ def record(duration: float = 2.0, channels=(2, 3), device: str | None = None,
         cmd += ["-af", pan]
     cmd += ["-ar", str(samplerate), "-f", "f32le", "-"]
     last_err = ""
+    to = duration + 20.0   # Timeout: ffmpeg/AVFoundation kann sonst ewig hängen (2026-11-20)
     for _attempt in range(4):  # AVFoundation sometimes does not release the device immediately
-        proc = subprocess.run(cmd, capture_output=True)
+        try:
+            proc = subprocess.run(cmd, capture_output=True, timeout=to)
+        except subprocess.TimeoutExpired:
+            last_err = f"ffmpeg timeout (>{to:.0f}s) — Aufnahme hing"
+            time.sleep(1.0)
+            continue
         if proc.returncode == 0:
             break
         last_err = proc.stderr.decode(errors="replace")
@@ -105,7 +111,10 @@ def record_wav(path, duration: float = 2.0, channels=(2, 3), device: str | None 
         "-ar", str(samplerate),
         "-c:a", "pcm_s16le", str(path),
     ]
-    subprocess.run(cmd, check=True, capture_output=True)
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, timeout=duration + 20.0)
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(f"ffmpeg timeout (>{duration + 20.0:.0f}s) — Aufnahme hing") from e
 
 
 def measure(x: np.ndarray) -> dict:
