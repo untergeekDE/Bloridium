@@ -29,8 +29,15 @@ suite is run on the measurement machine (item 11).
 2. 🟡 **RF prognosis is not predictive.** R² is −0.19 on held-out data and −0.06 in CV.
    - ✅ `bloridium prognose train` warns on stderr when R² < 0.
    - ✅ The webapp score note and the module docstring state the caveat.
-   - 🖥 Re-train on v2 scores (item 1), then check whether R² becomes positive. The shipped
-     `models/prognose_rf*.pkl` are still v1-trained.
+   - ✅ **Done 2026-11-20:** retrained on v2 (`--target score`, `recordings/sim_log_v2_rf.jsonl`):
+     n=99, MAE 10.47, **R²=+0.064 holdout / R²_cv=+0.132 — positive** (v1 model: R²<0).
+     Shipped `models/prognose_rf.pkl` is now v2-trained (old kept as `prognose_rf_v1.pkl`).
+     `--target combined` stays noisy (R² −0.19 holdout) — ship `score`. Note MAE is larger
+     in absolute terms only because v2 labels spread over 22–84 instead of saturated 87–98.
+   - ✅ Entropy check before training (`bloridium prognose entropy`): H(y)=3.14 bits on
+     n=99 v2 labels; embed_score adds partial IG 0.63 bits beyond spec_mad_db (d1 profile
+     0.60 on n=23, llm constant → none). embed/d1 are only available AFTER measuring →
+     leakage as RF input features; usable as label/diagnostic only (docs/FINDINGS.md).
    - ⬜ If not: get more and more varied data, use fewer features, or drop the RF in favour
      of the placeholder.
 3. ⬜ **Own random forest instead of sklearn**, kept only because scipy was broken locally.

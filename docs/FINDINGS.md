@@ -203,3 +203,22 @@ Helpers: `bloridium/waldorf.py` (`build_sysex`, `parse_sysex`, `identity_reply_i
   und können keine Features für die Vorhersage aus dem SNDD-Dump allein sein (Leakage);
   sie taugen als Label-Komponente/diagnostisches Feature, nicht als Input-Feature.
 - Finale Entropy-Auswertung folgt nach dem Neu-Recording der 100 Sounds mit v2.
+
+## 2026-11-20 — v2 full pipeline: re-record A001–A100, entropy check, RF retrain
+
+- Neu-Recording aller 100 Sounds mit erweiterter Konversion (LFO Shape/Phase/Delay,
+  Mixer-Noise auf freien/stummen Osc; rf100_v2 auf SD `2:rf200`, verify-sd 100/100):
+  200 Messungen (notes 72,60), alle `score_version: 2`, 188 gescored, **v2 mean 50.5,
+  range 22.4–81.3** (v1 war gesättigt ~94–97). Subset (24 Locs) zusätzlich mit
+  `--llm --profile` (d1): 83 llm + 83 d1-profile.
+- `prognose entropy` auf n=99 v2-Labels: H(y)=3.14 bits. spec_mad_db erklärt das Label
+  selbst (pearson −0.985, zirkulär). **Partielle IG gegeben spec_mad_db: embed_score
+  0.627 bits, profile_score (d1) 0.603 (n=23), env_dtw 0.596, spec_dtw 0.427; llm_score
+  konstant → 0.** => embed/d1 senken die Entropie WEITER, sind aber erst nach der Messung
+  verfügbar (Leakage als RF-Input) — als Label/diagnostisches Feature tauglich.
+- Retrain v2 (`--target score`): n=99, MAE 10.47, RMSE 12.51, **R²=+0.064 / R²_cv=+0.132**
+  (v1: R²<0). Top-Features: Filter 1 Cutoff, Osc 1/3 Octave, Filter 1 Resonance,
+  Filter 1 Env Amount. `combined` bleibt rauschig (R² −0.19) → `score` shippen.
+  Alte Modelle als `models/prognose_rf*_v1.pkl` behalten.
+- Bugfix: `audio.record` ffmpeg ohne Timeout hing 60 min (Fix: timeout=duration+20 s,
+  4 Versuche); qpat-Dateinamen per Konversion SD-sicher (`qpat.sd_filename`).
