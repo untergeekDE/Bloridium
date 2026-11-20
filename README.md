@@ -134,7 +134,7 @@ Parameters & safety:
 - The tool **never changes device settings**; All Notes Off (CC123) is sent on all channels before measurements.
 - **Warning: CC7 = 0 is silent on the Iridium** (Output Level).
 - Global DB option: `--db PATH` or `$BLORIDIUM_DB` (default `<repo>/bloridium.db`). Exit codes: 0 ok, 1 error, 2 hardware unreachable (with port list).
-- Similarity score (`bloridium/sim.py`): log-spectrogram cosine (70 %) + envelope DTW (30 %) → score 0–100, plus per-band dB deltas. Offline via `scripts/sim_compare.py --npy A.npy B.npy`, live via `--live` or `scripts/sim_live.py --param "Filter1 Cutoff" --value 90 --ref ref.npy`; every run is logged to `recordings/sim_log.jsonl`.
+- Similarity score (`bloridium/sim.py`, `score_version` 2 since v0.4.0): 70 % spectral similarity (`1 − spec_mad_db/20 dB`, the mean level-aligned deviation of the log-spectrogram bands) + 30 % envelope DTW → score 0–100, plus per-band dB deltas. The v1 cosine score saturated (see `docs/FINDINGS.md`); log rows without `score_version` are v1 and are skipped by `prognose train`. Offline via `scripts/sim_compare.py --npy A.npy B.npy`, live via `--live` or `scripts/sim_live.py --param "Filter1 Cutoff" --value 90 --ref ref.npy`; every run is logged to `recordings/sim_log.jsonl`.
 
 ## History & Todo
 
@@ -145,3 +145,8 @@ Parameters & safety:
 - Todo: Iridium parameters without CC (e.g. Filter1 Cutoff, mod matrix) reachable only via MIDI Learn on the device.
 - Todo: mapping model trained from `recordings/sim_log.jsonl`.
 - Full findings: `docs/FINDINGS.md`; inventory + next-session plan: `docs/STATUS.md`.
+- 2026-11-20: review fixes, v0.4.0 – similarity score v2, unified version, GPL-3.0 (`FIXES_TODO.md`).
+
+## License
+
+Bloridium is free software, licensed under the [GNU General Public License v3.0](LICENSE) (GPL-3.0-only).
