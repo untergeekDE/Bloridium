@@ -187,3 +187,19 @@ Helpers: `bloridium/waldorf.py` (`build_sysex`, `parse_sysex`, `identity_reply_i
   diagnostic `spec_cos`. Every result carries `score_version: 2`; log rows without it are
   v1. `prognose train` skips them by default (`--min-score-version 2`). The 20 dB scale is
   a heuristic and still needs calibration against user ratings (like specdiff).
+
+## 2026-11-20 — v2-Rescore der vorhandenen Aufnahmen + Entropy-Check (vor Retrain)
+
+- `scripts/rescore_v2.py`: alle 45 vorhandenen `ab_*`-Paare (9 Locs: A001 A008 A010 A019
+  A022 A039 A043 A071 A073) offline mit Score v2 + embed + llm + d1 re-gescored →
+  `recordings/sim_log_v2.jsonl` (40/45 mit Score; v1-Log bleibt unberührt).
+- v2-Scores streuen deutlich (mean 57.9, min 35.9, max 82.9) vs. v1-gesättigt ~94–97
+  → v2 ist als RF-Label deutlich signalhaltiger.
+- `bloridium prognose entropy` (H(y) + IG + partielle IG gegeben spec_mad_db):
+  spec_mad_db erklärt das v2-Label quasi allein (pearson −0.998, zirkulär: 70 %
+  Label-Gewicht); **embed_score / profile_score / spec_dtw / env_dtw haben partielle
+  IG = 0.000** (n=9) — auf diesem Mini-Set senkt nichts die Entropie weiter.
+  llm_score konstant 85 → IG 0. Caveat: embed/d1 sind erst NACH der Messung verfügbar
+  und können keine Features für die Vorhersage aus dem SNDD-Dump allein sein (Leakage);
+  sie taugen als Label-Komponente/diagnostisches Feature, nicht als Input-Feature.
+- Finale Entropy-Auswertung folgt nach dem Neu-Recording der 100 Sounds mit v2.
