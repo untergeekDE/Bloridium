@@ -379,3 +379,19 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
 | LFO 1 Fade defekt (Blofeld 2,6–2,9; Iridium 0,1–0,3) | Blofeld Fade bipolar: raw>64 -> `LfoNAttack=(raw-64)/63`, raw<64 -> `LfoNDecay=(64-raw)/64`, 64 -> beide 0 | test_lfo_fade_maps_to_attack_decay |
 
 - Free-Speed-Hz-Kurve bleibt offen (Hardware-Kalibrierung, `TODO_MEASURE.md`).
+
+### RF100 v3 vorbereitet (2026-11-21)
+
+- `scripts/reconvert_rf.py` konvertiert A001–A100 aus den SNDD-Dumps mit dem
+  aktuellen Mapping nach `transfer/rf100_v3` (SD-Ordner `rf300`, Slots 300–399,
+  `MANIFEST.json`/`MANIFEST.md`). Ergebnis: 100 qpats, gemappt 141–220
+  (Mittel 170,3), alle roundtrip-parsebar und SD-sicher benannt.
+- `scripts/measure_rf100.py` lädt die qpats per QUIR von `2:rf300/...`, misst
+  Notes 72/60, scorst mit v2 und schreibt `recordings/sim_log_v3.jsonl`
+  (dry-run ohne `--run`; `--verify-sd` read-only; Resume über `(loc, note)`).
+- Trainingspipeline mit dem vorhandenen v2-Log als Smoke-Test geprüft:
+  `prognose train --log recordings/sim_log_v2_rf.jsonl --dumps dumps
+  --target score` → n=99, MAE 10.47, R² 0.064 / R²_cv 0.132 (unverändert).
+  Nach dem neuen Lauf: `--log recordings/sim_log_v3.jsonl --model
+  models/prognose_rf_v3.pkl`.
+- Ablauf und Akzeptanz: `docs/MEASURE-RF100-V3.md`.
