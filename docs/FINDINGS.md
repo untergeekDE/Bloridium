@@ -314,3 +314,17 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
 - Kein PC von meinen QUIR-Sonden (nur Shell-Kommandos; set-pid nur Edit-Puffer, nie
   save-patch). ChangeProgram las 0.000. SD war am Geraet nicht gemountet (ls 2: fails).
 - rf100_v2 re-konvertiert (A008: 184 mapped). 401 Tests gruen.
+
+## 2026-11-21 — Matrix-Pitch-Kalibrierung live gemessen (INIT, Constant -> Osc1 Pitch)
+
+- Experiment `tools/quir_matrix_pitch_calib.py` (codesearch): `init-patch`, nur Osc1
+  (Sine), Matrix Row 1 = Constant(40) -> Osc1 Pitch(2), MatrixAmount gesweept, note 60
+  gespielt, Grundton per FFT (parabolisch interpoliert).
+- Ergebnis: **amount 0.5 = 0 semi (neutral), 1.0 = +24.0 semi, 0.0 = −13.8 semi**;
+  dazwischen nichtlinear (exponentiell). Kalibrierungstabelle MATRIX_PITCH_CAL in
+  qpat_map.py; Oktav-Rest-Shift (A008 1′) nutzt die inverse Interpolation
+  (`matrix_pitch_amount_for_semi`). Erster Messlauf hatte Shape=4 = Pink Noise gesetzt
+  (Enum: 0 Saw, 1 Sine, …, 4 Pink Noise) -> Messung unbrauchbar; mit Sine wiederholt.
+- init-patch loest sauberen Zustand im Edit-Puffer aus (verifiziert per get-param:
+  Shape 0, Vol 1/0/0, Coarse 24, Fine 0.5, Matrix row1 leer). Nichts persistiert.
+- 402 Tests gruen; rf100_v2 re-konvertiert (A008: CoarsePitch 48 + Constant-Row).

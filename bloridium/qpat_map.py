@@ -296,6 +296,31 @@ def amt_bipolar(raw: int) -> float:
     return max(0.0, min(1.0, 0.5 + (raw - 64) / 254.0))
 
 
+# MatrixAmount -> Pitch-Verschiebung in Halbtönen, gemessen am Iridium 2026-11-21
+# (tools/quir_matrix_pitch_calib.py in bloridium-codesearch: init-patch, nur Osc1
+# Sine, Matrix Row 1 = Constant -> Osc1 Pitch, note 60, FFT-Grundton):
+#   amount 0.5 = 0 semi (neutral), 1.0 = +24.0 semi, 0.0 = -13.8 semi (unten
+#   abgeflacht), dazwischen nichtlinear (exponentiell).
+MATRIX_PITCH_CAL = [  # (amount, semi)
+    (0.0, -13.78), (0.25, -5.95), (0.375, -1.53), (0.5, 0.0),
+    (0.625, 1.66), (0.75, 6.06), (0.875, 13.46), (1.0, 24.02),
+]
+
+
+def matrix_pitch_amount_for_semi(semi: float) -> float:
+    """Inverse der Kalibrierung: gewünschter Pitch-Shift in Halbtönen -> MatrixAmount 0..1."""
+    pts = sorted(MATRIX_PITCH_CAL, key=lambda p: p[1])
+    if semi <= pts[0][1]:
+        return pts[0][0]
+    if semi >= pts[-1][1]:
+        return pts[-1][0]
+    for (a0, s0), (a1, s1) in zip(pts, pts[1:]):
+        if s0 <= semi <= s1:
+            t = (semi - s0) / (s1 - s0) if s1 != s0 else 0.0
+            return a0 + t * (a1 - a0)
+    return 0.5
+
+
 def fine_pitch_norm(raw: int) -> float:
     """Blofeld osc detune (bipolar, center 64 = 0, range +/-64 cent) -> Iridium
     OscNFinePitch norm 0..1 centered at 0.5. Divisor 254 assumes the Iridium full
@@ -702,7 +727,9 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                 else:
                     unmapped.append(f"Filter {n} {kind} Source {src!r}")
     # Octave excess beyond CoarsePitch (enum max +24 semi): Constant -> OscN Pitch.
-    # Amount scale assumed +/-24 semi at 0..1 (0.5 = 0) — live-calibration TODO.
+    # Amount scale LIVE-kalibriert (2026-11-21, quir_matrix_pitch_calib.py: INIT,
+    # nur Osc1 Sine, Row Constant->Osc1 Pitch, note 60): 0.5 = 0 semi, 1.0 = +24 semi,
+    # dazwischen nichtlinear -> inverse Interpolation der Kalibrierungstabelle.
     # NOTE: the runtime has only 40 matrix rows (MatrixSrc41 does not resolve),
     # so these rows live in the same >=21 block, after the hard-wired ones.
     for n in (1, 2, 3):
@@ -710,7 +737,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         if ex:
             hw += 1
             mrow(hw, "Constant", None, f"Osc{n} Pitch",
-                 max(0.0, min(1.0, 0.5 + ex / 48.0)))
+                 matrix_pitch_amount_for_semi(ex))
     # Blofeld amplifier velocity (level dynamics, unipolar) -> own matrix slot
     # Velocity -> Volume. Amount 0.5 + 0.5*norm(raw) instead of
     # amt_bipolar (0.5 would be neutral/ineffective), because velocity is unipolar:

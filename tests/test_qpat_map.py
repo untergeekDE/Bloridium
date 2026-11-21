@@ -790,7 +790,20 @@ def test_a008_osc1_1ft_clamped_with_constant_pitch_shift():
              and r.get("Src", (0.0,))[0] == qpat_map.MATRIX_SRC["Constant"]]
     assert len(shift) == 1
     assert shift[0]["Dst"][0] == qpat_map.MATRIX_DST["Osc1 Pitch"]
-    assert shift[0]["Amount"][0] == pytest.approx(0.5 + 16 / 48)   # +16 semi excess
+    # +16 semi excess -> amount per live calibration (1.0 = +24 semi, nichtlinear)
+    assert shift[0]["Amount"][0] == pytest.approx(
+        qpat_map.matrix_pitch_amount_for_semi(16.0), abs=1e-9)
+    assert 0.875 < shift[0]["Amount"][0] < 1.0   # zwischen +13.5 (0.875) und +24 (1.0)
+
+
+def test_matrix_pitch_calibration_inverse():
+    # Kalibrierung 2026-11-21: 0.5 -> 0 semi, 1.0 -> +24 semi, 0.0 -> -13.8 semi
+    assert qpat_map.matrix_pitch_amount_for_semi(0.0) == pytest.approx(0.5)
+    assert qpat_map.matrix_pitch_amount_for_semi(24.0) == pytest.approx(1.0, abs=0.001)
+    assert qpat_map.matrix_pitch_amount_for_semi(-13.78) == pytest.approx(0.0)
+    assert qpat_map.matrix_pitch_amount_for_semi(12.0) > 0.75   # ~0.85 (nichtlinear)
+    assert qpat_map.matrix_pitch_amount_for_semi(99.0) == 1.0  # clamp
+    assert qpat_map.matrix_pitch_amount_for_semi(-99.0) == 0.0
 
 
 def test_a007_octaves_in_range_no_constant_rows():
