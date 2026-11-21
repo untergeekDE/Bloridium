@@ -28,7 +28,7 @@ import matching
 TOKEN_RE = re.compile(r"[0-9a-f]{32}")
 
 def footer(sim_ver: str) -> str:
-    return ('<footer><strong>Read the blog post on <a href="https://www.untergeek.de/2026/11/bloridium-porting-blofeld-sounds-to-the-iridium/#more-6616">untergeek.de</a> &middot;<strong> '
+    return ('<footer><strong>Read the blog post on <a href="https://www.untergeek.de/2026/11/bloridium-porting-blofeld-sounds-to-the-iridium/#more-6616">untergeek.de</a> &middot;</strong> '
             'Repository of conversion tools: '
             '<a href="https://github.com/untergeekDE/Bloridium">github.com/untergeekDE/Bloridium</a>'
             f' &middot; Bloridium v{convert.CONVERSION_VERSION} &middot; GPL-3.0</footer>')
@@ -207,7 +207,7 @@ def _results_html(report: dict) -> str:
             f"<td>{escape(s['name'])}</td><td>{escape(s['category'])}</td>"
             f'<td class="score" title="{escape(pens)}">{s["score"]:.1f}</td>'
             f'<td class="bar"><div style="width:{width}%"></div></td>'
-            f"<td>{s['mapped']}</td><td>{len(s['unmapped'])}</td></tr>")
+            f'<td title="{escape(", ".join(s["unmapped"]))}">{len(s["unmapped"])}</td></tr>')
     errs = "".join(f'<li>Message {e["index"]}: {escape(e["error"])}</li>'
                    for e in report.get("errors", []))
     matcher = escape(report.get("matcher") or "")
@@ -222,7 +222,7 @@ def _results_html(report: dict) -> str:
 <p><a href="/download/{report['token']}"><button>Download ZIP ({escape(report['zip_name'])})</button></a>
    <a href="/report/{report['token']}">report.json</a></p>
 <table><tr><th>Loc</th><th>Name</th><th>Category</th><th>Score</th><th></th>
-<th>mapped</th><th>unmapped</th></tr>
+<th>not in MIDI map</th></tr>
 {''.join(rows)}
 </table>
 {('<p class="err"><b>Errors:</b></p><ul>' + errs + '</ul>') if errs else ''}

@@ -88,7 +88,9 @@ def test_process_upload_zip(core, sample_sdata, tmp_path):
         assert rep["conversion_version"] == f"v{V}" and rep["similarity_version"] == f"v{V}"
         assert all("features" in s and "params" in s["features"] for s in rep["sounds"])
         assert all("score" in s and "penalties" in s for s in rep["sounds"])
-        assert "deterministic-placeholder" in zf.read("MANIFEST.md").decode()
+        man = zf.read("MANIFEST.md").decode()
+        assert "deterministic-placeholder" in man
+        assert "not in MIDI map" in man and "| mapped |" not in man
     # report.json on disk identical to the ZIP content
     on_disk = json.loads((tmp_path / report["token"] / "report.json").read_text())
     assert on_disk["token"] == report["token"]
@@ -189,6 +191,8 @@ def test_flask_routes(core, sample_sdata, tmp_path, monkeypatch):
     assert r.status_code == 200
     assert b"/download/" in r.data and b"Score" in r.data
     assert f"similarity v{V}".encode() in r.data
+    # 2026-11-21: "mapped" column removed, unmapped labelled "not in MIDI map"
+    assert b"not in MIDI map" in r.data and b"<th>mapped</th>" not in r.data
 
     token = None
     for line in r.data.decode().splitlines():

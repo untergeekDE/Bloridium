@@ -210,8 +210,8 @@ def process_upload(filename: str, data: bytes, data_dir, model_path=None) -> dic
         f"Conversion v{CONVERSION_VERSION}; Score = {matcher_desc}"
         + (f" (model: {resolved_model.name})" if resolved_model else ""),
         "",
-        "| Location | Name | qpat file | mapped | unmapped | Score |",
-        "|---|---|---|---|---|---|",
+        "| Location | Name | qpat file | not in MIDI map | Score |",
+        "|---|---|---|---|---|",
     ]
     sounds_report = []
     with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -222,8 +222,8 @@ def process_upload(filename: str, data: bytes, data_dir, model_path=None) -> dic
             fname = f"{loc}_{safe_name(conv['name'], loc)}.qpat"
             zf.writestr(fname, conv["qpat_bytes"])
             manifest_lines.append(
-                f"| {loc} | {conv['name']} | `{fname}` | {conv['mapped']} "
-                f"| {len(conv['unmapped'])} | {est['score']} |")
+                f"| {loc} | {conv['name']} | `{fname}` | {len(conv['unmapped'])} "
+                f"| {est['score']} |")
             sounds_report.append({
                 "location": loc, "name": conv["name"],
                 "category": str(parsed["params"].get("Category", "")),

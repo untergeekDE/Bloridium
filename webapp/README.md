@@ -73,7 +73,9 @@ from the image (OCI format) – if you want it in the image, build with
    a `.mid` MIDI file works too – its SysEx events are extracted from the
    track data, notes/meta are skipped, e.g. `Voltage-Bank-C.mid`)
 3. The results page shows per sound: location, name, **predicted score** (RF
-   prognosis ± std, or placeholder), mapped/unmapped parameters
+   prognosis ± std, or placeholder), count of parameters **not in the MIDI map**
+   (hover the number for the list; the old separate "mapped" column was removed
+   2026-11-21 — the count alone was confusing)
 4. **ZIP download**: one `<LOC>_<Name>.qpat` per sound + `MANIFEST.md` + `report.json`
    - On the Iridium: USB stick/SD -> `Load > Actions > Import` (Favorites Bank 6,
      then `CC0=6` + PC; mido PC = MIDI number - 2)
@@ -103,7 +105,8 @@ the UI title "Bloridium Tool v…", and `conversion_version` / `similarity_versi
 
 Model path: `BLORIDIUM_MODEL` (default: auto-detect – `models/prognose_rf.pkl` in
 the repo, `/app/models/prognose_rf.pkl` in the container – baked in, overridable by a mount).
-Per sound, the feature vector (parsed parameters, unmapped, mapped) also lands
+Per sound, the feature vector (parsed parameters, unmapped list, mapped count)
+also lands
 in `report.json` in the ZIP – that is the training data for re-training.
 
 ## Local development (without container)

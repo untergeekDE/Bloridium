@@ -5,4 +5,6 @@ Used by pyproject.toml (dynamic version), the CLI (--version), the web app
 imports so the web app can read it without loading the package.
 """
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"  # 2026-11-21: Mapping-Update (PPG->24dB LP, Filter-Drive->FX1,
+# LFOx*MW->Matrix Ctrl, Env-Curves Lin, PWM/FM/Filter-Mod -> Matrix 21+, Oktav-Clamp
+# + Constant-Shift, .mid-Upload); Webapp-UI ohne "mapped"-Spalte

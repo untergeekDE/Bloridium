@@ -1,0 +1,140 @@
+sdata,block,parameter,typ,wert,iridium_wert,status,wirkung_blofeld,wirkung_iridium,cosinus,paar_score,iridium_keys
+1,Oszillatoren,Osc 1 Octave,cont,32,0.0,OK,"6,61","6,69","0,98","94,0",MatrixAmount27 MatrixDst27 MatrixOnOff27 MatrixSrc27 Osc1CoarsePitch
+1,Oszillatoren,Osc 1 Octave,cont,48,8.0,OK,"6,17","6,64","0,99","96,4",Osc1CoarsePitch
+1,Oszillatoren,Osc 1 Octave,cont,64,24.0,n/a,"0,36","0,58",–,"96,0",
+1,Oszillatoren,Osc 1 Octave,cont,80,40.0,OK,"6,79","5,73","0,98","90,6",Osc1CoarsePitch
+2,Oszillatoren,Osc 1 Semitone,cont,52,12.0,OK,"5,79","6,17","0,99","96,2",Osc1CoarsePitch
+2,Oszillatoren,Osc 1 Semitone,cont,58,18.0,OK,"5,50","5,57","0,99","96,4",Osc1CoarsePitch
+2,Oszillatoren,Osc 1 Semitone,cont,64,24.0,n/a,"0,26","0,50",–,"96,5",
+2,Oszillatoren,Osc 1 Semitone,cont,76,36.0,OK,"5,96","5,38","0,98","91,7",Osc1CoarsePitch
+3,Oszillatoren,Osc 1 Detune,cont,0,0.24803149606299213,defekt,"3,20","1,93",–,"86,0",Osc1FinePitch
+3,Oszillatoren,Osc 1 Detune,cont,32,0.37401574803149606,Mismatch,"1,72","3,15",–,"72,1",Osc1FinePitch
+3,Oszillatoren,Osc 1 Detune,cont,64,0.5,n/a,"0,21","0,34",–,"94,8",
+3,Oszillatoren,Osc 1 Detune,cont,127,0.7480314960629921,teilweise,"2,95","2,39","0,71","87,4",Osc1FinePitch
+8,Oszillatoren,Osc 1 Shape,enum,0,6.0,teilweise,"9,04","8,17","0,76","67,7",Osc1Type
+8,Oszillatoren,Osc 1 Shape,enum,18,0.0,OK,"8,94","8,91","0,99","93,1",MatrixDst22 Osc1Type Osc1WavetableBrilliance Osc1WavetablePosition Osc1WavetableTable
+8,Oszillatoren,Osc 1 Shape,enum,36,0.0,OK,"11,04","9,45","0,99","89,1",MatrixDst22 Osc1Type Osc1WavetableBrilliance Osc1WavetablePosition Osc1WavetableTable
+8,Oszillatoren,Osc 1 Shape,enum,72,0.0,OK,"8,44","8,06","1,00","95,0",MatrixDst22 Osc1Type Osc1WavetableBrilliance Osc1WavetablePosition Osc1WavetableTable
+10,Oszillatoren,Osc 1 PWM Source,enum,0,49.0,n/a,"0,53","0,61",–,"95,7",MatrixDst22 MatrixDst23 MatrixDst24 MatrixDst25 MatrixSrc22 MatrixSrc23 MatrixSrc24 MatrixSrc25
+10,Oszillatoren,Osc 1 PWM Source,enum,8,4.0,n/a,"0,30","0,42",–,"96,0",MatrixSrc22
+10,Oszillatoren,Osc 1 PWM Source,enum,15,15.0,n/a,"0,35","0,54",–,"96,3",MatrixSrc22
+10,Oszillatoren,Osc 1 PWM Source,enum,30,40.0,n/a,"0,50","0,63",–,"96,3",MatrixSrc22
+11,Oszillatoren,Osc 1 PWM Amount,cont,0,49.0,n/a,"0,38","0,67",–,"96,9",MatrixDst22 MatrixDst23 MatrixDst24 MatrixDst25 MatrixSrc22 MatrixSrc23 MatrixSrc24 MatrixSrc25
+11,Oszillatoren,Osc 1 PWM Amount,cont,32,0.37401574803149606,n/a,"0,11","1,80",–,"93,0",MatrixAmount22
+11,Oszillatoren,Osc 1 PWM Amount,cont,64,0.5,n/a,"0,31","0,46",–,"96,7",
+11,Oszillatoren,Osc 1 PWM Amount,cont,127,0.7480314960629921,Mismatch,"0,31","2,91",–,"87,7",MatrixAmount22
+17,Oszillatoren,Osc 2 Octave,cont,32,0.0,n/a,"0,44","0,54",–,"96,4",MatrixAmount27 MatrixDst27 MatrixOnOff27 MatrixSrc27 Osc2CoarsePitch
+17,Oszillatoren,Osc 2 Octave,cont,48,8.0,n/a,"0,39","0,54",–,"96,7",Osc2CoarsePitch
+17,Oszillatoren,Osc 2 Octave,cont,64,24.0,n/a,"0,80","0,96",–,"95,2",
+17,Oszillatoren,Osc 2 Octave,cont,80,40.0,n/a,"0,64","0,67",–,"95,1",Osc2CoarsePitch
+18,Oszillatoren,Osc 2 Semitone,cont,52,12.0,n/a,"0,67","0,63",–,"96,5",Osc2CoarsePitch
+18,Oszillatoren,Osc 2 Semitone,cont,58,18.0,n/a,"0,48","0,68",–,"95,4",Osc2CoarsePitch
+18,Oszillatoren,Osc 2 Semitone,cont,64,24.0,n/a,"0,56","0,52",–,"96,6",
+18,Oszillatoren,Osc 2 Semitone,cont,76,36.0,n/a,"0,47","0,65",–,"95,5",Osc2CoarsePitch
+19,Oszillatoren,Osc 2 Detune,cont,0,0.24803149606299213,n/a,"0,46","0,56",–,"95,6",Osc2FinePitch
+19,Oszillatoren,Osc 2 Detune,cont,32,0.37401574803149606,n/a,"0,49","0,74",–,"95,0",Osc2FinePitch
+19,Oszillatoren,Osc 2 Detune,cont,64,0.5,n/a,"0,82","0,63",–,"96,5",
+19,Oszillatoren,Osc 2 Detune,cont,127,0.7480314960629921,n/a,"0,81","0,83",–,"96,2",Osc2FinePitch
+24,Oszillatoren,Osc 2 Shape,enum,0,6.0,n/a,"0,71","0,75",–,"96,7",
+24,Oszillatoren,Osc 2 Shape,enum,18,0.0,n/a,"1,66","1,44",–,"89,8",MatrixDst23 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+24,Oszillatoren,Osc 2 Shape,enum,36,0.0,n/a,"0,87","0,70",–,"95,0",MatrixDst23 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+24,Oszillatoren,Osc 2 Shape,enum,72,0.0,n/a,"0,69","1,11",–,"93,3",MatrixDst23 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+26,Oszillatoren,Osc 2 PWM Source,enum,0,80.0,n/a,"0,88","0,74",–,"95,8",MatrixDst23 MatrixDst24 MatrixDst25 MatrixSrc23 MatrixSrc24 MatrixSrc25
+26,Oszillatoren,Osc 2 PWM Source,enum,8,4.0,n/a,"0,96","0,89",–,"96,8",MatrixSrc23
+26,Oszillatoren,Osc 2 PWM Source,enum,15,15.0,n/a,"0,91","1,02",–,"95,8",MatrixSrc23
+26,Oszillatoren,Osc 2 PWM Source,enum,30,40.0,n/a,"0,93","0,95",–,"95,9",MatrixSrc23
+27,Oszillatoren,Osc 2 PWM Amount,cont,0,80.0,n/a,"0,61","0,63",–,"95,7",MatrixDst23 MatrixDst24 MatrixDst25 MatrixSrc23 MatrixSrc24 MatrixSrc25
+27,Oszillatoren,Osc 2 PWM Amount,cont,32,0.37401574803149606,n/a,"0,57","0,64",–,"96,1",MatrixAmount23
+27,Oszillatoren,Osc 2 PWM Amount,cont,64,0.5,n/a,"0,63","0,64",–,"96,1",
+27,Oszillatoren,Osc 2 PWM Amount,cont,127,0.7480314960629921,n/a,"0,81","0,93",–,"94,9",MatrixAmount23
+33,Oszillatoren,Osc 3 Octave,cont,32,0.0,n/a,"0,71","0,93",–,"94,8",MatrixAmount27 MatrixDst27 MatrixOnOff27 MatrixSrc27 Osc3CoarsePitch
+33,Oszillatoren,Osc 3 Octave,cont,48,8.0,n/a,"0,79","0,73",–,"96,6",Osc3CoarsePitch
+33,Oszillatoren,Osc 3 Octave,cont,64,24.0,n/a,"0,85","0,93",–,"96,2",Osc3CoarsePitch
+33,Oszillatoren,Osc 3 Octave,cont,80,40.0,n/a,"0,91","0,85",–,"96,3",Osc3CoarsePitch
+34,Oszillatoren,Osc 3 Semitone,cont,52,0.0,n/a,"0,66","0,61",–,"96,9",Osc3CoarsePitch
+34,Oszillatoren,Osc 3 Semitone,cont,58,6.0,n/a,"0,83","0,73",–,"96,5",Osc3CoarsePitch
+34,Oszillatoren,Osc 3 Semitone,cont,64,12.0,n/a,"0,69","0,63",–,"96,7",
+34,Oszillatoren,Osc 3 Semitone,cont,76,24.0,n/a,"0,60","0,79",–,"95,2",Osc3CoarsePitch
+35,Oszillatoren,Osc 3 Detune,cont,0,0.24803149606299213,n/a,"0,67","0,64",–,"96,0",Osc3FinePitch
+35,Oszillatoren,Osc 3 Detune,cont,32,0.37401574803149606,n/a,"0,81","0,78",–,"96,4",Osc3FinePitch
+35,Oszillatoren,Osc 3 Detune,cont,64,0.5,n/a,"0,59","0,78",–,"94,5",
+35,Oszillatoren,Osc 3 Detune,cont,127,0.7480314960629921,n/a,"0,72","0,75",–,"95,2",Osc3FinePitch
+40,Oszillatoren,Osc 3 Shape,enum,0,6.0,n/a,"0,78","0,79",–,"96,1",
+40,Oszillatoren,Osc 3 Shape,enum,18,0.0,OK,"5,81","4,80","0,91","82,6",MatrixDst24 Osc3Type Osc3WavetableBrilliance Osc3WavetablePosition Osc3WavetableTable
+40,Oszillatoren,Osc 3 Shape,enum,36,0.0,defekt,"5,81","1,57",–,"62,5",MatrixDst24 Osc3Type Osc3WavetableBrilliance Osc3WavetablePosition Osc3WavetableTable
+40,Oszillatoren,Osc 3 Shape,enum,72,0.0,OK,"5,84","5,56","0,95","89,8",MatrixDst24 Osc3Type Osc3WavetableBrilliance Osc3WavetablePosition Osc3WavetableTable
+42,Oszillatoren,Osc 3 PWM Source,enum,0,111.0,n/a,"0,76","0,79",–,"95,7",MatrixDst24 MatrixDst25 MatrixSrc24 MatrixSrc25
+42,Oszillatoren,Osc 3 PWM Source,enum,8,4.0,n/a,"0,63","0,62",–,"95,9",MatrixSrc24
+42,Oszillatoren,Osc 3 PWM Source,enum,15,15.0,n/a,"0,66","0,74",–,"95,7",MatrixSrc24
+42,Oszillatoren,Osc 3 PWM Source,enum,30,40.0,n/a,"0,58","0,52",–,"95,8",MatrixSrc24
+43,Oszillatoren,Osc 3 PWM Amount,cont,0,111.0,n/a,"0,80","0,72",–,"96,3",MatrixDst24 MatrixDst25 MatrixSrc24 MatrixSrc25
+43,Oszillatoren,Osc 3 PWM Amount,cont,32,0.37401574803149606,n/a,"0,56","0,61",–,"96,6",MatrixAmount24
+43,Oszillatoren,Osc 3 PWM Amount,cont,64,0.5,n/a,"0,54","0,56",–,"97,0",
+43,Oszillatoren,Osc 3 PWM Amount,cont,127,0.7480314960629921,n/a,"0,70","0,78",–,"96,0",MatrixAmount24
+49,Oszillatoren,Osc 2 Sync to O3,cont,0,,n/a,"0,82","0,82",–,"95,8",
+49,Oszillatoren,Osc 2 Sync to O3,cont,32,1.0,n/a,"0,98","0,74",–,"95,2",Osc2WaveformSync
+49,Oszillatoren,Osc 2 Sync to O3,cont,64,1.0,n/a,"0,89","1,06",–,"94,9",Osc2WaveformSync
+49,Oszillatoren,Osc 2 Sync to O3,cont,127,1.0,n/a,"0,78","0,88",–,"95,5",Osc2WaveformSync
+50,Oszillatoren,Osc Pitch Source,enum,0,,n/a,"0,80","0,75",–,"95,9",
+50,Oszillatoren,Osc Pitch Source,enum,8,4.0,n/a,"0,58","0,57",–,"95,8",MatrixSrc4
+50,Oszillatoren,Osc Pitch Source,enum,15,15.0,n/a,"0,64","0,65",–,"96,1",MatrixSrc4
+50,Oszillatoren,Osc Pitch Source,enum,30,40.0,n/a,"0,95","0,99",–,"95,8",MatrixSrc4
+51,Oszillatoren,Osc Pitch Amount,cont,0,0.24803149606299213,Mismatch,"0,85","4,17",–,"63,0",MatrixAmount4
+51,Oszillatoren,Osc Pitch Amount,cont,32,0.37401574803149606,Mismatch,"1,05","2,17",–,"81,8",MatrixAmount4
+51,Oszillatoren,Osc Pitch Amount,cont,64,0.5,n/a,"0,51","0,54",–,"96,1",
+51,Oszillatoren,Osc Pitch Amount,cont,127,0.7480314960629921,Mismatch,"0,47","4,12",–,"65,8",MatrixAmount4
+53,Oszillatoren,Glide,cont,0,0.0,n/a,"0,74","0,76",–,"95,7",
+53,Oszillatoren,Glide,cont,32,1.0,n/a,"0,52","0,50",–,"96,5",GlideOnOff
+53,Oszillatoren,Glide,cont,64,1.0,n/a,"0,77","0,81",–,"96,0",GlideOnOff
+53,Oszillatoren,Glide,cont,127,1.0,n/a,"1,03","1,11",–,"95,2",GlideOnOff
+57,Mixer,Glide Rate,cont,0,0.04225747937841505,n/a,"0,96","0,87",–,"96,1",GlideRate
+57,Mixer,Glide Rate,cont,32,0.21464551237295096,n/a,"0,53","0,65",–,"96,3",GlideRate
+57,Mixer,Glide Rate,cont,64,0.3870335453674869,n/a,"0,46","0,77",–,"95,0",GlideRate
+57,Mixer,Glide Rate,cont,127,0.7264224853254795,n/a,"0,76","0,92",–,"95,0",GlideRate
+58,Mixer,Allocation/Unisono,cont,0,0.0,n/a,"0,72","0,68",–,"96,6",
+58,Mixer,Allocation/Unisono,cont,32,1.0,n/a,"1,16","1,60",–,"87,6",UnisonoCount
+58,Mixer,Allocation/Unisono,cont,64,2.0,n/a,"1,79","1,72",–,"81,6",UnisonoCount
+58,Mixer,Allocation/Unisono,cont,127,3.0,n/a,"1,58","1,16",–,"91,4",UnisonoCount
+59,Mixer,Unisono Detune,cont,0,0.0,n/a,"0,36","0,62",–,"97,0",
+59,Mixer,Unisono Detune,cont,32,0.25196850393700787,n/a,"0,59","0,64",–,"95,8",UnisonoDetune
+59,Mixer,Unisono Detune,cont,64,0.5039370078740157,n/a,"0,94","0,98",–,"96,2",UnisonoDetune
+59,Mixer,Unisono Detune,cont,127,1.0,n/a,"0,17","0,53",–,"96,8",UnisonoDetune
+61,Mixer,Mixer Osc 1 Level,cont,0,0.0,OK,"9,42","8,01","0,88","70,3",Osc1Vol
+61,Mixer,Mixer Osc 1 Level,cont,32,0.25196850393700787,OK,"3,10","3,21","0,99","95,0",Osc1Vol
+61,Mixer,Mixer Osc 1 Level,cont,64,0.5039370078740157,n/a,"1,54","1,59",–,"96,4",Osc1Vol
+61,Mixer,Mixer Osc 1 Level,cont,127,1.0,n/a,"0,24","0,36",–,"96,5",
+63,Mixer,Mixer Osc 2 Level,cont,0,0.0,n/a,"0,58","0,60",–,"95,7",Osc2Vol
+63,Mixer,Mixer Osc 2 Level,cont,32,0.25196850393700787,n/a,"0,19","0,42",–,"95,7",Osc2Vol
+63,Mixer,Mixer Osc 2 Level,cont,64,0.5039370078740157,n/a,"0,19","0,44",–,"96,0",Osc2Vol
+63,Mixer,Mixer Osc 2 Level,cont,127,1.0,n/a,"0,24","0,50",–,"95,6",
+65,Mixer,Mixer Osc 3 Level,cont,0,0.0,n/a,"0,53","0,60",–,"96,3",Osc3Vol
+65,Mixer,Mixer Osc 3 Level,cont,32,0.25196850393700787,n/a,"0,20","0,41",–,"95,8",Osc3Vol
+65,Mixer,Mixer Osc 3 Level,cont,64,0.5039370078740157,n/a,"0,28","0,60",–,"96,7",Osc3Vol
+65,Mixer,Mixer Osc 3 Level,cont,127,1.0,n/a,"0,88","1,03",–,"96,8",
+67,Mixer,Mixer Noise Level,cont,0,0.5,n/a,"0,63","0,85",–,"96,8",
+67,Mixer,Mixer Noise Level,cont,32,0.0,defekt,"2,13","1,46",–,"89,7",Osc3Pan Osc3Type Osc3Vol Osc3WaveformShape
+67,Mixer,Mixer Noise Level,cont,64,0.0,teilweise,"3,58","2,63","0,63","83,6",Osc3Pan Osc3Type Osc3Vol Osc3WaveformShape
+67,Mixer,Mixer Noise Level,cont,127,0.0,teilweise,"4,87","3,89","0,70","76,7",Osc3Pan Osc3Type Osc3WaveformShape
+71,Mixer,Mixer RingMod Level,cont,0,0.0,n/a,"0,94","1,04",–,"96,0",
+71,Mixer,Mixer RingMod Level,cont,32,0.25196850393700787,n/a,"0,16","0,28",–,"95,6",RingModOsc1ToOsc2
+71,Mixer,Mixer RingMod Level,cont,64,0.5039370078740157,n/a,"0,39","0,63",–,"96,4",RingModOsc1ToOsc2
+71,Mixer,Mixer RingMod Level,cont,127,1.0,n/a,"0,28","0,44",–,"96,0",RingModOsc1ToOsc2
+77,Filter,Filter 1 Type,enum,0,1.0,n/a,"0,64","0,78",–,"95,2",FilterState
+77,Filter,Filter 1 Type,enum,3,15.0,teilweise,"7,40","6,18","0,74","60,2",Filter12Type
+77,Filter,Filter 1 Type,enum,6,9.0,OK,"7,97","8,10","0,87","66,0",Filter12Type
+77,Filter,Filter 1 Type,enum,11,0.0,n/a,"0,22","0,30",–,"95,6",
+78,Filter,Filter 1 Cutoff,cont,0,0.037277639881395874,OK,"11,96","7,77","0,91","61,4",Filter1CutOff
+78,Filter,Filter 1 Cutoff,cont,32,0.27428580495489746,OK,"9,33","7,28","0,90","73,2",Filter1CutOff
+78,Filter,Filter 1 Cutoff,cont,64,0.511293970028399,OK,"8,11","8,00","0,99","95,6",Filter1CutOff
+78,Filter,Filter 1 Cutoff,cont,127,0.9779037950168553,n/a,"0,54","0,71",–,"96,7",
+80,Filter,Filter 1 Resonance,cont,0,0.0,n/a,"0,53","0,76",–,"96,7",
+80,Filter,Filter 1 Resonance,cont,32,0.25196850393700787,n/a,"0,94","0,95",–,"96,0",Filter1Reso
+80,Filter,Filter 1 Resonance,cont,64,0.5039370078740157,n/a,"0,33","0,70",–,"95,9",Filter1Reso
+80,Filter,Filter 1 Resonance,cont,127,1.0,n/a,"0,25","1,65",–,"93,0",Filter1Reso
+81,Filter,Filter 1 Drive,cont,0,3.0,n/a,"0,79","0,87",–,"95,0",
+81,Filter,Filter 1 Drive,cont,32,0.25196850393700787,n/a,"1,70","0,51",–,"93,4",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+81,Filter,Filter 1 Drive,cont,64,0.5039370078740157,defekt,"2,39","1,67",–,"90,5",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+81,Filter,Filter 1 Drive,cont,127,1.0,OK,"3,03","3,13","0,97","94,5",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+86,Filter,Filter 1 Keytrack,cont,0,0.0,n/a,"0,22","0,40",–,"96,1",Filter1Keytrack
+86,Filter,Filter 1 Keytrack,cont,32,0.25196850393700787,n/a,"0,46","0,50",–,"95,4",Filter1Keytrack
+86,Filter,Filter 1 Keytrack,cont,64,0.5039370078740157,n/a,"0,14","0,38",–,"94,5",
