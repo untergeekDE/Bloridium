@@ -123,9 +123,14 @@ suite is run on the measurement machine (item 11).
 
 ## Agent skill & private tooling
 
-20. ⬜ **Public agent skill for all MIDI-based functions.** Today the `bloridium` skill
+20. ✅ **Public agent skill for all MIDI-based functions.** Today the `bloridium` skill
     exists only outside the repo, so clones never get it, yet `CLAUDE.md` asks to keep it
     updated.
+    - ✅ **Done 2026-11-21:** shipped in the repo as `skills/bloridium/SKILL.md`
+      (+ `skills/README.md` with per-runtime install instructions; `README.md` already
+      points to the `skills/` folder). Covers exactly the documented interfaces listed
+      below and nothing else; guard: `git grep -E "QUIR|quir_|midi-sysex|codesearch|
+      load-patch|set-pid|dump-params|find-pid" skills/` must stay empty.
     - **Goal:** ship a skill in the repo (`.claude/skills/bloridium/SKILL.md`, optionally
       mirrored for other agent runtimes) that exposes every function based on documented
       MIDI control.
