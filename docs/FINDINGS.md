@@ -267,3 +267,18 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
   (das Panel zeigt OscNVol als „OscN Mix“). Kein Bug.
 - Re-Convert A001–A100 -> transfer/rf100_v2 (MANIFEST/config unveraendert, sd_dir rf200,
   Slots 200–299). Naechster Schritt: SD-Kopie (plain cp) + frischer Messlauf.
+
+## 2026-11-21 — A006 @ slot 205 (LFO2*MW via matrix Ctrl) + Envelope-Curves linear
+
+- **Modifier-Produkte (LFOx*MW / LFOx*Press / Modifier M = LFOx * controller)** waren
+  bisher unmapped oder fielen auf reines Wheel/AT zurueck (LFO-Anteil verloren). Jetzt
+  `_resolve_mod_source()`: matrix row mit **Src=LFO x + MatrixControlN=Wheel/AfterTouch**
+  (+ControlAmount 1.0) — die „LFO2 CTRL: ModWheel“-Struktur des Iridium. Betrifft u.a.
+  A006 Mod 10–12 (Modifier 1 = LFO2*MW -> F1 Cutoff / F2 Cutoff / O1 Pitch, jetzt rows
+  10–12 mit Ctrl Wheel) und A001/A008 „LFO1*MW“ -> Src LFO1 + Ctrl Wheel.
+- **Envelope-Curves**: Blofeld-ADSRs sind linear, das Iridium-Template defaultet Attack
+  auf RC (1.0) — massiver Unterschied (User-Finding 11-21). Alle Amp/Filter1/Filter2/
+  FreeEnv1/FreeEnv2 Attack+Decay+Release-Curves werden jetzt auf **2.0 'Lin'** gesetzt
+  (Enum aus Factory-qpats: 0=Exp, 1=RC/'Exp alt', 2=Lin). Betrifft ALLE Sounds.
+- rf100_v2 re-konvertiert: A006 jetzt 191 mapped (war ~150), qpat enthaelt
+  MatrixControl10=14 'Ctrl Wheel' + alle Curves Lin. 397 Tests gruen.

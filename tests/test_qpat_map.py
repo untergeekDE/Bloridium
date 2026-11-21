@@ -181,8 +181,9 @@ def test_mod_matrix_slots_mapped(overrides):
     # 3: MW->FE Sustain 17, 4: MW->FE Decay 102, 5: Vel->F1 Cutoff 115, 6: Vel->F1 Reso 95
     # amounts bipolar centered around 0.5: irr = 0.5 + (blo-64)/254
     exp = {
-        1: (17.0, 1.0, 0.5 + (84 - 64) / 254),    # AfterTouch (17) -> Pitch
-        2: (17.0, 3.0, 0.5 + (43 - 64) / 254),    # AfterTouch -> Osc2 Pitch
+        # slot 1: LFO2*Press -> Pitch is now Src=LFO 2 + Ctrl=AfterTouch (2026-11-21)
+        1: (8.0, 1.0, 0.5 + (84 - 64) / 254),
+        2: (17.0, 3.0, 0.5 + (43 - 64) / 254),    # Pressure(AfterTouch 17) -> Osc2 Pitch
         3: (14.0, 124.0, 0.5 + (17 - 64) / 254),  # Wheel -> Filt1Env Sustain
         4: (14.0, 123.0, 0.5 + (102 - 64) / 254), # Wheel -> Filt1Env Decay
         5: (33.0, 109.0, 0.5 + (115 - 64) / 254), # Velocity -> Filter1 Cutoff
@@ -193,6 +194,9 @@ def test_mod_matrix_slots_mapped(overrides):
         assert overrides[f"MatrixDst{slot}"][0] == dst, f"slot {slot} dst"
         assert overrides[f"MatrixAmount{slot}"][0] == pytest.approx(amt), f"slot {slot} amt"
         assert overrides[f"MatrixOnOff{slot}"][0] == 1.0
+    # slot 1 keeps the LFO as row source, After Touch as row Ctrl (MatrixControl)
+    assert overrides["MatrixControl1"][0] == 17.0      # Ctrl After Touch
+    assert overrides["MatrixControlAmount1"][0] == 1.0
 
 
 def test_filter_direct_mod_source_mapped_to_extra_matrix_slot(overrides):
@@ -215,7 +219,9 @@ def test_amp_velocity_maps_to_velocity_volume_slot(overrides):
     # Osc Pitch Source=LFO1*MW (slot 10 -> Wheel -> Pitch)
     assert overrides["MatrixSrc9"][0] == 9.0     # LFO 3
     assert overrides["MatrixDst9"][0] == 152.0   # Volume
-    assert overrides["MatrixSrc10"][0] == 14.0   # Wheel (LFO1*MW)
+    # LFO1*MW (2026-11-21): Src stays LFO 1, Wheel moves to the row Ctrl
+    assert overrides["MatrixSrc10"][0] == 7.0    # LFO 1
+    assert overrides["MatrixControl10"][0] == 14.0  # Ctrl Wheel
     assert overrides["MatrixDst10"][0] == 1.0    # Pitch
 
 
@@ -318,7 +324,8 @@ def test_aftertouch_matrix_src_is_17_runtime():
     assert qpat_map.MATRIX_SRC["After Touch"] == 17.0
     ov, _ = qpat_map.blofeld_to_qpat_params(
         bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A043"])))
-    assert ov["MatrixSrc1"][0] == 17.0   # A043 M1: LFO2*Press -> Pitch
+    assert ov["MatrixSrc1"][0] == 8.0    # A043 M1: LFO2*Press -> Src LFO 2 ...
+    assert ov["MatrixControl1"][0] == 17.0  # ... + Ctrl After Touch (2026-11-21)
     assert ov["MatrixSrc2"][0] == 17.0   # A043 M2: Pressure -> O2 Pitch
 
 
@@ -675,3 +682,65 @@ def test_no_filter_drive_keeps_fx1_untouched():
     ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
     assert ov["FX1Type"][0] == qpat_map.FX_TYPE["Chorus"]  # Blofeld FX1 Chorus bleibt
     assert "DriveType" not in ov and "DriveAmount" not in ov
+
+
+# --- 2026-11-21: LFOx*MW products via matrix Ctrl (A006 @ slot 205); env curves Lin ---
+
+A006 = "dumps/blofeld_sndd_A006_20261119_053353.bin"
+
+
+def _rows(ov):
+    import re
+    rows = {}
+    for k, v in ov.items():
+        m = re.match(r"Matrix(Src|Dst|Control|ControlAmount)(\d+)$", k)
+        if m:
+            rows.setdefault(int(m.group(2)), {})[m.group(1)] = v
+    return rows
+
+
+def test_modifier_product_lfo2_times_mw_maps_to_src_lfo2_ctrl_wheel():
+    # A006: Modifier 1 = LFO 2 * Mod Wheel; Mod 10-12 use it -> matrix rows with
+    # Src=LFO 2 (8.0) AND Control=Wheel (14.0) — the "LFO2 CTRL: ModWheel" structure
+    parsed = bd.parse_sndd((REPO / A006).read_bytes())
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    rows = _rows(ov)
+    ctrl_rows = [r for r in rows.values()
+                 if r.get("Control", (0.0,))[0] == qpat_map.MATRIX_SRC["Wheel"]]
+    assert len(ctrl_rows) == 4  # Mod 10, 11, 12 + Osc Pitch Source (LFO1*MW)
+    for r in ctrl_rows:
+        assert r["Src"][0] in (7.0, 8.0)          # LFO 1 or LFO 2 as row source
+        assert r["ControlAmount"][0] == 1.0        # full ctrl scaling
+    assert not any("Modulation 10" in u or "Modulation 11" in u for u in un)
+
+
+def test_direct_lfox_mw_source_keeps_lfo_with_ctrl_wheel():
+    # A001 Mod 8: source "LFO1*MW" -> Src=LFO 1 + Ctrl=Wheel (was: Wheel only, LFO lost)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMP))
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    rows = _rows(ov)
+    hit = [r for r in rows.values()
+           if r.get("Src", (0.0,))[0] == qpat_map.MATRIX_SRC["LFO 1"]
+           and r.get("Control", (0.0,))[0] == qpat_map.MATRIX_SRC["Wheel"]]
+    assert hit and hit[0]["Dst"][0] == qpat_map.MATRIX_DST["Pitch"]
+
+
+def test_resolve_mod_source_unit():
+    p = {"Modifier 2 Operation": "*", "Modifier 2 Source A": "LFO 3",
+         "Modifier 2 Source B": "Mod Wheel"}
+    assert qpat_map._resolve_mod_source(p, "Modifier 2") == ("LFO 3", "Wheel")
+    assert qpat_map._resolve_mod_source(p, "LFO2*MW") == ("LFO 2", "Wheel")
+    assert qpat_map._resolve_mod_source(p, "LFO1*Press") == ("LFO 1", "After Touch")
+    assert qpat_map._resolve_mod_source(p, "Velocity") == ("Velocity", None)
+    assert qpat_map._resolve_mod_source(p, "off") == (None, None)
+    # unknown modifier op -> unmapped
+    p2 = {"Modifier 1 Operation": "*", "Modifier 1 Source A": "Velocity",
+          "Modifier 1 Source B": "Mod Wheel"}
+    assert qpat_map._resolve_mod_source(p2, "Modifier 1") == (None, None)
+
+
+def test_envelope_curves_are_linear(overrides):
+    # Blofeld ADSRs are linear; Iridium template default Attack=RC must be overridden
+    for grp in ("AmpEnv", "Filter1", "Filter2", "FreeEnv1", "FreeEnv2"):
+        for ph in ("Attack", "Decay", "Release"):
+            assert overrides[f"{grp}{ph}Curve"] == (2.0, "Lin"), f"{grp}{ph}Curve"

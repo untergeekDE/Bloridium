@@ -13,6 +13,7 @@ matrix amounts, see amt_bipolar().
 from __future__ import annotations
 
 import math
+import re
 
 # Enum tables (display -> value) = RUNTIME values of OS 4.1.0b2, live-verified via QUIR
 # `param-info` on 2026-11-18 (docs/refs/quir_runtime_enums_2026-11-18.md). KEY FINDING
@@ -145,8 +146,8 @@ MATRIX_DST = {"Off": 0.0, "Pitch": 1.0, "Osc1 Pitch": 2.0, "Osc2 Pitch": 3.0, "O
 # Blofeld mod source -> Iridium MatrixSrc display (pressure combos approx. to After Touch)
 BLOFELD_MOD_SRC = {
     "LFO 1": "LFO 1", "LFO 2": "LFO 2", "LFO 3": "LFO 3",
-    "LFO1*MW": "Wheel", "LFO2*MW": "Wheel", "LFO3*MW": "Wheel",
-    "LFO1*Press": "After Touch", "LFO2*Press": "After Touch", "LFO3*Press": "After Touch",
+    # NOTE: products "LFO1*MW"/"LFO2*Press"/... are deliberately NOT here — they are
+    # resolved by _resolve_mod_source() to Src=LFO x + matrix Ctrl (see below).
     "Mod Wheel": "Wheel", "Pressure": "After Touch", "Poly Press": "After Touch",
     "Velocity": "Velocity", "Rel. Velo": "Release Velocity",
     "Keytrack": "Keytrack", "Pitch Bend": "Pitch Bend",
@@ -178,6 +179,41 @@ BLOFELD_MOD_DST = {
     # no Iridium matrix dst exists for: F1/F2 Drive, F1/F2 FM, O1-3 FM, RMod Level/Bal.,
     # NoiseLevel/Bal., O1-3 Balance, M1-4 Amount (runtime dst list, param-info 2480)
 }
+
+
+def _resolve_mod_source(p: dict, src) -> tuple[str | None, str | None]:
+    """Blofeld mod source -> (MATRIX_SRC key, matrix Ctrl key or None).
+
+    Products like "LFO2*MW" or "Modifier 1" (= LFO 2 * Mod Wheel, op "*") are
+    represented on the Iridium as a matrix row with Src=LFO x AND Ctrl
+    (MatrixControlN)=Wheel — the "LFO2 CTRL: ModWheel" structure
+    (user finding 2026-11-21, A006 @ Iridium slot 205, Mod 10-12 via Modifier 1).
+    """
+    if not isinstance(src, str) or src == "off":
+        return None, None
+    m = re.match(r"^LFO\s*([1-3])\s*\*\s*(MW|Mod\s*Wheel)$", src, re.IGNORECASE)
+    if m:
+        return f"LFO {m.group(1)}", "Wheel"
+    m = re.match(r"^LFO\s*([1-3])\s*\*\s*Press", src, re.IGNORECASE)
+    if m:
+        return f"LFO {m.group(1)}", "After Touch"
+    m = re.match(r"^Modifier\s*([1-4])$", src, re.IGNORECASE)
+    if m:
+        mi = m.group(1)
+        op = p.get(f"Modifier {mi} Operation")
+        sa = p.get(f"Modifier {mi} Source A")
+        sb = p.get(f"Modifier {mi} Source B")
+        if op == "*" and isinstance(sa, str) and re.fullmatch(r"LFO\s*[1-3]", sa):
+            if sb == "Mod Wheel":
+                return sa, "Wheel"
+            if sb == "Pressure":
+                return sa, "After Touch"
+            return None, None
+        if op == "+" and isinstance(sa, str):
+            # Modifier = SourceA + Constant: map SourceA alone, constant offset lost
+            return BLOFELD_MOD_SRC.get(sa), None
+        return None, None
+    return BLOFELD_MOD_SRC.get(src), None
 
 
 def norm(raw: int) -> float:
@@ -304,6 +340,17 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
 
     def setp(key, value, display=""):
         ov[key] = (float(value), display)
+
+    def mrow(slot: int, s_disp: str, ctrl_disp: str | None, d_disp: str, amt) -> None:
+        """One Iridium matrix row; ctrl_disp -> MatrixControlN (row 'Ctrl', e.g. Wheel
+        for Blofeld LFOx*MW products, 2026-11-21)."""
+        setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
+        if ctrl_disp:
+            setp(f"MatrixControl{slot}", MATRIX_SRC[ctrl_disp], f"Ctrl {ctrl_disp}")
+            setp(f"MatrixControlAmount{slot}", 1.0, "full")
+        setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)
+        setp(f"MatrixAmount{slot}", amt)
+        setp(f"MatrixOnOff{slot}", 1.0, "Active")
 
     # --- oscillators ---
     shape_raw_idx = [8, 24, 40]     # SDATA indices OscN Shape
@@ -503,6 +550,13 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                        ("Sustain", f"{base}Sustain"), ("Release", f"{base}Release")):
             setp(ik, norm(p[f"Envelope {n} {bk}"]))
 
+    # --- envelope curves: Blofeld ADSRs are LINEAR, but the Iridium template defaults
+    # Attack=RC (1.0) — massive audible difference (user finding 2026-11-21).
+    # Curve enum (factory qpats): 0=Exp, 1=RC resp. 'Exp alt', 2=Lin -> set all to Lin.
+    for grp in ("AmpEnv", "Filter1", "Filter2", "FreeEnv1", "FreeEnv2"):
+        for ph in ("Attack", "Decay", "Release"):
+            setp(f"{grp}{ph}Curve", 2.0, "Lin")
+
     # --- LFO ---
     # ATTENTION key names: template/device know "Lfo1Speed" (lowercase), NOT "LFO1Speed"!
     # (wrong: LFO1Speed -> own key, device ignores it, LFO ran on template default
@@ -551,7 +605,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         if not isinstance(src, str) or src == "off":
             continue
         slot += 1
-        s_disp = BLOFELD_MOD_SRC.get(src)
+        s_disp, ctrl_disp = _resolve_mod_source(p, src)
         d_disp = BLOFELD_MOD_DST.get(dst)
         if d_disp is None and noise_osc and dst in ("NoiseLevel", "Noise Bal."):
             # Blofeld-Modulation auf den Noise-Mixer -> Iridium Osc-Mix/Pan des Noise-Osc
@@ -571,10 +625,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             d_disp = {"Filter2 Cutoff": "DF Amount", "Filter2 Reso": "DF Color",
                       "Filter2 Pan": "DF Pan"}.get(d_disp, d_disp)
         if s_disp and d_disp:
-            setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
-            setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)
-            setp(f"MatrixAmount{slot}", amt_bipolar(amt))
-            setp(f"MatrixOnOff{slot}", 1.0, "Active")
+            mrow(slot, s_disp, ctrl_disp, d_disp, amt_bipolar(amt))
         else:
             unmapped.append(f"Modulation {m} ({src} -> {dst})")
     # direct filter modulation (Filter N Mod Source/Amount) -> extra matrix slots from 17
@@ -582,15 +633,12 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         src = p[f"Filter {n} Mod Source"]
         if isinstance(src, str) and src != "off":
             slot += 1
-            s_disp = BLOFELD_MOD_SRC.get(src)
+            s_disp, ctrl_disp = _resolve_mod_source(p, src)
             d_disp = "Filter1 Cutoff" if n == 1 else "Filter2 Cutoff"
             if n == 2 and seriell and not f2_bypass:
                 d_disp = "DF Amount"   # serial: F2 lives in the DigiFormer (P1-2)
             if s_disp:
-                setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
-                setp(f"MatrixDst{slot}", MATRIX_DST[d_disp], d_disp)
-                setp(f"MatrixAmount{slot}", amt_bipolar(p[f"Filter {n} Mod Amount"]))
-                setp(f"MatrixOnOff{slot}", 1.0, "Active")
+                mrow(slot, s_disp, ctrl_disp, d_disp, amt_bipolar(p[f"Filter {n} Mod Amount"]))
             else:
                 unmapped.append(f"Filter {n} Mod Source {src!r}")
     # Blofeld amplifier velocity (level dynamics, unipolar) -> own matrix slot
@@ -607,26 +655,20 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # A008 AmpEnv, A019/A043/A010/... LFO3 amt 64)
     amp_mod_src = p.get("Amplifier Mod Source")
     if isinstance(amp_mod_src, str) and amp_mod_src != "off":
-        s_disp = BLOFELD_MOD_SRC.get(amp_mod_src)
+        s_disp, ctrl_disp = _resolve_mod_source(p, amp_mod_src)
         if s_disp:
             slot += 1
-            setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
-            setp(f"MatrixDst{slot}", MATRIX_DST["Volume"], "Volume")
-            setp(f"MatrixAmount{slot}", amt_bipolar(p.get("Amplifier Mod Amount", 64)))
-            setp(f"MatrixOnOff{slot}", 1.0, "Active")
+            mrow(slot, s_disp, ctrl_disp, "Volume", amt_bipolar(p.get("Amplifier Mod Amount", 64)))
         else:
             unmapped.append(f"Amplifier Mod Source {amp_mod_src!r}")
     # Blofeld "Osc Pitch Source/Amount" (global pitch mod) -> matrix slot -> Pitch
     # (A008 LFO1*MW amt 74, several others amt 64; previously unmapped)
     osc_pitch_src = p.get("Osc Pitch Source")
     if isinstance(osc_pitch_src, str) and osc_pitch_src != "off":
-        s_disp = BLOFELD_MOD_SRC.get(osc_pitch_src)
+        s_disp, ctrl_disp = _resolve_mod_source(p, osc_pitch_src)
         if s_disp:
             slot += 1
-            setp(f"MatrixSrc{slot}", MATRIX_SRC[s_disp], s_disp)
-            setp(f"MatrixDst{slot}", MATRIX_DST["Pitch"], "Pitch")
-            setp(f"MatrixAmount{slot}", amt_bipolar(p.get("Osc Pitch Amount", 64)))
-            setp(f"MatrixOnOff{slot}", 1.0, "Active")
+            mrow(slot, s_disp, ctrl_disp, "Pitch", amt_bipolar(p.get("Osc Pitch Amount", 64)))
         else:
             unmapped.append(f"Osc Pitch Source {osc_pitch_src!r}")
     # Serial: the Blofeld filter env opens BOTH filters (F1 -> F2). On the Iridium
