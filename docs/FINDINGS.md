@@ -222,3 +222,27 @@ Helpers: `bloridium/waldorf.py` (`build_sysex`, `parse_sysex`, `identity_reply_i
   Alte Modelle als `models/prognose_rf*_v1.pkl` behalten.
 - Bugfix: `audio.record` ffmpeg ohne Timeout hing 60 min (Fix: timeout=duration+20 s,
   4 Versuche); qpat-Dateinamen per Konversion SD-sicher (`qpat.sd_filename`).
+
+## 2026-11-21 — v2-Messung verifiziert + Detail-Analyse A001–A005 (scripts/detail_compare.py)
+
+- Slot-Belegung während des v2-Laufs (2026-11-20): pro Loc `load-patch 2:rf200/<sd_name>.qpat`
+  + `save-patch <slot>` — quir_rf_dataset_v2.jsonl: 200 Zeilen, 100 Slots (200–299), **100
+  verschiedene load-Pfade** (1:1 zu den Locs). Log `storeTimbreToSlot`-Zeilen mit lesbarem
+  Namen matchen die Labels (200=JMX jun. … 204=HooverBass … 215=ArangedHeaven CT), kein Slot
+  mit zwei verschiedenen Namen. Leere Namen im Log sind Interleaving zweier Jobs (alt +
+  --resume) im selben Logfile. Messung ist nicht entwertet. (Gegencheck am Gerät steht aus —
+  Iridium war 11-21 kurz nicht am MIDI-Bus; Readback der Slot-Namen + CoarsePitch folgt.)
+  Beachte: *gespeicherte* Slots laden bekanntermaßen als Sample-Slots still (−70 dBFS,
+  TODO_FIX) — am Panel klingen deshalb alle Slots gleich (leise), die Namen sind aber
+  verschieden. Gemessen wurde immer vom SD-Pfad, nie vom Slot.
+- Detail A001–A005 (v2, live): A001 79–80 (bestes), A002 59–62, A003 34–39, A004 54–59,
+  A005 27–28. RF-Prognose aus dem Dump allein trifft das gut (A001 70±12 vs 80, A002 62 vs 60,
+  A005 50±12 vs 27 — hier zu optimistisch).
+- Auffälliges Muster A002–A005: schlechteste Bänder liegen im Grundtonbereich
+  (band_delta_db = Iridium − Blofeld, z.B. A005@72: 211–302 Hz −75…−90 dB; A005@60:
+  117–148 Hz −63…−73 dB). A001 (beide Osz. Octave 64) hat das nicht. Hypothese: **Osc-Octave
+  < 64 (CoarsePitch < 24, z.B. 12 bei raw 52, 0 bei raw 40) landet am Iridium nicht korrekt**
+  → Grundton fehlt eine Oktave daneben. A003 zusätzlich: Osc2 Sync-to-Osc3, FM Osc3→Osc1/2/
+  Filter, PWM — alles unmapped. A004: Osc2 „PWM Pulse“ PW 9 (sehr schmal) + PWM via Env3.
+  Verifikation am Gerät (get-param CoarsePitch + Spektral-Test note 72) folgt, sobald das
+  Iridium am Bus ist.
