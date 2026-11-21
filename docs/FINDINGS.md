@@ -357,3 +357,17 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
 - Offen: Neumessung der drei Punkte (`profile_testb_sweep.py osc2|unison|fx`);
   die frühere Unison-Aufnahme zeigte bei Detune 127 eine Reaktion (Centroid
   3536 -> 3140 Hz), aber nicht monoton.
+
+### A2-Fix Filter 2 (2026-11-21, ohne neue Hardware-Messung)
+
+| Befund (bisherige Messung) | Fix in qpat_map.py | Test |
+|---|---|---|
+| F2-Type „defekt“: nur `Filter12Type` (F1) wurde geschrieben; v14/v15 haben ein separates `Filter2Type` | `Filter2Type` aus der Blofeld-F2-Type (gleiche v14-Enum-Tabelle) | test_parallel_routing_f2_stays_filter2_active |
+| F2 in Parallel-Schaltung praktisch stumm: v8-Template `FilterLink=Boost` ignoriert Cutoff 2/Resonanz 2 | parallel mit aktiver F2: `FilterLink=Independent` (6.0); seriell bleibt `Single`, weil F2 im DigiFormer sitzt | test_parallel_routing_f2_stays_filter2_active |
+| Resonanz bei 100 % Mismatch (cos 0,06–0,44), Iridium erreichte die Selbstoszillation erst bei raw 127 | `blofeld_reso_norm()`: raw 113 (Blofeld-Selbstoszillation) -> 1.0, darüber clamp | test_resonance_self_oscillation_calibration |
+| F2-Drive bei raw 32/64 nur 0,20/0,30× so stark wie Blofeld (bei 127 OK) | Drive ist ein Insert: `DriveDryWet=1.0` statt `norm(drive)`; `DriveAmount=norm(drive)` | test_filter_drive_* |
+
+- Die f2-Neumessung steht noch aus (`TODO_MEASURE.md`); insbesondere muss vor
+  dem Lauf per Readback geprüft werden, dass `FilterLink`, `Filter2Type` und
+  `DriveDryWet` wirklich im Edit-Buffer stehen (die frühere Messung nutzte
+  teilweise Geräte-Init-Werte statt der qpat-Werte).

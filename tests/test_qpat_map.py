@@ -162,7 +162,7 @@ def test_serial_routing_f2_to_former_link_single():
 
 def test_parallel_routing_f2_stays_filter2_active():
     # A010 Wurly Piano: Filter Routing = 0 (parallel), F2 = LP 24dB (not Bypass)
-    # -> F2 stays filter 2 'Active', former = Bypass, routing 'Parallel'
+    # -> F2 stays filter 2 'Active', former = Bypass, routing 'Parallel'.
     parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / "dumps/blofeld_sndd_A010_20261108_233057.bin"))
     assert parsed["params"]["Filter Routing"] == 0
     ov, _unmapped = qpat_map.blofeld_to_qpat_params(parsed)
@@ -170,8 +170,30 @@ def test_parallel_routing_f2_stays_filter2_active():
     assert ov["DigiFormerType"] == (0.0, "Bypass")
     assert ov["DigiFormerAmount"][0] == 0.0
     assert ov["Filter2State"] == (0.0, "Active")
+    # Parallel needs Independent; the v8 template default is Boost (1.0), which
+    # ignores Cutoff 2 / Resonance 2 and would make F2 inaudible.
+    assert ov["FilterLink"] == (6.0, "Independent")
+    # Both dual filters now have their own type parameter (v14 target); the old
+    # mapping only set Filter12Type for F1, so F2 fell back to 12dB LP.
+    assert ov["Filter2Type"] == (3.0, "24dB LP")
     # F2-Cutoff/Reso land on the filter2 stage (stays active)
     assert "Filter2CutOff" in ov and "Filter2Reso" in ov
+
+
+def test_resonance_self_oscillation_calibration():
+    # Blofeld self-oscillates above resonance raw 113 (manual); the Iridium starts
+    # at 100 %. Map raw 113 -> 1.0 instead of norm(113)=0.89 so both reach
+    # self-oscillation in the same region. Raw 64 stays proportional.
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / "dumps/blofeld_sndd_A010_20261108_233057.bin"))
+    parsed["params"]["Filter 1 Resonance"] = 64
+    parsed["params"]["Filter 2 Resonance"] = 113
+    ov, _unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Filter1Reso"][0] == pytest.approx(64 / 113)
+    assert ov["Filter2Reso"][0] == pytest.approx(1.0)
+    # beyond the self-oscillation point stays at full resonance
+    parsed["params"]["Filter 2 Resonance"] = 127
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Filter2Reso"][0] == pytest.approx(1.0)
 
 
 def test_filter_keytrack_bipolar(overrides):
@@ -695,7 +717,10 @@ def test_filter_drive_simulated_as_fx1_drive_tube_a005():
     assert ov["FX1Type"][0] == qpat_map.FX_TYPE["Drive"]
     assert ov["DriveType"] == (1.0, "Tube -> DriveType")
     assert ov["DriveAmount"][0] == pytest.approx(8 / 127)
-    assert ov["DriveDryWet"][0] == pytest.approx(8 / 127)
+    # Blofeld drive is an insert (100 % of the signal is driven), not a send.
+    # The old DryWet=norm(drive) halved/quartered the effect; measurement f2
+    # showed Iridium strengths of 0.20/0.30x at raw 32/64 (OK at 127).
+    assert ov["DriveDryWet"][0] == pytest.approx(1.0)
     assert ov["DriveGain"][0] == 0.5
     # Blofeld FX1 war Chorus (mix 35 > 0) -> Ersatz wird als unmapped geloggt
     assert any("replaced by filter-drive" in u and "Chorus" in u for u in un)
@@ -709,6 +734,7 @@ def test_filter_drive_clipping_maps_to_pnp_and_keeps_inaudible_fx1_a043():
     assert ov["FX1Type"][0] == qpat_map.FX_TYPE["Drive"]
     assert ov["DriveType"][0] == 0.0
     assert ov["DriveAmount"][0] == pytest.approx(16 / 127)
+    assert ov["DriveDryWet"][0] == pytest.approx(1.0)
     assert not any("replaced by filter-drive" in u for u in un)
 
 

@@ -20,15 +20,15 @@ Die Umsetzung/Reparatur des Konverters war an eine **andere Session** übergeben
 Die Punkte A1–A10 waren daher **zurückgestellt** (nicht vergessen); A8 und A11 wurden
 noch vor dieser Umstellung umgesetzt.
 
-**Nachtrag 2026-11-21 (Umsetzungs-Session):** A1, A3 und A4 sind ebenfalls umgesetzt
-(Code + Unit-Tests, Suite 405 passed). Alle umgesetzten Punkte (A1, A3, A4, A8, A11)
-stehen jetzt mit Beleg und Test in `FIXES_HISTORY.md` und sind aus dieser Liste
-entfernt. Offen bleibt nur die jeweilige **Neumessung** am Gerät.
+**Nachtrag 2026-11-21 (Umsetzungs-Session):** A1, A2, A3 und A4 sind ebenfalls
+umgesetzt (Code + Unit-Tests, Suite 407 passed). Alle umgesetzten Punkte (A1, A2,
+A3, A4, A8, A11) stehen jetzt mit Beleg und Test in `FIXES_HISTORY.md` und sind aus
+dieser Liste entfernt. Offen bleibt nur die jeweilige **Neumessung** am Gerät.
 
 Nächste Messblöcke (Reihenfolge):
 
-0. **Verifikation A1/A3/A4** — PWM (`osc2`), Reverb-Mix (`fx`), Unisono (`unison`);
-   Details und Akzeptanz in `FIXES_HISTORY.md`.
+0. **Verifikation A1/A2/A3/A4** — PWM (`osc2`), Filter 2 (`f2`), Reverb-Mix (`fx`),
+   Unisono (`unison`); Details und Akzeptanz in `FIXES_HISTORY.md`/`TODO_MEASURE.md`.
 1. **5 · Glide/Legato** — Zwei-Noten-Recorder; Rate/Mode 0/1, 20/60/100.
 2. **6 · Unisono** — Count 2/4/8, Detune, Pan (A4-Befund absichern).
 3. **7 · Sync** — nur Osc 2+3, Intervall +7, Sync aus/ein.
@@ -38,33 +38,6 @@ Messhygiene: verifizierter Dump-Load (C1), 2 Takes je Wert, L/R bei Pan, Notenpa
 bei Keytrack, Anschlagspaare bei Velocity.
 
 ## A. Konverter-Fixes mit Messbeleg
-
-### A2 · 🟡 teilweise (A11 umgesetzt; Typ/Reso/Drive offen) · Filter 2
-- **Beleg (Direkttest, 12 Aufnahmen):** Balance **0 = Filter 1, 127 = Filter 2**;
-  Routing **0 = parallel, 1 = seriell** (bei seriell liegt F2 immer im Weg).
-  Der frühere inkonsistente Lauf ist durch die Readback-Verifikation (C1) und die
-  Routing-Korrektur (A11) behoben; der Wiederholungslauf hat einen sauberen
-  Rauschboden (0,2/0,6).
-- **Stelle:** `qpat_map.py`, Block „Filter 2 / DigiFormer / FilterLink“ (ca. 520–560)
-  und `blofeld_to_qpat_params` (Balance → `OscNDestination`).
-- **Fix:**
-  1. Balance `raw` → Anteil F1/F2: **seriell** über `OscNDestination`
-     (2 = F1 … 22 = Former/F2), **parallel** über `FilterLevel`/`Filter2Level`
-     (per-Osc-Anteil ist dort nicht darstellbar).
-  2. Routing → `FilterLink` (parallel: Independent, seriell: Linked) und
-     `FilterFormerRouting` konsistent dazu.
-  3. F2-Typ weiter über `DigiFormerType` (Nave/PPG/Largo/Comb), aber nur wenn
-     `Filter2State=Active`; sonst `Off` (nicht `Bypass`).
-- **Stand 2026-11-21 (Test D, verifizierter Load):** F2 **Cutoff** cos 0,89,
-  Stärke 0,61 → teilweise; **Drive** cos 0,97, Stärke 0,49 → teilweise;
-  **Type** defekt (Parallel: nur ein `Filter12Type`), **Resonanz** Mismatch.
-  Der frühere konstante Offset ist weg (Rauschboden 0,2/0,6). **Block 3b
-  (2026-11-21):** F2 Env Amount OK (0,92–1,0), Env Velocity teilweise
-  (0,75–0,81), Keytrack teilweise (0,89).
-- **Offen (andere Session):** F2-Typ in Parallel-Schaltung, Resonanz-Kennlinie,
-  Drive-Skalierung; Keytrack/Env brauchen Messblock 3b.
-- **Voraussetzung:** erst **C1** (Dump-Readback) umsetzen, sonst ist der Lauf nicht
-  vertrauenswürdig.
 
 ### A5 · P1 · FX-Parameter-Indizes und Skalen
 - **Beleg:** Chorus-Test (100 % wet): Parameter 5 bei 64/127 **Iridium 5–11×**

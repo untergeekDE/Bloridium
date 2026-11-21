@@ -95,9 +95,9 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 |---|---|---|---|---|
 | 77 | Filter 1 Type | Filter12Type | 🟡 approximation | Enum table v14; Notch/Comb -> BP approximation |
 | 78 | Filter 1 Cutoff | Filter1CutOff | ✅ direct | norm; device: no CC (only qpat/CC0 via .mimap) |
-| 80 | Filter 1 Resonance | Filter1Reso | ✅ direct | norm |
-| 81 | Filter 1 Drive | - | ❌ unmapped | Drive -> FX Drive possible, Pan -> DigiFormer PAN (CC78) |
-| 82 | Filter 1 Drive Curve | - | ❌ unmapped | Global/System/etc. |
+| 80 | Filter 1 Resonance | Filter1Reso | 🟡 approximation | calibrated `raw/113` clamp (Blofeld self-oscillation >113 -> Iridium 1.0); curve still approximate, cos mismatch 0.06–0.44 |
+| 81 | Filter 1 Drive | FX1 Drive (DriveAmount/Gain/DryWet) | 🟡 approximation | insert drive: `DriveDryWet=1.0`, `DriveAmount=norm(drive)`, curve -> DriveType |
+| 82 | Filter 1 Drive Curve | DriveType | 🟡 approximation | Tube/Pickup/PNP; other Blofeld curves -> PNP |
 | 86 | Filter 1 Keytrack | Filter1Keytrack | ✅ direct | norm(raw); **Test E (2 Noten, 2026-11-21): cos 0,86, teilweise** — bei 0 % weicht die Wirkung ab |
 | 87 | Filter 1 Env Amount | FilterNEnvAmount | ✅ direct | norm |
 | 88 | Filter 1 Env Velocity | FilterNVeloAmount | ⚠️ deviation | norm; **Test E (2 Anschläge): cos 0,36** — Kennlinie/Sustain-Abhängigkeit prüfen |
@@ -108,14 +108,14 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 93 | Filter 1 Pan | - | ❌ unmapped | Drive -> FX Drive possible, Pan -> DigiFormer PAN (CC78) |
 | 94 | Filter 1 Pan Source | - | ❌ unmapped | Global/System/etc. |
 | 95 | Filter 1 Pan Amount | Matrix-Slot -> Filter1 Pan | ✅ direct | Matrixzeile jetzt ab Amount 0, Betrag `0,5+(raw−64)/127`; **Test E: 0 % cos 0,998, 100 % cos 0,997** |
-| 97 | Filter 2 Type | DigiFormerType | 🟡 approximation | Blofeld F2 model -> Former model (Nave/PPG/Largo/SVF), not identical |
-| 98 | Filter 2 Cutoff | DigiFormerAmount + Filter2CutOff | 🟡 approximation | Cutoff -> Former Amount (approximation), F2 stage itself Off |
-| 100 | Filter 2 Resonance | DigiFormerColor + Filter2Reso | 🟡 approximation | Reso -> Former Color |
-| 101 | Filter 2 Drive | - | ❌ unmapped |  |
-| 102 | Filter 2 Drive Curve | - | ❌ unmapped | Global/System/etc. |
-| 106 | Filter 2 Keytrack | Filter2Keytrack | ✅ direct | norm(raw) wie F1; **noch nicht messtechnisch bestätigt** (F2-Mapping blockiert, TODO A2) |
-| 107 | Filter 2 Env Amount | FilterNEnvAmount | ✅ direct | norm |
-| 108 | Filter 2 Env Velocity | FilterNVeloAmount | ✅ direct | norm; **noch nicht messtechnisch bestätigt** (F2-Mapping blockiert, TODO A2) |
+| 97 | Filter 2 Type | Filter2Type (parallel) / DigiFormerType (serial) | 🟡 approximation | parallel: own `Filter2Type` like `Filter12Type`; serial: Former model (Nave/PPG/Largo/SVF) |
+| 98 | Filter 2 Cutoff | Filter2CutOff (parallel) / DigiFormerAmount (serial) | 🟡 approximation | cutoff -> Hz calibration; serial via Former |
+| 100 | Filter 2 Resonance | Filter2Reso (parallel) / DigiFormerColor (serial) | 🟡 approximation | calibrated raw/113; serial: reso -> Former Color |
+| 101 | Filter 2 Drive | FX1 Drive (DriveAmount/Gain/DryWet) | 🟡 approximation | as F1: insert, full wet; max drive of F1/F2 wins |
+| 102 | Filter 2 Drive Curve | DriveType | 🟡 approximation | as F1 |
+| 106 | Filter 2 Keytrack | Filter2Keytrack | ✅ direct | norm(raw) wie F1; measured cos 0.89 (teilweise) |
+| 107 | Filter 2 Env Amount | FilterNEnvAmount | ✅ direct | norm; measured 0.92–1.0 |
+| 108 | Filter 2 Env Velocity | FilterNVeloAmount | ✅ direct | norm; measured 0.75–0.81 (teilweise) |
 | 109 | Filter 2 Mod Source | Matrix-Slot -> DF Amount (serial) / Filter2 Cutoff (parallel) | 🟡 approximation | serial: F2 lives in the DigiFormer -> dst 95 (P1-2, 2026-11-18) |
 | 110 | Filter 2 Mod Amount | MatrixAmount | 🟡 approximation | amt_bipolar |
 | 111 | Filter 2 FM Source | - | ❌ unmapped |  |
@@ -123,7 +123,7 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 113 | Filter 2 Pan | - | ❌ unmapped |  |
 | 114 | Filter 2 Pan Source | - | ❌ unmapped | Global/System/etc. |
 | 115 | Filter 2 Pan Amount | - | ❌ unmapped | Global/System/etc. |
-| 117 | Filter Routing | FilterLink (Linked) + Filter2State Off | 🟡 approximation | serial -> Linked; F2 Bypass -> F2 Off + Former Bypass (bleed fix) |
+| 117 | Filter Routing | FilterLink + Filter2State + FilterFormerRouting | 🟡 approximation | parallel (0): `FilterLink=Independent`, F2 Active, Former Bypass; serial (1): F2 -> DigiFormer, `FilterLink=Single`, F2 State Off; F2 Bypass -> Off (bleed fix) |
 
 ## Effects (FX1/FX2 type/mix) (SDATA 118-127)
 

@@ -35,7 +35,26 @@ für Saw/Triangle/Sine nicht mehr angelegt; der Hinweis steht als
 (`test_pwm_row_only_for_pulse_shapes`), aber ein Sweep mit `Osc 2 Shape = Pulse`
 und `PWM Source = LFO 1` wäre die saubere Hardware-Bestätigung.
 
-## 2. A3 — Reverb-Mix über `ReverbGain`
+## 2. A2 — Filter 2
+
+**Status: Code-Fix fertig, f2-Neumessung offen.**
+
+Der Code setzt jetzt in Parallel-Schaltung `FilterLink = Independent` und einen
+eigenen `Filter2Type`; außerdem Resonanz-Kennlinie (`raw 113 -> 1.0`) und
+Filter-Drive als Insert (`DriveDryWet = 1.0`). Details in `FIXES_HISTORY.md`.
+
+**Zu tun:**
+
+- [ ] `python3 scripts/profile_testb_sweep.py f2` erneut fahren.
+- [ ] Vor dem Lauf per Readback prüfen, dass im Edit-Buffer wirklich
+      `FilterLink=Independent`, `Filter2Type=3` (A010 LP24) und
+      `DriveDryWet=1.0` stehen — die frühere Messung nutzte teilweise die
+      Geräte-Init-Werte statt der qpat-Werte.
+- [ ] F2-Type/Cutoff/Resonanz/Drive in Parallel- und Seriell-Schaltung prüfen.
+- [ ] Bei weiterhin schlechtem Resonanz-Cosinus: Filter-1/2-Modelle
+      (`Filter1Model`/`Filter2Model`, B5) als nächsten Hebel untersuchen.
+
+## 3. A3 — Reverb-Mix über `ReverbGain`
 
 **Status: Code-Fix + Unit-Test fertig; Messung abgebrochen/kontaminiert.**
 
@@ -56,7 +75,7 @@ der Reverb-Dry/Wet-Regler), nicht mehr die alte Matrix-Zeile.
 - [ ] Danach `profile_testb_sweep.py fx` nicht mehr als Gesamtlauf verwenden.
 - [ ] Erst dann `FIXES_HISTORY.md` als „verifiziert“ markieren.
 
-## 3. A4 — Unisono Count/Detune
+## 4. A4 — Unisono Count/Detune
 
 **Status: Code-Fix fertig, Geräte-Readback bestätigt, Klassifikator noch zu grob.**
 
@@ -90,7 +109,7 @@ also am Gerät an.
       bei Detune 127 separat prüfen.
 - [ ] Ergebnis in `FIXES_HISTORY.md` als verifiziert eintragen.
 
-## 4. Messhygiene / offene Punkte
+## 5. Messhygiene / offene Punkte
 
 - [ ] Vor jedem Lauf `FX1Type = Off` bzw. `FX2Type = Off` explizit setzen, wenn
       der jeweilige FX nicht Gegenstand der Messung ist.

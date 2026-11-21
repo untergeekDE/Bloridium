@@ -197,6 +197,37 @@ suite is run on the measurement machine (item 11).
   `test_a007_osc_pwm_mapped_to_wf_warp_rows_ge_21`.
 - **Offen:** optionaler positiver Pulse-Sweep am Gerät (Unit-Test deckt ihn ab).
 
+### A2 · ✅ umgesetzt (2026-11-21), Neumessung offen · Filter 2
+- **Beleg (Profiling/Test D, verifizierter Load):** F2 **Cutoff** cos 0,89,
+  Stärke 0,61 (teilweise); **Drive** bei raw 32/64 nur 0,20/0,30× so stark wie
+  Blofeld, bei 127 OK (cos 0,97); **Type** defekt, weil nur `Filter12Type` (F1)
+  geschrieben wurde; **Resonanz** Mismatch (cos 0,06–0,44). Die frühere
+  Routing-Korrektur (A11) hatte den konstanten Offset beseitigt.
+- **Stelle:** `qpat_map.py`, Filter-/Routing-Block und Filter-Drive-Block.
+- **Umsetzung:**
+  1. **`FilterLink`:** parallel mit aktiver F2 jetzt `Independent` (6.0). Das
+     v8-Template stand auf `Boost` (1.0), das Cutoff 2/Resonanz 2 ignoriert —
+     F2 wäre im qpat praktisch stumm gewesen. Seriell bleibt `Single`, weil F2
+     dort im DigiFormer sitzt (nicht `Linked`; das alte TODO war hier falsch).
+  2. **`Filter2Type`:** eigener F2-Typ aus der Blofeld-F2-Type (gleiche
+     v14-Enum-Tabelle wie `Filter12Type`). Bisher fiel F2 auf den Geräte-Default
+     12dB LP zurück; A010 bekommt jetzt 24dB LP.
+  3. **Resonanz-Kennlinie:** `blofeld_reso_norm()` mappt raw 113 (Beginn der
+     Blofeld-Selbstoszillation laut Handbuch) auf 1.0 statt auf 0.89; raw > 113
+     wird geklemmt. Damit erreichen beide Filter die Selbstoszillation im
+     gleichen Bereich, niedrige Werte bleiben proportional.
+  4. **Filter-Drive:** Blofeld-Drive ist ein Insert, kein Send. `DriveDryWet`
+     steht jetzt auf 1.0 (vorher `norm(drive)`, dadurch bei raw 32/64 nur
+     0,20/0,30× Wirkung); `DriveAmount = norm(drive)` steuert weiter die
+     Sättigung, `DriveGain` bleibt neutral.
+- **Tests:** `test_parallel_routing_f2_stays_filter2_active`,
+  `test_resonance_self_oscillation_calibration`,
+  `test_filter_drive_simulated_as_fx1_drive_tube_a005`,
+  `test_filter_drive_clipping_maps_to_pnp_and_keeps_inaudible_fx1_a043`.
+- **Verifikation offen:** `f2`-Sweep mit den neuen qpat-Werten wiederholen
+  (Cutoff/Reso/Drive/Type in Parallel- und Seriell-Schaltung); Details in
+  `TODO_MEASURE.md`.
+
 ### A3 · ✅ umgesetzt (2026-11-21) · Reverb-Mix über `ReverbGain`
 - **Beleg:** „Effect 2 Mix“ war **defekt** (Blofeld 3,3; Iridium 1,8). Es gibt
   keinen `ReverbDryWet`-qpat-Parameter; der alte Workaround (Matrix

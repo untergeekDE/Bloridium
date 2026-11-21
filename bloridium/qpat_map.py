@@ -405,6 +405,19 @@ def blofeld_cutoff_norm(raw) -> float:
     return max(0.0, min(1.0, x))
 
 
+# Blofeld manual: the filter starts to self-oscillate above resonance raw 113;
+# the Iridium starts at 100 % resonance. Linear norm() only reached 0.89 there,
+# so the Iridium stayed below self-oscillation for raw 113-126. Calibrate the
+# threshold: raw 113 -> 1.0, raw 127 clamps to 1.0.
+BLOFELD_RESO_SELF_OSC_RAW = 113.0
+
+
+def blofeld_reso_norm(raw) -> float:
+    """Blofeld filter resonance raw 0..127 -> Iridium FilterNReso norm 0..1."""
+    raw = max(0, min(127, raw))
+    return min(1.0, raw / BLOFELD_RESO_SELF_OSC_RAW)
+
+
 def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     """parsed: blofeld_dump.parse_sndd(). -> (overrides, unmapped)
 
@@ -586,7 +599,8 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # parallel (0): F1 and F2 parallel. Iridium: F2 stays filter 2 (Active),
     #   Former = Bypass, routing 'Parallel'.
     seriell = p.get("Filter Routing") == 1
-    f2_bypass = BLOFELD_FILTER_TO_IRIDIUM.get(f2_label if isinstance(f2_label, str) else "") is None
+    m2 = BLOFELD_FILTER_TO_IRIDIUM.get(f2_label if isinstance(f2_label, str) else "")
+    f2_bypass = m2 is None
     if seriell:
         if f2_bypass:
             # F2 Bypass: Former bypass AND Filter2State 'Off' - 'Bypass' alone leaked
@@ -610,10 +624,18 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             setp("FilterLink", FILTER_LINK["Single"], "Single")
         else:
             setp("Filter2State", FILTER2_STATE["Active"], "Active")
+            # The v8 template defaults to Boost (1.0), which ignores Cutoff 2 /
+            # Resonance 2. Parallel therefore needs Independent so F2 is audible
+            # at all (A2, profiling 2026-11-21).
+            setp("FilterLink", FILTER_LINK["Independent"], "Independent")
+    if m2:
+        # v14/v15 have a separate Filter2Type; writing only Filter12Type (F1) left
+        # F2 on the device default 12dB LP -> "type defekt" in the parallel test.
+        setp("Filter2Type", FILTER12_TYPE[m2], m2)
     setp("Filter1CutOff", blofeld_cutoff_norm(p["Filter 1 Cutoff"]))
-    setp("Filter1Reso", norm(p["Filter 1 Resonance"]))
+    setp("Filter1Reso", blofeld_reso_norm(p["Filter 1 Resonance"]))
     setp("Filter2CutOff", blofeld_cutoff_norm(p["Filter 2 Cutoff"]))
-    setp("Filter2Reso", norm(p["Filter 2 Resonance"]))
+    setp("Filter2Reso", blofeld_reso_norm(p["Filter 2 Resonance"]))
     setp("Filter1EnvAmount", norm(p["Filter 1 Env Amount"]))
     setp("Filter1VeloAmount", norm(p["Filter 1 Env Velocity"]))
     setp("Filter2EnvAmount", norm(p["Filter 2 Env Amount"]))
@@ -945,7 +967,11 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
               f"{curve} -> DriveType")
         setp("DriveAmount", norm(int(drive)))
         setp("DriveGain", 0.5, "neutral")
-        setp("DriveDryWet", norm(int(drive)))
+        # Blofeld filter drive is an insert: the whole signal passes the drive
+        # stage, Amount controls saturation. The Iridium Drive is an FX, so keep
+        # Dry/Wet at 100 % and use Amount (the old norm(drive) Dry/Wet made the
+        # effect 0.20/0.30x too weak at raw 32/64, see f2 profiling 2026-11-21).
+        setp("DriveDryWet", 1.0, "full wet (insert)")
 
     # --- arp ---
     unmapped += [k for k in p if k.startswith("Arp")]

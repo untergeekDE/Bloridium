@@ -115,10 +115,17 @@ verbindet die Filter über `FilterLink`.
   darstellbar). Mit verifiziertem Dump-Load (Rauschboden 0,2/0,6) folgt der
   **F2-Cutoff** dem Blofeld (Cosinus 0,88–0,96, Stärke 0,6), **F2-Drive** bei
   hohen Werten (0,97) und die **F2-Hüllkurve**: Env Amount 0,92–1,0,
-  Env Velocity 0,75–0,81, Keytrack 0,89 (teilweise). **F2-Typ** bleibt defekt,
-  weil der Iridium in der Parallel-Schaltung nur **einen** `Filter12Type` für
-  beide Filter hat; die Resonanz reagiert am Iridium deutlich, aber mit anderer
-  Form (F1 cos 0,06–0,20, F2 cos 0,16 bei je 100 %) → Kennlinie/Güte unterschiedlich.
+  Env Velocity 0,75–0,81, Keytrack 0,89 (teilweise).
+- **Nachtrag A2 (2026-11-21, Code):** In Parallel-Schaltung setzt der Konverter
+  jetzt `FilterLink = Independent` (das v8-Template stand auf `Boost`, das
+  Cutoff 2/Resonanz 2 ignoriert) und einen eigenen `Filter2Type` (v14 hat neben
+  `Filter12Type` ein separates `Filter2Type`). Filter-Drive läuft als Insert mit
+  `DriveDryWet=1.0`; die Resonanz-Kennlinie mappt raw 113 (Blofeld-
+  Selbstoszillation) auf 1.0. Die **F2-Neumessung** steht noch aus
+  (`TODO_MEASURE.md`).
+- **Grenze:** Die Resonanzform bleibt trotz Kennlinien-Fix eine Näherung; bei
+  weiterhin schlechtem Cosinus sind die Filter-Modelle
+  (`Filter1Model`/`Filter2Model`, B5) der nächste Hebel.
 
 ### 2.5 Filter-Drive und Filter-FM
 
@@ -224,9 +231,9 @@ werden aber nicht gesetzt:
 
 1. ✅ **PWM-Zeile nur für pulsartige Blofeld-Wellenformen** — umgesetzt (A1,
    2026-11-21), Neumessung offen.
-2. **Filter-2-/Balance-Mapping neu aufsetzen:** Balance → `OscNDestination`,
-   Routing → `FilterLink`, F2-Modell → DigiFormer; danach Test D „f2“ wiederholen
-   (aktuell 4× zu stark / Richtung falsch).
+2. ✅ **Filter-2-/Balance-Mapping** — Balance → `OscNDestination`/`FilterLevel`,
+   parallel `FilterLink=Independent` + `Filter2Type`, Filter-Drive als Insert,
+   Resonanz-Kennlinie (A2, 2026-11-21); Neumessung `f2` offen.
 3. ✅ **Unisono Detune** — Bitfeld-Korrektur (Bits 4–6) + neutrale Pan/Delay-Werte
    (A4, 2026-11-21), Neumessung offen.
 4. **LFO Fade** auf `LfoNAttack`/`LfoNDecay` legen und **Free-Speed** in Hz
