@@ -199,11 +199,12 @@ def test_mod_matrix_slots_mapped(overrides):
     assert overrides["MatrixControlAmount1"][0] == 1.0
 
 
-def test_filter_direct_mod_source_mapped_to_extra_matrix_slot(overrides):
-    # Blofeld "Filter 1 Mod Source = Mod Wheel, Mod Amount = 111" -> next free slot (7) -> Filter1 Cutoff
-    assert overrides["MatrixSrc7"][0] == 14.0
-    assert overrides["MatrixDst7"][0] == 109.0
-    assert overrides["MatrixAmount7"][0] == pytest.approx(0.5 + (111 - 64) / 254)
+def test_filter_direct_mod_source_mapped_to_hardwired_slot_21(overrides):
+    # Blofeld "Filter 1 Mod Source = Mod Wheel, Mod Amount = 111" -> hard-wired slot 21
+    # (rows 1-16 = Blofeld Mod 1-16, 17-20 = amp-velo/amp-mod/osc-pitch/DF-env; 2026-11-21)
+    assert overrides["MatrixSrc21"][0] == 14.0
+    assert overrides["MatrixDst21"][0] == 109.0
+    assert overrides["MatrixAmount21"][0] == pytest.approx(0.5 + (111 - 64) / 254)
 
 
 def test_amp_velocity_maps_to_velocity_volume_slot(overrides):
@@ -211,18 +212,18 @@ def test_amp_velocity_maps_to_velocity_volume_slot(overrides):
     # Matrix amount is bipolar centered at 0.5 -> 0.5 + 0.5*norm = 0.752
     # (0.5 would be neutral/ineffective! bipolar trap 2026-11-09)
     assert overrides["AmpVeloAmount"][0] == pytest.approx(64 / 127)
-    assert overrides["MatrixSrc8"][0] == 33.0    # Velocity (runtime)
-    assert overrides["MatrixDst8"][0] == 152.0   # Volume (runtime)
-    assert overrides["MatrixAmount8"][0] == pytest.approx(0.5 + 0.5 * 64 / 127)
-    assert overrides["MatrixOnOff8"][0] == 1.0
-    # A043 also has Amplifier Mod Source=LFO 3 (slot 9 -> Volume) and
-    # Osc Pitch Source=LFO1*MW (slot 10 -> Wheel -> Pitch)
-    assert overrides["MatrixSrc9"][0] == 9.0     # LFO 3
-    assert overrides["MatrixDst9"][0] == 152.0   # Volume
+    assert overrides["MatrixSrc7"][0] == 33.0    # Velocity (runtime)
+    assert overrides["MatrixDst7"][0] == 152.0   # Volume (runtime)
+    assert overrides["MatrixAmount7"][0] == pytest.approx(0.5 + 0.5 * 64 / 127)
+    assert overrides["MatrixOnOff7"][0] == 1.0
+    # A043 also has Amplifier Mod Source=LFO 3 (slot 8 -> Volume) and
+    # Osc Pitch Source=LFO1*MW (slot 9 -> LFO 1 + Ctrl Wheel -> Pitch)
+    assert overrides["MatrixSrc8"][0] == 9.0     # LFO 3
+    assert overrides["MatrixDst8"][0] == 152.0   # Volume
     # LFO1*MW (2026-11-21): Src stays LFO 1, Wheel moves to the row Ctrl
-    assert overrides["MatrixSrc10"][0] == 7.0    # LFO 1
-    assert overrides["MatrixControl10"][0] == 14.0  # Ctrl Wheel
-    assert overrides["MatrixDst10"][0] == 1.0    # Pitch
+    assert overrides["MatrixSrc9"][0] == 7.0     # LFO 1
+    assert overrides["MatrixControl9"][0] == 14.0   # Ctrl Wheel
+    assert overrides["MatrixDst9"][0] == 1.0     # Pitch
 
 
 def test_glide_rate_calibrated_not_linear():
@@ -693,7 +694,7 @@ def _rows(ov):
     import re
     rows = {}
     for k, v in ov.items():
-        m = re.match(r"Matrix(Src|Dst|Control|ControlAmount)(\d+)$", k)
+        m = re.match(r"Matrix(Src|Dst|Amount|Control|ControlAmount)(\d+)$", k)
         if m:
             rows.setdefault(int(m.group(2)), {})[m.group(1)] = v
     return rows
@@ -744,3 +745,33 @@ def test_envelope_curves_are_linear(overrides):
     for grp in ("AmpEnv", "Filter1", "Filter2", "FreeEnv1", "FreeEnv2"):
         for ph in ("Attack", "Decay", "Release"):
             assert overrides[f"{grp}{ph}Curve"] == (2.0, "Lin"), f"{grp}{ph}Curve"
+
+
+def test_a007_osc_pwm_mapped_to_wf_warp_rows_ge_21():
+    # A007: Osc1/2/3 PWM Source LFO 1/2/3 (amt 64/3/111) -> matrix rows 22-24,
+    # Dst WF1/2/3 Warp (waveform oscs), NOT dropped (user finding 2026-11-21 @ slot 206)
+    parsed = bd.parse_sndd((REPO / "dumps/blofeld_sndd_A007_20261119_053353.bin").read_bytes())
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    rows = _rows(ov)
+    pwm = {n: r for n, r in rows.items()
+           if n >= 21 and r.get("Dst", (0.0,))[0] in (18.0, 49.0, 80.0)}
+    assert len(pwm) == 3
+    assert rows[22]["Dst"][0] == 18.0 and rows[22]["Src"][0] == 7.0   # WF1 Warp <- LFO 1
+    assert rows[23]["Dst"][0] == 49.0 and rows[23]["Src"][0] == 8.0   # WF2 Warp <- LFO 2
+    assert rows[24]["Dst"][0] == 80.0 and rows[24]["Src"][0] == 9.0   # WF3 Warp <- LFO 3
+    assert rows[23]["Amount"][0] == pytest.approx(0.5 + (3 - 64) / 254)   # amt 3
+    assert not any("PWM" in u for u in un)
+
+
+def test_a005_osc_fm_approx_via_pitch_and_serial_f2_pan_via_df():
+    # A005: Osc2 FM Source LFO1 amt 4 -> row >= 21 Dst Osc2 Pitch; Filter2 Pan (serial)
+    # -> DF Pan (the audible F2 is the DigiFormer in serial mode)
+    parsed = bd.parse_sndd((REPO / A005).read_bytes())
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    rows = _rows(ov)
+    hw = [r for n, r in rows.items() if n >= 21]
+    fm = [r for r in hw if r.get("Dst", (0.0,))[0] == qpat_map.MATRIX_DST["Osc2 Pitch"]]
+    assert fm and fm[0]["Src"][0] == qpat_map.MATRIX_SRC["LFO 1"]
+    pan = [r for r in hw if r.get("Dst", (0.0,))[0] == qpat_map.MATRIX_DST["DF Pan"]]
+    assert pan and pan[0]["Src"][0] == qpat_map.MATRIX_SRC["LFO 2"]
+    assert not any("FM" in u or "Pan" in u for u in un if "Filter" in u or "Osc" in u)

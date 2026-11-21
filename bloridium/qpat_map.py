@@ -415,9 +415,11 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         # on the Iridium (user finding 2026-11-15, stereo image, e.g. A043 Balance=0).
         # -> Pan always center; Balance goes to the unmapped log below.
         setp(f"Osc{n}Pan", 0.5, "center (Blofeld Balance is F1/F2 share, not pan)")
-        for k in ("Bend Range", "Keytrack", "FM Source", "FM Amount", "PWM Source",
-                  "PWM Amount", "Limit WT"):
+        for k in ("Bend Range", "Keytrack", "Limit WT"):
             unmapped.append(f"Osc {n} {k}")
+        # FM/PWM Source+Amount are NOT unmapped here anymore: they are mapped as
+        # matrix rows >= 21 in the hard-wired block below (2026-11-21, A007 @ 206);
+        # only truly unmappable ones land in unmapped there.
         unmapped.append(f"Mixer Osc {n} Balance (F1/F2 share, not pan; later maybe OscNDestination)")
         if otype != "Wavetable":
             unmapped.append(f"Osc {n} Brilliance")
@@ -628,19 +630,65 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             mrow(slot, s_disp, ctrl_disp, d_disp, amt_bipolar(amt))
         else:
             unmapped.append(f"Modulation {m} ({src} -> {dst})")
-    # direct filter modulation (Filter N Mod Source/Amount) -> extra matrix slots from 17
+    # --- hard-wired modulations -> matrix slots >= 21 ---------------------------
+    # Blofeld Mod 1-16 occupy rows 1-16; amp-velo/amp-mod/osc-pitch/DF-env use 17-20.
+    # The Iridium has 40 matrix rows, so the hard-wired modulations (Filter N
+    # Mod/FM/Pan Source, Osc N PWM/FM Source) go to 21+ — otherwise they collide
+    # with the mod slots when all 16 are used, or get dropped (user finding
+    # 2026-11-21, A007 @ slot 206: Osc2/3 PWM Amount was not represented at all).
+    hw = 20
     for n in (1, 2):
         src = p[f"Filter {n} Mod Source"]
         if isinstance(src, str) and src != "off":
-            slot += 1
+            hw += 1
             s_disp, ctrl_disp = _resolve_mod_source(p, src)
             d_disp = "Filter1 Cutoff" if n == 1 else "Filter2 Cutoff"
             if n == 2 and seriell and not f2_bypass:
                 d_disp = "DF Amount"   # serial: F2 lives in the DigiFormer (P1-2)
             if s_disp:
-                mrow(slot, s_disp, ctrl_disp, d_disp, amt_bipolar(p[f"Filter {n} Mod Amount"]))
+                mrow(hw, s_disp, ctrl_disp, d_disp, amt_bipolar(p[f"Filter {n} Mod Amount"]))
             else:
                 unmapped.append(f"Filter {n} Mod Source {src!r}")
+    # Osc N PWM Source/Amount -> WF warp (waveform osc) resp. WT position (wavetable)
+    for n in (1, 2, 3):
+        src = p.get(f"Osc {n} PWM Source")
+        amt = p.get(f"Osc {n} PWM Amount", 0)
+        if isinstance(src, str) and src != "off" \
+                and isinstance(amt, (int, float)) and amt != 0:
+            hw += 1
+            s_disp, ctrl_disp = _resolve_mod_source(p, src)
+            d_disp = f"WT{n} Position" if osc_is_wavetable.get(n) else f"WF{n} Warp"
+            if s_disp and d_disp in MATRIX_DST:
+                mrow(hw, s_disp, ctrl_disp, d_disp, amt_bipolar(amt))
+            else:
+                unmapped.append(f"Osc {n} PWM Source {src!r} (no Iridium dst)")
+        # Osc N FM: no FM dst on the Iridium -> approximate via OscN Pitch
+        src = p.get(f"Osc {n} FM Source")
+        amt = p.get(f"Osc {n} FM Amount", 0)
+        if isinstance(src, str) and src != "off" \
+                and isinstance(amt, (int, float)) and amt != 0:
+            hw += 1
+            s_disp, ctrl_disp = _resolve_mod_source(p, src)
+            if s_disp:
+                mrow(hw, s_disp, ctrl_disp, f"Osc{n} Pitch", amt_bipolar(amt))
+            else:
+                unmapped.append(f"Osc {n} FM Source {src!r}")
+    # Filter N FM / Pan Source (hard-wired) -> cutoff / pan (serial: DigiFormer)
+    for n in (1, 2):
+        for kind, d_base in (("FM", "Cutoff"), ("Pan", "Pan")):
+            src = p.get(f"Filter {n} {kind} Source")
+            amt = p.get(f"Filter {n} {kind} Amount", 0)
+            if isinstance(src, str) and src != "off" \
+                    and isinstance(amt, (int, float)) and amt != 0:
+                hw += 1
+                s_disp, ctrl_disp = _resolve_mod_source(p, src)
+                d_disp = f"Filter{n} {d_base}"
+                if n == 2 and seriell and not f2_bypass:
+                    d_disp = "DF Amount" if d_base == "Cutoff" else "DF Pan"
+                if s_disp:
+                    mrow(hw, s_disp, ctrl_disp, d_disp, amt_bipolar(amt))
+                else:
+                    unmapped.append(f"Filter {n} {kind} Source {src!r}")
     # Blofeld amplifier velocity (level dynamics, unipolar) -> own matrix slot
     # Velocity -> Volume. Amount 0.5 + 0.5*norm(raw) instead of
     # amt_bipolar (0.5 would be neutral/ineffective), because velocity is unipolar:

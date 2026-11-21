@@ -282,3 +282,19 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
   (Enum aus Factory-qpats: 0=Exp, 1=RC/'Exp alt', 2=Lin). Betrifft ALLE Sounds.
 - rf100_v2 re-konvertiert: A006 jetzt 191 mapped (war ~150), qpat enthaelt
   MatrixControl10=14 'Ctrl Wheel' + alle Curves Lin. 397 Tests gruen.
+
+## 2026-11-21 — A007 @ slot 206 (Pulsantw0rt): PWM/FM -> Matrix-Slots >= 21; Detune offen
+
+- **Fest verdrahtete Modulationen landen jetzt auf Matrix-Slots ab 21** (Iridium hat 40
+  Rows; 1-16 = Blofeld Mod 1-16, 17-20 = Amp-Velo/Amp-Mod/Osc-Pitch/DF-Env):
+  - Osc N PWM Source/Amount -> `WF{n} Warp` (Waveform-Osc) bzw. `WT{n} Position`
+    (Wavetable-Osc). A007: Rows 22-24 = LFO1/2/3 -> WF1/2/3 Warp (war komplett unmapped).
+  - Osc N FM -> Approximation via `Osc{n} Pitch` (kein FM-Dst am Iridium).
+  - Filter N Mod/FM/Pan Source -> Filter Cutoff/Pan (serial: DF Amount/DF Pan).
+  - A007 jetzt 169 mapped (vorher ~150), PWM nicht mehr in unmapped.
+- **Detune**: Blofeld raw 64 = 0 cent -> Iridium FinePitch 0.5 (A007: Osc2 0.5, Osc3 0.492
+  bei raw 62). Am Geraet werden da „hohe Werte" angezeigt -> die cent-per-norm-Skala des
+  Iridium ist NICHT zentriert bei 0.5 (bekannter live-calibration TODO, divisor 254
+  annimmt +/-127 cent). Offen: Live-Pitch-Sweep per QUIR (FinePitch 0/0.5/1 -> Grundton
+  messen), dann fine_pitch_norm korrigieren.
+- rf100_v2 re-konvertiert (A007-qpat verifiziert: MatrixSrc/Dst 22-24 = WF Warp). 399 Tests.
