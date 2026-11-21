@@ -28,7 +28,7 @@ import matching
 TOKEN_RE = re.compile(r"[0-9a-f]{32}")
 
 def footer(sim_ver: str) -> str:
-    return ('<footer>Info on <a href="https://untergeek.de">untergeek.de</a> &middot; '
+    return ('<footer><strong>Read the blog post on <a href="https://www.untergeek.de/2026/11/bloridium-porting-blofeld-sounds-to-the-iridium/#more-6616">untergeek.de</a> &middot;<strong> '
             'Repository of conversion tools: '
             '<a href="https://github.com/untergeekDE/Bloridium">github.com/untergeekDE/Bloridium</a>'
             f' &middot; Bloridium v{convert.CONVERSION_VERSION} &middot; GPL-3.0</footer>')

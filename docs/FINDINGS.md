@@ -328,3 +328,17 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
 - init-patch loest sauberen Zustand im Edit-Puffer aus (verifiziert per get-param:
   Shape 0, Vol 1/0/0, Coarse 24, Fine 0.5, Matrix row1 leer). Nichts persistiert.
 - 402 Tests gruen; rf100_v2 re-konvertiert (A008: CoarsePitch 48 + Constant-Row).
+
+### Mapping-Stand 2026-11-21 (Checkliste: Befund -> Fix -> Test)
+
+| Befund (live am Iridium) | Fix in qpat_map.py | Test |
+|---|---|---|
+| A005@204: F1 PPG LP kam als svf/12dB LP an | `PPG LP -> "24dB LP"` (Filter12Type 3.0); matching.py exact | test_ppg_lp_maps_to_24db_lp |
+| A005@204: Filter-Drive fehlte | Drive -> FX1=Drive, DriveType aus Curve (Tube/Pickup/PNP), Amount/DryWet=norm(drive) | test_filter_drive_*_a005/a043/pickup/no_drive |
+| A006@205: Modifier1 = LFO2*MW unmapped | `_resolve_mod_source`: Src=LFOx + MatrixControl=Wheel/AT (+Amount 1.0) | test_modifier_product_*/test_direct_lfox_mw/test_resolve_mod_source_unit |
+| Env-Attack Blofeld linear vs Iridium RC | alle Amp/Filter/FreeEnv Attack/Decay/Release-Curves = 2.0 'Lin' | test_envelope_curves_are_linear |
+| A007@206: Osc PWM/FM, Filter FM/Pan unmapped | Matrix-Slots >= 21: OscN PWM -> WF{n} Warp/WT Position, OscN FM -> Osc{n} Pitch (approx), Filter Mod/FM/Pan -> Cutoff/Pan (serial: DF) | test_a007_osc_pwm_*/test_a005_osc_fm_* |
+| A008@207: Osc1 1' (+36 semi) > CoarsePitch-Max (+24) | Clamp auf 48 + Rest als Constant -> OscN Pitch, Amount per MATRIX_PITCH_CAL (live: 0.5=0 semi, 1.0=+24 semi) | test_a008_osc1_1ft_*/test_matrix_pitch_calibration_inverse |
+| A007@206: Detune-Anzeige am Panel „hoch" | DOKUMENTIERT, offen: FinePitch-Kalibrierung live (FIXES_TODO), Mapping raw 64 -> 0.5 bleibt bis dahin | — (FIXES_TODO) |
+| SD `2:rf200` war veraltet (A007 las CoarsePitch 36) | kein Code-Bug; frische Kopie aus transfer/rf100_v2 noetig (plain cp) | — |
+| Matrix-Runtime nur 40 Rows (kein 41) | Doku; Hard-wired-Block nutzt 21..40 | — |

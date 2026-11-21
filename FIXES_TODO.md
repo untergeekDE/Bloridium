@@ -181,3 +181,11 @@ suite is run on the measurement machine (item 11).
          repo is already public, so existing clones and forks keep the old state.
     - ⬜ Add a guard to the planned CI (item 12): `git grep` on the forbidden names fails
       the build.
+
+## Kalibrierungen (offen, live am Iridium zu messen — 2026-11-21)
+
+- ⬜ **Osc Detune/FinePitch cent-per-norm** des Iridium (A007: Blofeld raw 64 = 0 cent
+  -> qpat 0.5, Panel zeigt „hohe Werte"). Gemessen werden muss: FinePitch 0/0.5/1 ->
+  Grundton-Shift (analog quir_matrix_pitch_calib.py, dst = OscN FinePitch statt Matrix).
+  Dann `fine_pitch_norm()` in qpat_map.py korrigieren (aktuell 0.5 + (raw-64)/254).
+- ⬜ **_MAD_SCALE (20 dB)** gegen User-Ratings kalibrieren (bestehender Punkt aus Item 1).
