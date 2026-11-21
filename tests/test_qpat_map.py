@@ -302,6 +302,43 @@ def test_glide_rate_calibrated_not_linear():
     assert all(b >= a for a, b in zip(vals, vals[1:]))
 
 
+def test_glide_rate_matches_measured_curve():
+    # Block 5 (docs/GLIDE-2026-11-21.md): equal-time mapping for the measured
+    # Blofeld/Iridium anchors. Blofeld raw 64 = 592 ms, 70 = 1013 ms, 85 = 2117 ms.
+    assert qpat_map.blofeld_glide_seconds(64) == pytest.approx(0.592, abs=0.002)
+    assert qpat_map.blofeld_glide_seconds(70) == pytest.approx(1.013, abs=0.003)
+    assert qpat_map.blofeld_glide_seconds(85) == pytest.approx(2.117, abs=0.005)
+    # Iridium: norm 0.50 = 379 ms, 0.75 = 896 ms, 1.0 = 1600 ms
+    assert qpat_map.iridium_glide_seconds(0.50) == pytest.approx(0.379, abs=0.002)
+    assert qpat_map.iridium_glide_seconds(0.75) == pytest.approx(0.896, abs=0.003)
+    assert qpat_map.iridium_glide_seconds(1.00) == pytest.approx(1.600, abs=0.002)
+    # recommended converter anchors from the measurement
+    assert qpat_map.glide_rate_norm(50) == pytest.approx(0.32, abs=0.01)
+    assert qpat_map.glide_rate_norm(64) == pytest.approx(0.59, abs=0.01)
+    assert qpat_map.glide_rate_norm(70) == pytest.approx(0.79, abs=0.01)
+    assert qpat_map.glide_rate_norm(85) == pytest.approx(1.0, abs=1e-9)
+    assert qpat_map.glide_rate_norm(127) == pytest.approx(1.0, abs=1e-9)
+
+
+def test_glide_mode_maps_to_glide_type():
+    # Iridium has only Onset/Legato; Portamento -> Onset, fingered -> Legato.
+    parsed = _parsed_with({"Glide": 1, "Glide Mode": "Portamento"})
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["GlideType"] == (0.0, "Onset")
+    parsed = _parsed_with({"Glide": 1, "Glide Mode": "fingered P"})
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["GlideType"] == (1.0, "Legato")
+    parsed = _parsed_with({"Glide": 1, "Glide Mode": "fingered G"})
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["GlideType"] == (1.0, "Legato")
+    assert any("fingered G" in u for u in un)
+    # stepped glissando is not representable -> continuous glide + report note
+    parsed = _parsed_with({"Glide": 1, "Glide Mode": "Glissando"})
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["GlideType"] == (0.0, "Onset")
+    assert any("Glide Mode" in u and "Glissando" in u for u in un)
+
+
 def test_a073_glide_rate_in_overrides():
     parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / "dumps/blofeld_sndd_A073_20261108_233117.bin"))
     ov, _unmapped = qpat_map.blofeld_to_qpat_params(parsed)

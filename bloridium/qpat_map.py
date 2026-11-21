@@ -246,41 +246,55 @@ def bipolar_amount_full(raw: int) -> float:
 
 # ---- Glide Rate: time calibration (both sides are log-scaled in time) ----
 # Why not plain norm(): Blofeld "Glide Rate" raw 0..127 is NOT linear in time
-# (Blofeld manual: low values = milliseconds, high = several seconds); the
-# Iridium "GlideRate" norm 0..1 is not either. Linear norm() therefore maps too
-# high (observation 2026-11-09: A073 Chord Hose raw 48 -> norm 0.378 ->
-# "Glide Rate 0.29sec" on the Iridium, clearly longer than on the Blofeld).
-# Anchors (measured/documented):
-#   - Blofeld raw 20 <-> Iridium norm 0.15: Don Solaris factory pairs (Blofeld
-#     Rate 20 = Iridium GlideRate 0.15); 0.15 is the Iridium default = 0.045 s
-#     (manual) -> t_blo(20) = 0.045 s.
-#   - Iridium norm 0.378 shows "0.29 s" on the device (display read during A073 import).
-#   - Blofeld raw 127 = "several seconds" (manual) -> conservatively 5 s.
-# Both curves are exponential in time; mapping raw -> norm via t_blo(raw) = t_irr(norm)
-# keeps the audible glide time identical on both synths.
-GLIDE_BLO_T_AT_20 = 0.045   # s at raw 20 (Don Solaris anchor)
-GLIDE_BLO_T_MAX = 5.0       # s at raw 127 ("several seconds", conservative)
-GLIDE_IRR_ANCHORS = ((0.15, 0.045), (0.378, 0.29))   # (norm, s on device)
+# (low values = milliseconds, high = several seconds); the Iridium "GlideRate"
+# norm 0..1 is not either. Linear norm() therefore maps too high (A073 raw 48
+# -> 0.378 -> "0.29 s" on the Iridium, clearly longer than the Blofeld).
+# Block 5 (2026-11-21) measured both curves; mapping raw -> norm via
+# t_blo(raw) = t_irr(norm) keeps the audible glide time equal.
+GLIDE_BLO_ANCHORS = ((0.0, 0.018), (20.0, 0.045), (50.0, 0.155), (64.0, 0.592),
+                     (70.0, 1.013), (85.0, 2.117), (127.0, 5.0))
+# Iridium GlideRate norm -> measured glide time (s). Max ~1.6 s, so Blofeld
+# times above that cannot be reached 1:1 (clamped at norm 1.0).
+GLIDE_IRR_ANCHORS = ((0.15, 0.045), (0.30, 0.139), (0.40, 0.267), (0.50, 0.379),
+                     (0.60, 0.608), (0.75, 0.896), (0.90, 1.349), (1.00, 1.600))
+# Iridium has only Onset/Legato. Stepped Glissando/fingered G cannot be
+# represented; they fall back to continuous Onset/Legato.
+GLIDE_MODE_TO_IRIDIUM = {"Portamento": 0.0, "fingered P": 1.0,
+                         "Glissando": 0.0, "fingered G": 1.0}
+
+
+def _interp_log_x(anchors, x):
+    """Piecewise interpolation, linear in x and logarithmic in y."""
+    x = max(anchors[0][0], min(anchors[-1][0], float(x)))
+    for (x0, y0), (x1, y1) in zip(anchors, anchors[1:]):
+        if x <= x1:
+            if x1 == x0:
+                return y1
+            f = (x - x0) / (x1 - x0)
+            return y0 * (y1 / y0) ** f
+    return anchors[-1][1]
 
 
 def blofeld_glide_seconds(raw: int) -> float:
-    """Blofeld Glide Rate raw 0..127 -> glide time in s (exponential)."""
-    raw = max(0, min(127, int(raw)))
-    return GLIDE_BLO_T_AT_20 * (GLIDE_BLO_T_MAX / GLIDE_BLO_T_AT_20) ** ((raw - 20) / 107.0)
+    """Blofeld Glide Rate raw 0..127 -> glide time in s (measured anchors)."""
+    return _interp_log_x(GLIDE_BLO_ANCHORS, max(0, min(127, int(raw))))
 
 
 def iridium_glide_seconds(norm_v: float) -> float:
-    """Iridium GlideRate norm 0..1 -> glide time in s (exponential through the anchors)."""
-    (n0, t0), (n1, t1) = GLIDE_IRR_ANCHORS
-    return t0 * (t1 / t0) ** ((norm_v - n0) / (n1 - n0))
+    """Iridium GlideRate norm 0..1 -> glide time in s (measured anchors)."""
+    return _interp_log_x(GLIDE_IRR_ANCHORS, max(0.0, min(1.0, float(norm_v))))
 
 
 def glide_rate_norm(raw: int) -> float:
     """Blofeld Glide Rate raw -> Iridium GlideRate norm via equal glide time."""
     t = blofeld_glide_seconds(raw)
-    (n0, t0), (n1, t1) = GLIDE_IRR_ANCHORS
-    n = n0 + (n1 - n0) * math.log(t / t0) / math.log(t1 / t0)
-    return max(0.0, min(1.0, n))
+    if t <= GLIDE_IRR_ANCHORS[0][1]:
+        return GLIDE_IRR_ANCHORS[0][0]
+    for (n0, t0), (n1, t1) in zip(GLIDE_IRR_ANCHORS, GLIDE_IRR_ANCHORS[1:]):
+        if t <= t1:
+            f = math.log(t / t0) / math.log(t1 / t0)
+            return min(1.0, n0 + (n1 - n0) * f)
+    return 1.0
 
 
 # ---- LFO clock: Blofeld sync speed (SysEx doc 4.6) -> Iridium SyncRatio ----
@@ -562,6 +576,18 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # Glide Rate time-calibrated (log scale), not linear: norm() mapped too high (see above)
     _gr = p.get("Glide Rate", 0)
     setp("GlideRate", glide_rate_norm(_gr), f"~{blofeld_glide_seconds(_gr):.3f}s")
+    # Blofeld Glide Mode -> Iridium GlideType (only Onset/Legato exist).
+    # Portamento/fingered are representable; Glissando/fingered G need stepped
+    # semitone glide, which the Iridium cannot do -> continuous approximation.
+    glide_mode = p.get("Glide Mode")
+    if isinstance(glide_mode, str) and glide_mode in GLIDE_MODE_TO_IRIDIUM:
+        gtype = GLIDE_MODE_TO_IRIDIUM[glide_mode]
+        setp("GlideType", gtype, "Legato" if gtype else "Onset")
+        if glide_mode in ("Glissando", "fingered G"):
+            unmapped.append(
+                f"Glide Mode {glide_mode!r}: stepped glide approximated as continuous")
+    else:
+        setp("GlideType", 0.0, "Onset")
     # UnisonoCount is an enum (runtime param-info 3691: 0=Off, 1=2 voices ... 7=8),
     # not a norm. Blofeld Allocation/Unisono = 0uuu000a (spec 4.10): bits 4-6 are the
     # voice index (0=mono/off, 1=dual ... 5=6 voices) -> same enum, see unison_count().
