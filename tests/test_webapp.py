@@ -118,8 +118,10 @@ def test_rf_prognose(sample_sdata, tmp_path):
     assert r1["model"] == str(RF_MODEL)
     assert 0.0 <= s["score"] <= 100.0 and s["std"] is not None and s["std"] >= 0
     assert s["score"] == r2["sounds"][0]["score"]  # deterministic
-    # A043 measured mean label was 89.55 (HANDOVER-2026-11-19) -> prediction sane
-    assert 80.0 <= s["score"] <= 100.0
+    # A043 measured v2 mean label is 46.3 (recordings/sim_log_v2_rf.jsonl,
+    # HANDOVER §6c; the old v1 label 89.55 no longer applies since the v2
+    # retrain on 2026-11-20) -> prediction should land near it
+    assert abs(s["score"] - 46.3) < 15.0
     with zipfile.ZipFile(r1["zip_path"]) as zf:
         rep = json.loads(zf.read("report.json"))
         assert rep["matcher"].startswith(f"rf-prognose-v{V}")
@@ -249,3 +251,150 @@ def test_versions_are_unified():
     from bloridium.version import __version__
     assert convert.CONVERSION_VERSION == matching.SIMILARITY_VERSION == \
         matching.PLACEHOLDER_VERSION == __version__
+
+
+# --- .mid (Standard MIDI File) uploads: webapp/midi_file.py -----------------
+
+def _varlen(n: int) -> bytes:
+    out = [n & 0x7F]
+    n >>= 7
+    while n:
+        out.append((n & 0x7F) | 0x80)
+        n >>= 7
+    return bytes(reversed(out))
+
+
+def _smf(events: bytes) -> bytes:
+    """Wrap raw track event bytes into a format-0 SMF (1 track, 96 ppq)."""
+    hdr = (b"MThd" + (6).to_bytes(4, "big") + (0).to_bytes(2, "big")
+           + (1).to_bytes(2, "big") + (96).to_bytes(2, "big"))
+    return hdr + b"MTrk" + len(events).to_bytes(4, "big") + events
+
+
+def _sysex_event(msg: bytes, include_f7: bool = False) -> bytes:
+    """SMF 0xF0 event (delta 0) for a complete F0..F7 message.
+
+    include_f7: some writers (e.g. Voltage-Bank-C.mid) leave the trailing F7
+    inside the event payload instead of terminating with a separate F7.
+    """
+    payload = msg[1:] if include_f7 else msg[1:-1]
+    return b"\x00\xf0" + _varlen(len(payload)) + payload
+
+
+def test_midi_file_extract_sysex_basics():
+    import midi_file
+    assert midi_file.is_smf(b"MThd....") and not midi_file.is_smf(b"\xf0\x3e\xf7")
+    msgs = midi_file.extract_sysex(_smf(_sysex_event(b"\xf0\x3e\x13\xf7")))
+    assert msgs == [b"\xf0\x3e\x13\xf7"]
+    # F7 included in the F0 payload stays one message (not split)
+    msgs = midi_file.extract_sysex(_smf(_sysex_event(b"\xf0\x3e\x13\xf7", include_f7=True)))
+    assert msgs == [b"\xf0\x3e\x13\xf7"]
+    with pytest.raises(midi_file.MidiFileError):
+        midi_file.extract_sysex(b"RIFF....WAVE")
+    # unknown chunk between header and track is skipped per SMF spec
+    hdr = b"MThd" + (6).to_bytes(4, "big") + b"\x00\x00\x00\x01\x00\x60"
+    unk = b"XXXX" + (3).to_bytes(4, "big") + b"abc"
+    trk = b"MTrk" + (4).to_bytes(4, "big") + _sysex_event(b"\xf0\x3e\xf7")
+    assert midi_file.extract_sysex(hdr + unk + trk) == [b"\xf0\x3e\xf7"]
+
+
+def test_parse_upload_mid_bank(core, sample_sdata):
+    msgs = [_sndd_bytes(0, i, sample_sdata) for i in range(3)]
+    mid = _smf(b"".join(_sysex_event(m) for m in msgs))
+    res = convert.parse_upload("bank-a.mid", mid)
+    assert len(res["sounds"]) == 3 and res["errors"] == [] and res["skipped"] == 0
+    assert [convert.location_str(s["bb"], s["nn"]) for s in res["sounds"]] == \
+        ["A001", "A002", "A003"]
+    assert all(s["chk_ok"] for s in res["sounds"])
+
+
+def test_parse_upload_mid_payload_includes_f7(core, sample_sdata):
+    # like the real Voltage-Bank-C.mid: trailing F7 inside the 0xF0 event payload
+    msg = _sndd_bytes(2, 0, sample_sdata)  # bank C, sound 1
+    mid = _smf(_sysex_event(msg, include_f7=True))
+    res = convert.parse_upload("Voltage-Bank-C.mid", mid)
+    assert len(res["sounds"]) == 1
+    assert res["sounds"][0]["chk_ok"]
+    assert convert.location_str(res["sounds"][0]["bb"], res["sounds"][0]["nn"]) == "C001"
+
+
+def test_parse_upload_mid_skips_notes_meta_running_status(core, sample_sdata):
+    msg = _sndd_bytes(0, 7, sample_sdata)
+    noise = (b"\x00\x90\x3c\x64"              # note on
+             b"\x40\x3c\x00"                  # delta + running status (note on vel 0)
+             b"\x00\xff\x03\x04Test"          # track name meta
+             b"\x00\xff\x51\x03\x07\xa1\x20"  # tempo meta
+             b"\x00\xb0\x07\x64"              # CC
+             b"\x00\xc0\x05"                  # program change (1 data byte)
+             b"\x00\xe0\x00\x40")             # pitch bend (2 data bytes)
+    mid = _smf(_sysex_event(msg) + noise + _sysex_event(msg) + b"\x00\xff\x2f\x00")
+    res = convert.parse_upload("x.mid", mid)
+    assert len(res["sounds"]) == 2 and res["skipped"] == 0 and res["errors"] == []
+
+
+def test_parse_upload_mid_escaped_f7_continuation(core, sample_sdata):
+    msg = _sndd_bytes(0, 3, sample_sdata)  # A004
+    body = msg[1:-1]
+    half = len(body) // 2
+    ev = (b"\x00\xf0" + _varlen(half) + body[:half]
+          + b"\x00\xf7" + _varlen(len(body) - half) + body[half:]
+          + b"\x00\xff\x2f\x00")
+    res = convert.parse_upload("x.mid", _smf(ev))
+    assert len(res["sounds"]) == 1 and res["sounds"][0]["chk_ok"]
+    assert convert.location_str(res["sounds"][0]["bb"], res["sounds"][0]["nn"]) == "A004"
+
+
+def test_parse_upload_mid_malformed():
+    # sysex event length past end of track
+    bad_trk = b"\x00\xf0\x7f\x3e"
+    mid = (b"MThd" + (6).to_bytes(4, "big") + b"\x00\x00\x00\x01\x00\x60"
+           + b"MTrk" + len(bad_trk).to_bytes(4, "big") + bad_trk)
+    with pytest.raises(convert.UploadError, match="MIDI file"):
+        convert.parse_upload("x.mid", mid)
+    # .mid name but no MThd content
+    with pytest.raises(convert.UploadError, match="MIDI file"):
+        convert.parse_upload("x.mid", b"definitely not a midi file")
+    # MThd but truncated header
+    with pytest.raises(convert.UploadError, match="MIDI file"):
+        convert.parse_upload("x.mid", b"MThd\x00\x00")
+
+
+def test_process_upload_mid_zip(core, sample_sdata, tmp_path):
+    msgs = [_sndd_bytes(2, i, sample_sdata) for i in range(2)]  # C001, C002
+    mid = _smf(b"".join(_sysex_event(m, include_f7=True) for m in msgs))
+    report = convert.process_upload("Voltage-Bank-C.mid", mid, tmp_path, model_path=NO_MODEL)
+    assert report["num_sounds"] == 2
+    assert report["source_file"] == "Voltage-Bank-C.mid"
+    assert "Voltage-Bank-C" in report["zip_name"]
+    with zipfile.ZipFile(report["zip_path"]) as zf:
+        qpats = sorted(n for n in zf.namelist() if n.endswith(".qpat"))
+        assert qpats == ["C001_SH Power.qpat", "C002_SH Power.qpat"]
+        assert "MANIFEST.md" in zf.namelist()
+
+
+def test_flask_upload_mid(core, sample_sdata, tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)
+    app = create_app()
+    app.data_dir = tmp_path
+    client = app.test_client()
+    r = client.get("/")
+    assert b".mid" in r.data and b'accept=".syx,.bin,.hex,.mid,.midi"' in r.data
+    mid = _smf(_sysex_event(_sndd_bytes(0, 42, sample_sdata)))
+    r = client.post("/upload", data={"file": (io.BytesIO(mid), "bank.mid")},
+                    content_type="multipart/form-data")
+    assert r.status_code == 200 and b"/download/" in r.data and b"A043" in r.data
+
+
+REAL_MID = Path("/Users/jan/Nextcloud/AAA Musik/01 Sounds/Blofeld/"
+                "DonSolarisAnalogVoltage/Voltage-Bank-C.mid")
+
+
+@pytest.mark.skipif(not REAL_MID.exists(), reason="example .mid not on this machine")
+def test_parse_upload_real_voltage_bank_c_mid():
+    res = convert.parse_upload(REAL_MID.name, REAL_MID.read_bytes())
+    assert len(res["sounds"]) == 128 and res["errors"] == []
+    assert all(s["chk_ok"] for s in res["sounds"])
+    locs = [convert.location_str(s["bb"], s["nn"]) for s in res["sounds"]]
+    assert locs[0] == "C001" and locs[-1] == "C128"
+    assert res["sounds"][0]["name"] == "Prophet Brass"

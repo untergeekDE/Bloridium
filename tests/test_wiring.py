@@ -59,8 +59,9 @@ def test_audio_record_uses_config_device_and_samplerate(tmp_path, monkeypatch):
 
     captured = {}
 
-    def fake_run(cmd, capture_output=True):
+    def fake_run(cmd, capture_output=True, timeout=None):
         captured["cmd"] = cmd
+        captured["timeout"] = timeout
         # 200 float32 samples = 2 channels x 100 samples
         return subprocess.CompletedProcess(cmd, 0, stdout=b"\x00" * 800, stderr=b"")
 
@@ -69,6 +70,7 @@ def test_audio_record_uses_config_device_and_samplerate(tmp_path, monkeypatch):
     assert data.shape == (2, 100)
     assert ":FakeDevice" in captured["cmd"]
     assert "44100" in captured["cmd"]
+    assert captured["timeout"] == 0.1 + 20.0  # ffmpeg timeout = duration + 20 s (2026-11-20)
 
 
 def test_audio_settings_defaults_without_yaml(tmp_path):

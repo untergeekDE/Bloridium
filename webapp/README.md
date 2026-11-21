@@ -69,7 +69,9 @@ from the image (OCI format) – if you want it in the image, build with
 1. Open `http://<server>:8000` (layout like `webpage.pdf`, background
    `bloridium-scaled.jpg` from `webapp/static/`)
 2. Upload a `.syx` bank backup (e.g. `bank-a-2019-06-17.syx` from the SysEx
-   backups – 128 SNDD messages; a single sound also works as `.bin`/`.hex`)
+   backups – 128 SNDD messages; a single sound also works as `.bin`/`.hex`;
+   a `.mid` MIDI file works too – its SysEx events are extracted from the
+   track data, notes/meta are skipped, e.g. `Voltage-Bank-C.mid`)
 3. The results page shows per sound: location, name, **predicted score** (RF
    prognosis ± std, or placeholder), mapped/unmapped parameters
 4. **ZIP download**: one `<LOC>_<Name>.qpat` per sound + `MANIFEST.md` + `report.json`

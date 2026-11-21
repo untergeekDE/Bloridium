@@ -19,6 +19,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import matching
+import midi_file
 
 WEBAPP = Path(__file__).resolve().parent
 REPO = WEBAPP.parent
@@ -110,8 +111,23 @@ def location_str(bb: int, nn: int) -> str:
     return f"{chr(ord('A') + bb)}{nn + 1:03d}"
 
 
+def upload_messages(filename: str, data: bytes) -> list[bytes]:
+    """Complete SysEx messages (F0..F7) contained in the upload.
+
+    .mid/.midi (Standard MIDI File, e.g. a bank exported from Sysex Librarian):
+    SysEx events are extracted from the SMF track data (notes/meta are skipped).
+    Everything else (.syx/.bin): raw scan for F0..F7.
+    """
+    if midi_file.is_smf(data) or filename.lower().endswith((".mid", ".midi")):
+        try:
+            return midi_file.extract_sysex(data)
+        except midi_file.MidiFileError as e:
+            raise UploadError(f"invalid MIDI file: {e}") from None
+    return split_sysex_messages(data)
+
+
 def parse_upload(filename: str, data: bytes) -> dict:
-    """Parse upload: decode .hex, split SysEx, parse SNDDs.
+    """Parse upload: decode .hex, extract SysEx (.mid via SMF, else raw), parse SNDDs.
 
     Returns: {"sounds": [parse_sndd results...], "errors": [...], "skipped": int}
     """
@@ -122,7 +138,7 @@ def parse_upload(filename: str, data: bytes) -> dict:
             raise UploadError(f"invalid .hex file: {e}") from None
     core = load_core()
     sounds, errors, skipped = [], [], 0
-    for idx, msg in enumerate(split_sysex_messages(data)):
+    for idx, msg in enumerate(upload_messages(filename, data)):
         try:
             parsed = core.blofeld_dump.parse_sndd(msg)
         except ValueError:

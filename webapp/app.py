@@ -67,10 +67,10 @@ def index_body(score_note: str) -> str:
 <h1>Bloridium Tool v{convert.CONVERSION_VERSION}</h1>
 <p class="sub"><b>Convert Blofeld Sound Banks for the Iridium</b></p>
 <p>Upload a Blofeld Midi Dump File (.SYX bank, e.g. from Sysex Librarian,
-   or single sound as .bin/.hex)</p>
+   single sound as .bin/.hex, or a .mid MIDI file containing SysEx sound dumps)</p>
 <p>Download as a ZIP with Iridium *.qpat file(s) to import from SD or USB</p>
 <form method="post" action="/upload" enctype="multipart/form-data">
-  <input type="file" name="file" required>
+  <input type="file" name="file" accept=".syx,.bin,.hex,.mid,.midi" required>
   <button type="submit">Convert</button>
 </form>
 <p class="note"><b>NOTE:</b> Due to a host of technical issues, the converted sound is a very

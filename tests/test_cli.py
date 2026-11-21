@@ -66,7 +66,7 @@ def test_convert_from_dump_writes_qpat_and_db_row(repo, db_path, tmp_path, capsy
     assert rc == 0
     out = capsys.readouterr().out
     assert "unmapped" in out.lower()
-    files = list(out_dir.glob("*_A043.qpat"))
+    files = list(out_dir.glob("A043_*.qpat"))  # sd_filename: <LOC>_<Name>.qpat, SD-sicher
     assert len(files) == 1
     q = qpat.load(files[0])
     assert "Osc1Type" in q["params"]
