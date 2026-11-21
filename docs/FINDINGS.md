@@ -246,3 +246,24 @@ Helpers: `bloridium/waldorf.py` (`build_sysex`, `parse_sysex`, `identity_reply_i
   Filter, PWM — alles unmapped. A004: Osc2 „PWM Pulse“ PW 9 (sehr schmal) + PWM via Env3.
   Verifikation am Gerät (get-param CoarsePitch + Spektral-Test note 72) folgt, sobald das
   Iridium am Bus ist.
+
+## 2026-11-21 — Live-Findings A005 @ Iridium Slot 204 -> Mapping-Fixes
+
+Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
+
+- **Filter 1 PPG LP**: war als `12dB LP` (Filter12Type 0.0) konvertiert, am Geraet
+  FilterModel=svf + FilterType=12dB LP. PPG LP ist ein 24dB-Ladder -> jetzt
+  `BLOFELD_FILTER_TO_IRIDIUM["PPG LP"] = "24dB LP"` (Filter12Type 3.0; 24dB-Typen
+  sind in Factory-qpats ohne Filter1Model-Aenderung gueltig). matching.py
+  FILTER1_EXACT["PPG LP"] jetzt 1.0.
+- **Filter-Drive -> FX1 Drive**: Blofeld `Filter 1/2 Drive` hat kein Iridium-Pendant
+  (auch kein Matrix-Dst) -> wird jetzt als **Effect 1 = Drive** simuliert, DriveType aus
+  der Blofeld-Curve (Tube->1.0, Pickup 1/2->2.0, Clipping etc.->0.0 PNP), DriveAmount/
+  DriveDryWet = norm(drive). War Blofeld-FX1 hörbar (mix>0), landet ein
+  "replaced by filter-drive"-Eintrag in unmapped. A005: F2 Drive 8 Tube -> FX1 Drive
+  Tube 0.063. Betrifft u.a. A043 (F1 Drive 16 Clipping -> FX1 Drive PNP; FX1 Chorus mix 0
+  war eh stumm).
+- **Osc1 Mix 0 bei A005 ist korrekt**: Blofeld Mixer Osc 1 Level = 0 -> Osc1Vol 0.0
+  (das Panel zeigt OscNVol als „OscN Mix“). Kein Bug.
+- Re-Convert A001–A100 -> transfer/rf100_v2 (MANIFEST/config unveraendert, sd_dir rf200,
+  Slots 200–299). Naechster Schritt: SD-Kopie (plain cp) + frischer Messlauf.

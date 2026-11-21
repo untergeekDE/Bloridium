@@ -120,7 +120,7 @@ WEIGHTS = {"osc": 0.30, "filter": 0.25, "fx": 0.15, "env_mod": 0.20, "arp": 0.10
 # How exactly can the Blofeld filter-1 type be represented on the Iridium?
 FILTER1_EXACT = {
     "Bypass": 1.0, "LP 24dB": 1.0, "LP 12dB": 1.0, "HP 24dB": 1.0, "HP 12dB": 1.0,
-    "PPG LP": 0.9,                       # -> 12dB LP (approximation)
+    "PPG LP": 1.0,                       # -> 24dB LP (since 2026-11-21; PPG is a 24dB ladder)
     "BP 24dB": 0.5, "BP 12dB": 0.5,      # -> 24dB BP (approximation)
     "Notch24dB": 0.5, "Notch12dB": 0.5,  # -> 24dB BP (approximation)
     "Comb+": 0.5, "Comb-": 0.5,          # -> 24dB BP (approximation)

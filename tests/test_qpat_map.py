@@ -620,3 +620,58 @@ def test_noise_uses_muted_osc_and_noise_mod_dst():
     assert ov["MatrixDst1"][1] == "Osc3 Mix"
     assert ov["MatrixDst2"][1] == "Osc3 Pan"
     assert not any("Noise" in u for u in un)
+
+
+# --- 2026-11-21: PPG LP -> 24dB LP; Filter-Drive -> FX1 Drive (A005 @ slot 204) ---
+
+A005 = "dumps/blofeld_sndd_A005_20261119_053353.bin"
+
+
+def test_ppg_lp_maps_to_24db_lp():
+    # A005 HooverBass: Blofeld F1 = PPG LP (24dB-Ladder-Typ) -> Filter12Type 3.0,
+    # NICHT 12dB LP (am Geraet gesehen: FilterModel=svf + 12dB LP = falsch)
+    parsed = bd.parse_sndd((REPO / A005).read_bytes())
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Filter12Type"] == (3.0, "24dB LP")
+
+
+def test_filter_drive_simulated_as_fx1_drive_tube_a005():
+    # A005: F1 Drive 0, F2 Drive 8 Curve "Tube" -> FX1 = Drive, DriveType = Tube (1.0)
+    parsed = bd.parse_sndd((REPO / A005).read_bytes())
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["FX1Type"][0] == qpat_map.FX_TYPE["Drive"]
+    assert ov["DriveType"] == (1.0, "Tube -> DriveType")
+    assert ov["DriveAmount"][0] == pytest.approx(8 / 127)
+    assert ov["DriveDryWet"][0] == pytest.approx(8 / 127)
+    assert ov["DriveGain"][0] == 0.5
+    # Blofeld FX1 war Chorus (mix 35 > 0) -> Ersatz wird als unmapped geloggt
+    assert any("replaced by filter-drive" in u and "Chorus" in u for u in un)
+
+
+def test_filter_drive_clipping_maps_to_pnp_and_keeps_inaudible_fx1_a043():
+    # A043: F1 Drive 16 Curve "Clipping" -> DriveType PNP (0.0); FX1 Chorus mix 0
+    # (inaudible) -> wird ersetzt, aber OHNE unmapped-Notiz
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMP))
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["FX1Type"][0] == qpat_map.FX_TYPE["Drive"]
+    assert ov["DriveType"][0] == 0.0
+    assert ov["DriveAmount"][0] == pytest.approx(16 / 127)
+    assert not any("replaced by filter-drive" in u for u in un)
+
+
+def test_filter_drive_pickup_curve_maps_to_pickup():
+    parsed = bd.parse_sndd((REPO / A005).read_bytes())
+    parsed["params"]["Filter 2 Drive"] = 100
+    parsed["params"]["Filter 2 Drive Curve"] = "Pickup 1"
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["DriveType"][0] == 2.0
+    assert ov["DriveAmount"][0] == pytest.approx(100 / 127)
+
+
+def test_no_filter_drive_keeps_fx1_untouched():
+    parsed = bd.parse_sndd((REPO / A005).read_bytes())
+    parsed["params"]["Filter 1 Drive"] = 0
+    parsed["params"]["Filter 2 Drive"] = 0
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["FX1Type"][0] == qpat_map.FX_TYPE["Chorus"]  # Blofeld FX1 Chorus bleibt
+    assert "DriveType" not in ov and "DriveAmount" not in ov

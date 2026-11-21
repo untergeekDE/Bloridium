@@ -78,7 +78,11 @@ BLOFELD_WAVETABLE_TO_IRIDIUM = {
 # Notch/Comb are approximations (the real Comb-/PPG models live in the DigiFormer,
 # but selecting them would be a routing change of its own -> see unmapped).
 BLOFELD_FILTER_TO_IRIDIUM = {
-    "Bypass": None, "LP 24dB": "24dB LP", "LP 12dB": "12dB LP", "PPG LP": "12dB LP",
+    # PPG LP is a 24dB ladder-type on the Blofeld -> "24dB LP" (NOT 12dB LP:
+    # user finding 2026-11-21, A005 @ Iridium slot 204 showed FilterModel=svf /
+    # FilterType=12dB LP and sounded wrong; 24dB LP is a valid Filter12Type in
+    # factory qpats without touching Filter1Model).
+    "Bypass": None, "LP 24dB": "24dB LP", "LP 12dB": "12dB LP", "PPG LP": "24dB LP",
     "BP 24dB": "24dB BP", "BP 12dB": "24dB BP",
     "HP 24dB": "24dB HP", "HP 12dB": "24dB HP",
     "Notch24dB": "24dB BP", "Notch12dB": "24dB BP",
@@ -682,6 +686,32 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             setp("DelaySync", 1.0, "On")
             setp("DelayLeftSync", min(1.0, p.get("Effect 2 Parameter 11", 0) / 29.0))
             setp("DelayRightSync", min(1.0, p.get("Effect 2 Parameter 11", 0) / 29.0))
+
+    # --- Filter-Drive -> FX1 Drive (2026-11-21, user finding A005 @ Iridium slot 204):
+    # Blofeld "Filter 1/2 Drive" has no Iridium filter pendant (no matrix dst either) ->
+    # simulate it as Effect 1 = Drive. DriveType from the Blofeld drive curve
+    # (Iridium enum: 0 PNP, 1 Tube, 2 PickUp; Blofeld DRIVE_CURVES in blofeld_dump.py):
+    # Tube -> Tube, Pickup 1/2 -> PickUp, all clip-like curves -> PNP (approx).
+    DRIVE_CURVE_TO_IRIDIUM = {"Tube": 1.0, "Pickup 1": 2.0, "Pickup 2": 2.0}
+    drives = []
+    for fn in (1, 2):
+        dv = p.get(f"Filter {fn} Drive", 0)
+        if isinstance(dv, (int, float)) and dv > 0:
+            drives.append((fn, dv, p.get(f"Filter {fn} Drive Curve", "")))
+    if drives:
+        fno, drive, curve = max(drives, key=lambda d: d[1])
+        fx1_label = p.get("Effect 1 Type", "")
+        fx1_mix = p.get("Effect 1 Mix", 0)
+        if isinstance(fx1_label, str) and fx1_label != "Bypass" \
+                and isinstance(fx1_mix, (int, float)) and fx1_mix > 0:
+            unmapped.append(f"Effect 1 {fx1_label!r} (mix {fx1_mix}) replaced by "
+                            "filter-drive simulation FX1=Drive")
+        setp("FX1Type", FX_TYPE["Drive"], f"Drive (Filter {fno} Drive {int(drive)} simulation)")
+        setp("DriveType", DRIVE_CURVE_TO_IRIDIUM.get(curve if isinstance(curve, str) else "", 0.0),
+              f"{curve} -> DriveType")
+        setp("DriveAmount", norm(int(drive)))
+        setp("DriveGain", 0.5, "neutral")
+        setp("DriveDryWet", norm(int(drive)))
 
     # --- arp ---
     unmapped += [k for k in p if k.startswith("Arp")]
