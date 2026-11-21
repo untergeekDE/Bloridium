@@ -698,8 +698,25 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             setp(f"Lfo{n}Shape", BLO_LFO_SHAPE_TO_IRIDIUM[shape], shape)
         setp(f"Lfo{n}Phase", norm(p.get(f"LFO {n} Start Phase", 64)))
         setp(f"Lfo{n}Delay", norm(p.get(f"LFO {n} Delay", 0)))
-        # Fade/Keytrack haben kein Iridium-LFO-Pendant (verbleiben unmapped)
-        unmapped.append(f"LFO {n} Fade/Keytrack")
+        # Blofeld Fade is bipolar -64..+63 (raw 64 = 0): positive fades the LFO
+        # in, negative fades it out. The Iridium has separate LfoNAttack/Decay.
+        # Scaling is linear/approximate; the exact fade time still needs a
+        # hardware calibration (A7).
+        fade = p.get(f"LFO {n} Fade", 64)
+        if not isinstance(fade, (int, float)):
+            fade = 64
+        if fade > 64:
+            setp(f"Lfo{n}Attack", (fade - 64) / 63.0, f"Fade +{fade - 64} -> fade-in")
+            setp(f"Lfo{n}Decay", 0.0, "no fade-out")
+        elif fade < 64:
+            setp(f"Lfo{n}Attack", 0.0, "no fade-in")
+            setp(f"Lfo{n}Decay", (64 - fade) / 64.0, f"Fade -{64 - fade} -> fade-out")
+        else:
+            setp(f"Lfo{n}Attack", 0.0, "no fade")
+            setp(f"Lfo{n}Decay", 0.0, "no fade")
+        # Keytrack has no direct Iridium LFO pendant (matrix Keytrack -> LFO Speed
+        # would be the approximation, B7).
+        unmapped.append(f"LFO {n} Keytrack")
 
     # --- routing: Blofeld Osc->Mixer->F1->F2->Amp. The per-source Balance is the
     #     F1/F2 share and maps to the Iridium Osc Destination (2 = all filter,

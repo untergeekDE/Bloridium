@@ -83,7 +83,7 @@ from the image (OCI format) – if you want it in the image, build with
 ## Versioning
 
 One version for the whole project: `__version__` in `bloridium/version.py`
-(currently 0.5.2). It is used for the package (`pyproject.toml`, `bloridium --version`),
+(currently 0.5.3). It is used for the package (`pyproject.toml`, `bloridium --version`),
 the UI title "Bloridium Tool v…", and `conversion_version` / `similarity_version` in
 `report.json` and `MANIFEST.md`. Which matcher produced the score is in `matcher`
 (`rf-prognose-v…` or `deterministic-placeholder-v…`) and `model`.

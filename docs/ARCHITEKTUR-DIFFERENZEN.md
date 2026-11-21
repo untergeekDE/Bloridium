@@ -34,7 +34,7 @@ Parameter gibt es daher drei Fälle:
 | **Unisono** | bis 8 Stimmen, Detune; kein Pan/Delay | `UnisonoCount`, `UnisonoDetune`, **`UnisonoPan`, `UnisonoDelay`** | Count/Detune reichen nicht | Count aus Bitfeld **4–6** (Spec 4.10), Detune norm; Pan 0.5 / Delay 0 neutral halten | **behoben (A4, 2026-11-21):** Bits 4–6 statt 5–7 (Stimmenzahl war halbiert); Neumessung offen |
 | **Glide** | 4 Modi (Portamento/fingered P/Glissando/fingered G) | `GlideOnOff`, `GlideRate`, **`GlideType`** | Modi sind abbildbar, werden aber nicht gesetzt | `GlideType` aus dem Blofeld-Modus; Rate zeitkalibriert (÷ 127) | im Init nicht messbar (kein Legato) |
 | **Hüllkurven** | 4 Hüllkurven, Modi ADSR/ADS1DS2R/OneShot/Loop, Attack-Level, Decay2/Sustain2 | Hüllkurven mit Kurven (RC/Exp/Lin), Loop-Modi, Delay | zweite Decay/Sustain-Stufe fehlt | ADSR 1:1; ADS1DS2R auf ADSR annähern (Stufe 2 geht verloren) | FE Env Amount/Attack/Sustain OK (cos 0,90–0,99); Amp Attack/Sustain teilweise; FE Decay nur bei langen Zeiten |
-| **LFOs** | 3 LFOs: Shape, Speed, Sync, Clocked, Phase, Delay, **Fade**, Keytrack | 6 LFOs: Shape, Speed, Sync, Phase, **Delay, Attack, Decay**, Slew, Warp | Fade/Keytrack haben kein direktes Pendant | Fade → `LfoNAttack`/`LfoNDecay`; Keytrack → Matrix `Keytrack → LFO Speed` | **LFO Fade defekt**; LFO Speed bei langsamen Werten defekt (Free-Speed-Hz offen) |
+| **LFOs** | 3 LFOs: Shape, Speed, Sync, Clocked, Phase, Delay, **Fade**, Keytrack | 6 LFOs: Shape, Speed, Sync, Phase, **Delay, Attack, Decay**, Slew, Warp | Fade/Keytrack haben kein direktes Pendant | Fade → `LfoNAttack`/`LfoNDecay`; Keytrack → Matrix `Keytrack → LFO Speed` | Fade-Mapping umgesetzt (A7a); LFO Speed bei langsamen Werten defekt (Free-Speed-Hz offen) |
 | **Modifier** | 4 Rechen-Modifier (+ − × AND OR XOR MAX min) | Matrix-Control (Src + Ctrl), keine freien Rechenoperatoren | nur ×-Produkte und + mit Konstante annäherbar | `LFO × ModWheel` als Src+Ctrl; übrige Operatoren „nicht unterstützt“ | — |
 | **Arpeggiator** | Arp mit 16-Step-Pattern, Glide/Accent, Timing | Arp/Sequencer (`ArpOn`, `ArpStepLength`, `ArpGate`, …) | eigener Block, vollständig unmapped | Arp-Grundfunktion könnte gemappt werden (Step-Länge, Oktaven, Sortierung) | nicht getestet |
 | **FX** | 2 Slots, feste Typen, Dry/Wet je Typ | 2 FX-Slots + Mod-FX, mehr Typen | Typ-Mapping nötig; Parameter-Indizes weichen ab | DryWet-Key je Typ; Parameter 1:1 nach Index | FX Mix teilweise; Parameter 1/2 teilweise; **Parameter 5 bei 64/127 stark übersteuert** |
@@ -166,9 +166,10 @@ mit Fade und Keytrack.
 
 - **Workaround:** Blofeld-Fade → `LfoNAttack`/`LfoNDecay`; Keytrack →
   Matrix `Keytrack → LFO Speed`; Clocked/Sync → `LfoNSync` + `SyncRatio`.
-- **Messung:** **LFO Fade defekt** (Blofeld hörbar, Iridium ohne Reaktion);
-  LFO Speed: langsame Werte ohne Iridium-Wirkung, schnelle Werte nur teilweise
-  (die Free-Speed-Hz-Skala ist noch offen).
+- **Stand:** Fade-Mapping ist umgesetzt (bipolar: positiv → Attack, negativ →
+  Decay, A7a, Test `test_lfo_fade_maps_to_attack_decay`). **LFO Speed** bleibt
+  offen: langsame Werte ohne Iridium-Wirkung, schnelle nur teilweise
+  (Free-Speed-Hz-Skala noch nicht kalibriert).
 
 ### 2.9 Modulationsmatrix und Modifier
 

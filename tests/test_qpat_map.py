@@ -626,6 +626,31 @@ def test_lfo_shape_delay_phase_mapped():
     assert not any(u.startswith("LFO 1") and "Shape" in u for u in un)
 
 
+def test_lfo_fade_maps_to_attack_decay():
+    # Blofeld Fade is bipolar -64..+63 (raw 64 = 0): positive = fade-in,
+    # negative = fade-out. The Iridium has LfoNAttack / LfoNDecay.
+    parsed = _parsed_with({"LFO 1 Fade": 127})
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Lfo1Attack"][0] == pytest.approx(1.0)
+    assert ov["Lfo1Decay"][0] == pytest.approx(0.0)
+    assert not any("LFO 1 Fade" in u for u in un)
+
+    parsed = _parsed_with({"LFO 2 Fade": 0})       # -64 = maximum fade-out
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Lfo2Attack"][0] == pytest.approx(0.0)
+    assert ov["Lfo2Decay"][0] == pytest.approx(1.0)
+    assert not any("LFO 2 Fade" in u for u in un)
+
+    parsed = _parsed_with({"LFO 3 Fade": 64})      # neutral
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Lfo3Attack"][0] == pytest.approx(0.0)
+    assert ov["Lfo3Decay"][0] == pytest.approx(0.0)
+    # Keytrack still has no LFO pendant and stays in the report
+    parsed = _parsed_with({"LFO 1 Keytrack": 20})
+    _ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert any("LFO 1" in u and "Keytrack" in u for u in un)
+
+
 def test_lfo_shape_enum_covers_all_blofeld_shapes():
     # Enum aus 1186 Factory-qpats (Quantum_Factories.zip): 0 Sine, 1 Triangle,
     # 2 Square, 3 Saw(down), 4 Saw(up), 5 S&H. Blofeld "Random" -> S&H (Naeherung).

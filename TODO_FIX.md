@@ -58,14 +58,18 @@ bei Keytrack, Anschlagspaare bei Velocity.
   nachziehen (Attack/Decay/Sustain getrennt), Kurvenform dokumentieren.
 - **Akzeptanz:** Attack/Sustain cos ≥ 0,85 und Stärke 0,7–1,4.
 
-### A7 · P1 · LFO: Fade abbilden, Free-Speed kalibrieren
+### A7 · 🟡 Fade umgesetzt (2026-11-21), Free-Speed offen · LFO: Fade abbilden, Free-Speed kalibrieren
 - **Beleg:** „LFO 1 Fade“ = **defekt** (Blofeld 2,6–2,9; Iridium 0,1–0,3).
   „LFO 1 Speed“: langsame Werte ohne Iridium-Wirkung, schnelle nur teilweise
   (cos 0,65). Der Iridium hat `LfoNAttack`/`LfoNDecay` — die werden nicht genutzt.
-- **Stelle:** `qpat_map.py`, LFO-Block (ca. 610–630).
+- **Stelle:** `qpat_map.py`, LFO-Block.
 - **Fix:** Blofeld-Fade → `LfoNAttack` (Fade-in) bzw. `LfoNDecay` (Fade-out);
   Free-Speed-Hz-Kurve mit 6–8 Stützstellen kalibrieren (langsame LFOs zuerst).
 - **Akzeptanz:** Fade-Sweep OK/teilweise; Speed-Sweep über 4 Werte cos ≥ 0,8.
+- **Stand:** Fade-Mapping umgesetzt: raw>64 → `LfoNAttack=(raw−64)/63`,
+  raw<64 → `LfoNDecay=(64−raw)/64`, 64 → beide 0. Keytrack bleibt unmapped.
+  Test: `test_lfo_fade_maps_to_attack_decay`. Die Zeit-Skalierung ist linear
+  angenähert; Free-Speed-Kalibrierung braucht weiterhin eine Messung.
 
 ### A9 · P1 · Noise: Kennlinie und Farbe
 - **Beleg:** „Mixer Noise Level“ in der Tendenz richtig (cos 0,77–0,93), aber

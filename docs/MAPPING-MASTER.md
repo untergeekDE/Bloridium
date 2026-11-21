@@ -155,7 +155,7 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 164 | LFO 1 Clocked | - | ❌ unmapped | Global/System/etc. |
 | 165 | LFO 1 Start Phase | - | ❌ unmapped | Global/System/etc. |
 | 166 | LFO 1 Delay | - | ❌ unmapped |  |
-| 167 | LFO 1 Fade | - | ❌ unmapped |  |
+| 167 | LFO 1 Fade | Lfo1Attack / Lfo1Decay | 🟡 approximation | bipolar: raw>64 -> Attack=(raw-64)/63, raw<64 -> Decay=(64-raw)/64, 64 -> both 0 |
 | 170 | LFO 1 Keytrack | - | ❌ unmapped |  |
 | 172 | LFO 2 Shape | - | ❌ unmapped |  |
 | 173 | LFO 2 Speed | LFO NSpeed | ✅ direct | Clock-Index norm |
@@ -163,7 +163,7 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 176 | LFO 2 Clocked | - | ❌ unmapped | Global/System/etc. |
 | 177 | LFO 2 Start Phase | - | ❌ unmapped | Global/System/etc. |
 | 178 | LFO 2 Delay | - | ❌ unmapped |  |
-| 179 | LFO 2 Fade | - | ❌ unmapped |  |
+| 179 | LFO 2 Fade | Lfo2Attack / Lfo2Decay | 🟡 approximation | as 167 |
 | 182 | LFO 2 Keytrack | - | ❌ unmapped |  |
 | 184 | LFO 3 Shape | - | ❌ unmapped |  |
 | 185 | LFO 3 Speed | LFO NSpeed | ✅ direct | Clock-Index norm |
@@ -171,7 +171,7 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 188 | LFO 3 Clocked | - | ❌ unmapped | Global/System/etc. |
 | 189 | LFO 3 Start Phase | - | ❌ unmapped | Global/System/etc. |
 | 190 | LFO 3 Delay | - | ❌ unmapped |  |
-| 191 | LFO 3 Fade | - | ❌ unmapped |  |
+| 191 | LFO 3 Fade | Lfo3Attack / Lfo3Decay | 🟡 approximation | as 167 |
 | 194 | LFO 3 Keytrack | - | ❌ unmapped |  |
 
 ## Envelopes (Filter/Amp/Env3/Env4) (SDATA 195-244)

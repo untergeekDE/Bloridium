@@ -371,3 +371,11 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
   dem Lauf per Readback geprüft werden, dass `FilterLink`, `Filter2Type` und
   `DriveDryWet` wirklich im Edit-Buffer stehen (die frühere Messung nutzte
   teilweise Geräte-Init-Werte statt der qpat-Werte).
+
+### A7a-Fix LFO-Fade (2026-11-21)
+
+| Befund (Messung) | Fix in qpat_map.py | Test |
+|---|---|---|
+| LFO 1 Fade defekt (Blofeld 2,6–2,9; Iridium 0,1–0,3) | Blofeld Fade bipolar: raw>64 -> `LfoNAttack=(raw-64)/63`, raw<64 -> `LfoNDecay=(64-raw)/64`, 64 -> beide 0 | test_lfo_fade_maps_to_attack_decay |
+
+- Free-Speed-Hz-Kurve bleibt offen (Hardware-Kalibrierung, `TODO_MEASURE.md`).

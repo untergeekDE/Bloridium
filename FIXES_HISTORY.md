@@ -260,6 +260,16 @@ suite is run on the measurement machine (item 11).
 - **Offen:** Messmetrik auf Spektralbreite umstellen und Count 2/4/8 separat
   messen; Details in `TODO_MEASURE.md`.
 
+### A7a · ✅ umgesetzt (2026-11-21) · LFO-Fade -> Attack/Decay
+- **Beleg:** „LFO 1 Fade“ war defekt (Blofeld 2,6–2,9; Iridium 0,1–0,3), obwohl
+  der Iridium `LfoNAttack`/`LfoNDecay` hat.
+- **Umsetzung:** Blofeld Fade ist bipolar (-64…+63, raw 64 = 0):
+  raw > 64 → `LfoNAttack=(raw−64)/63` (Fade-in), raw < 64 →
+  `LfoNDecay=(64−raw)/64` (Fade-out), raw 64 → beide 0.
+- **Test:** `test_lfo_fade_maps_to_attack_decay`.
+- **Offen (A7):** Free-Speed-Kalibrierung (Hz-Kurve) braucht eine Messung;
+  die Fade-Zeit-Skalierung ist linear angenähert.
+
 ### A8 · ✅ umgesetzt (2026-11-21) · Filter-Pan-Ziele (Betrag bipolar)
 - **Beleg (Test E, L/R, vor der Korrektur):** „Filter 1 Pan Amount“ war bei
   **100 % OK** (Cosinus 1,0), bei **0 % ohne Iridium-Wirkung** (Blofeld-Wirkung 4,6).

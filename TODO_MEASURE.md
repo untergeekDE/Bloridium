@@ -3,13 +3,13 @@
 **Stand:** 2026-11-21 · **Geräte:** Blofeld + Iridium Keyboard, beide über USB
 (kein Launchpad) · **Audio:** Scarlett 18i8, 48 kHz, Blofeld In 3/4, Iridium In 5/6.
 
-Die Code-Fixes A1, A3 und A4 sind umgesetzt und unit-getestet; Details in
-`FIXES_HISTORY.md`. Diese Datei sammelt nur noch, was am Gerät nachgemessen bzw.
-an der Messmethodik repariert werden muss.
+Die Code-Fixes A1, A2, A3, A4 und A7a (LFO-Fade) sind umgesetzt und
+unit-getestet; Details in `FIXES_HISTORY.md`. Diese Datei sammelt nur noch, was
+am Gerät nachgemessen bzw. an der Messmethodik repariert werden muss.
 
 **Runner:** `scripts/profile_todo_measure.py <group>` misst die offenen Gruppen
-getrennt (`pulse_amt`, `pulse_src`, `fx1types`, `reverb`, `unison_detune`,
-`unison_count`). `... report` schreibt die Zusammenfassung nach
+getrennt (`pulse_amt`, `fx1types`, `reverb`, `unison_detune`, `unison_count`).
+`... report` schreibt die Zusammenfassung nach
 `docs/TODO-MEASURE-2026-11-21.md`. Der Runner setzt für FX1-Messungen
 `FX2Type = Off` und für Reverb `FX1Type = Off` — damit ist die alte
 Reverb-Kontamination des FX-Sweeps beseitigt.
@@ -109,7 +109,23 @@ also am Gerät an.
       bei Detune 127 separat prüfen.
 - [ ] Ergebnis in `FIXES_HISTORY.md` als verifiziert eintragen.
 
-## 5. Messhygiene / offene Punkte
+## 5. A7 — LFO Free-Speed (Fade ist umgesetzt)
+
+**Status:** Fade-Mapping fertig; Free-Speed-Kalibrierung offen.
+
+`LfoNAttack`/`LfoNDecay` werden jetzt aus dem bipolaren Blofeld-Fade gesetzt
+(Test `test_lfo_fade_maps_to_attack_decay`). Die Zeit-Skalierung ist linear
+angenähert.
+
+**Zu tun:**
+
+- [ ] Fade-Sweep am Gerät (positiv/negativ, je 4 Werte) und Zeitkonstanten
+      vergleichen; ggf. Kurve für Attack/Decay nachziehen.
+- [ ] Free-Speed-Hz-Kurve mit 6–8 Stützstellen messen (langsame LFOs zuerst),
+      dann `LfoNSpeed`-Mapping kalibrieren.
+- [ ] Speed-Sweep über 4 Werte, Ziel cos ≥ 0,8.
+
+## 6. Messhygiene / offene Punkte
 
 - [ ] Vor jedem Lauf `FX1Type = Off` bzw. `FX2Type = Off` explizit setzen, wenn
       der jeweilige FX nicht Gegenstand der Messung ist.
