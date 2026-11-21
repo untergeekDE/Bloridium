@@ -357,6 +357,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     oct_idx = [1, 17, 33]
     semi_idx = [2, 18, 34]
     osc_is_wavetable = {}
+    oct_excess: dict[int, float] = {}  # semitones beyond the CoarsePitch enum (0..48)
     for n in (1, 2, 3):
         raw_shape = sdata[shape_raw_idx[n - 1]]
         # get the shape label from the parsed params
@@ -403,7 +404,18 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         # (old: 64 - raw gave +12 instead of -12 for Osc3 raw 52, one octave too high)
         oct_up = (sdata[oct_idx[n - 1]] - 64) / 12.0
         semi = sdata[semi_idx[n - 1]] - 64
-        setp(f"Osc{n}CoarsePitch", 24.0 + 12.0 * oct_up + semi, f"{semi:+.0f} semi")
+        total_semi = 12.0 * oct_up + semi
+        cp = 24.0 + total_semi
+        # Iridium CoarsePitch enum is 0..48 = -24..+24 semi (param-info pid 1391,
+        # verified live 2026-11-21); 2' (+24) is the max. Beyond that (e.g. A008
+        # Osc1 1' = +36 semi) clamp and shift the excess via matrix Constant->OscN Pitch.
+        if cp > 48.0:
+            oct_excess[n] = cp - 48.0
+            cp = 48.0
+        elif cp < 0.0:
+            oct_excess[n] = cp  # negative
+            cp = 0.0
+        setp(f"Osc{n}CoarsePitch", cp, f"{total_semi:+.0f} semi")
         # Detune is bipolar around raw 64 (Blofeld: +/-64 cent) -> center at 0.5 on the
         # Iridium, NOT norm(raw) (old: A008 Osc1 Detune 126 -> 0.992 ~ full range instead
         # of near-center). The Iridium cent-per-norm scale is a live-calibration TODO
@@ -689,6 +701,16 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                     mrow(hw, s_disp, ctrl_disp, d_disp, amt_bipolar(amt))
                 else:
                     unmapped.append(f"Filter {n} {kind} Source {src!r}")
+    # Octave excess beyond CoarsePitch (enum max +24 semi): Constant -> OscN Pitch.
+    # Amount scale assumed +/-24 semi at 0..1 (0.5 = 0) — live-calibration TODO.
+    # NOTE: the runtime has only 40 matrix rows (MatrixSrc41 does not resolve),
+    # so these rows live in the same >=21 block, after the hard-wired ones.
+    for n in (1, 2, 3):
+        ex = oct_excess.get(n, 0.0)
+        if ex:
+            hw += 1
+            mrow(hw, "Constant", None, f"Osc{n} Pitch",
+                 max(0.0, min(1.0, 0.5 + ex / 48.0)))
     # Blofeld amplifier velocity (level dynamics, unipolar) -> own matrix slot
     # Velocity -> Volume. Amount 0.5 + 0.5*norm(raw) instead of
     # amt_bipolar (0.5 would be neutral/ineffective), because velocity is unipolar:

@@ -775,3 +775,30 @@ def test_a005_osc_fm_approx_via_pitch_and_serial_f2_pan_via_df():
     pan = [r for r in hw if r.get("Dst", (0.0,))[0] == qpat_map.MATRIX_DST["DF Pan"]]
     assert pan and pan[0]["Src"][0] == qpat_map.MATRIX_SRC["LFO 2"]
     assert not any("FM" in u or "Pan" in u for u in un if "Filter" in u or "Osc" in u)
+
+
+def test_a008_osc1_1ft_clamped_with_constant_pitch_shift():
+    # A008 Easy Piano: Osc1 Octave raw 100 = 1' (+36 semi), Semitone +4 -> +40 semi total.
+    # CoarsePitch enum max is +24 (48), so clamp to 48 and shift +16 semi via
+    # matrix row Constant -> Osc1 Pitch (user proposal 2026-11-21).
+    parsed = bd.parse_sndd((REPO / "dumps/blofeld_sndd_A008_20261108_233053.bin").read_bytes())
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc1CoarsePitch"] == (48.0, "+40 semi")     # clamped, label shows total
+    assert ov["Osc2CoarsePitch"] == (24.0, "+0 semi")
+    rows = _rows(ov)
+    shift = [r for n, r in rows.items() if n >= 21
+             and r.get("Src", (0.0,))[0] == qpat_map.MATRIX_SRC["Constant"]]
+    assert len(shift) == 1
+    assert shift[0]["Dst"][0] == qpat_map.MATRIX_DST["Osc1 Pitch"]
+    assert shift[0]["Amount"][0] == pytest.approx(0.5 + 16 / 48)   # +16 semi excess
+
+
+def test_a007_octaves_in_range_no_constant_rows():
+    # A007: Osc1/2 = 4' (+12 -> 36), Osc3 = 16' (-12 -> 12) — all within 0..48, no shift rows
+    parsed = bd.parse_sndd((REPO / "dumps/blofeld_sndd_A007_20261119_053353.bin").read_bytes())
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc1CoarsePitch"][0] == 36.0 and ov["Osc1CoarsePitch"][1] == "+12 semi"
+    assert ov["Osc3CoarsePitch"][0] == 12.0 and ov["Osc3CoarsePitch"][1] == "-12 semi"
+    rows = _rows(ov)
+    assert not any(r.get("Src", (0.0,))[0] == qpat_map.MATRIX_SRC["Constant"]
+                   for r in rows.values())

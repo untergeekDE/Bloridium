@@ -298,3 +298,19 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
   annimmt +/-127 cent). Offen: Live-Pitch-Sweep per QUIR (FinePitch 0/0.5/1 -> Grundton
   messen), dann fine_pitch_norm korrigieren.
 - rf100_v2 re-konvertiert (A007-qpat verifiziert: MatrixSrc/Dst 22-24 = WF Warp). 399 Tests.
+
+## 2026-11-21 — Oktavlagen: CoarsePitch-Clamp + Constant-Verschiebung (A008); SD-Kopie veraltet
+
+- Live verifiziert (QUIR, 11-21): `set-pid` (nicht set-param!) setzt OscNCoarsePitch;
+  Runtime-Enum = 0..48 = −24…+24 semi (param-info pid 1391; 48 = +24 semi = 2').
+  **Matrix-Runtime hat nur 40 Rows** (MatrixSrc41 loest nicht auf) — "ab 41" gibt es nicht.
+- A007 @ SD: Geraet las nach load-patch Osc3CoarsePitch=36 -> die SD-Kopie `2:rf200` ist
+  VERALTET (altes +12-Mapping); lokales qpat hat korrekt 12.0 (−12 semi = 16'). set-pid
+  1391 12 wird akzeptiert. => SD frisch aus transfer/rf100_v2 kopieren.
+- A008 Easy Piano: Osc1 = 1' (+36 semi) + 4 semi = +40 semi -> CoarsePitch clamp auf 48,
+  Rest (+16 semi) als Matrix-Row Constant -> Osc1 Pitch in den Slots >= 21 (Amount
+  0.5 + excess/48 — Skala ±24 semi angenommen, live-calibration TODO). CoarsePitch-Label
+  zeigt jetzt die GESAMT-Semitones (war nur Semitone-Anteil).
+- Kein PC von meinen QUIR-Sonden (nur Shell-Kommandos; set-pid nur Edit-Puffer, nie
+  save-patch). ChangeProgram las 0.000. SD war am Geraet nicht gemountet (ls 2: fails).
+- rf100_v2 re-konvertiert (A008: 184 mapped). 401 Tests gruen.
