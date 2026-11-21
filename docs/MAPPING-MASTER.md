@@ -11,8 +11,10 @@ Reference sound: A043 "SH Power" (129 mapped / 75 unmapped of 290 set params aft
   FX mix key by mapped type + FX params (spec 5.2-5.9); detune centered at 0.5;
   Amp Mod / Osc Pitch Mod -> matrix slots; new v14 dsts: AmpEnv Attack=109, LFO1-3 Speed=145-147.
 - Still open (live clarification, see `docs/superpowers/plans/2026-11-18-converter-rebuild-polyat.md`):
-  amt_bipolar divisor, FinePitch cent scale, LFO free-speed Hz, AE Decay/Sustain/Release + FE Release
+  amt_bipolar divisor, LFO free-speed Hz, AE Decay/Sustain/Release + FE Release
   + F1/F2 Drive/Pan dsts (need `param-info 2480`), WT bridge by CLAP, qpat version v14 vs v15 on device.
+- 2026-11-21 Init-Profiling (`docs/PROFILING-INIT-2026-11-21.md`): **FinePitch calibrated** ->
+  `0.5 + (raw-64)/127` (Blofeld +/-101 cent, Iridium 203 cent per norm unit). Detune is now direct.
 
 **PC/Favorites mapping on the Iridium (which sound on which MIDI PC): see `docs/IRIDIUM-FAVORITES-MAP.md`**
 (mido PC = display "MIDI" - 2; MIDI 100-106 = calib test sounds, 107-115 = the 9 converted sounds).
@@ -25,41 +27,41 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 |---|---|---|---|---|
 | 1 | Osc 1 Octave | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
 | 2 | Osc 1 Semitone | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
-| 3 | Osc 1 Detune | OscNFinePitch | ⚠️ deviation | centered `0.5+(raw-64)/254` (was norm(); cent scale live-TODO) |
+| 3 | Osc 1 Detune | OscNFinePitch | ✅ direct | centered `0.5+(raw-64)/127` (live-calibrated 2026-11-21: Blofeld ±101 cent, Iridium 203 cent/norm) |
 | 4 | Osc 1 Bend Range | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 5 | Osc 1 Keytrack | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 6 | Osc 1 FM Source | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 7 | Osc 1 FM Amount | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 8 | Osc 1 Shape | OscNType + OscNWaveformShape | 🟡 approximation | VA shapes direct; wavetables -> Type + WavetableTable (bridge, e.g. MalletSyn=2) + WavetablePosition (from pulsewidth) + Brilliance; Spectrum unmapped |
 | 9 | Osc 1 Pulsewidth | OscNWaveformPW | ✅ direct | Waveform mode -> WaveformPW; wavetable mode -> WavetablePosition (Blofeld 'PW/Wave') |
-| 10 | Osc 1 PWM Source | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
-| 11 | Osc 1 PWM Amount | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
+| 10 | Osc 1 PWM Source | Matrix-Slot -> WFn Warp / WTn Position | 🟡 conditional | hard-wired slot >= 21; waveform pulse shapes -> WF Warp, wavetable -> WT Position; Saw/Triangle/Sine deliberately ignored (A1) |
+| 11 | Osc 1 PWM Amount | MatrixAmount | 🟡 conditional | amt_bipolar; only for pulse-like shapes |
 | 14 | Osc 1 Limit WT | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 16 | Osc 1 Brilliance | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 17 | Osc 2 Octave | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
 | 18 | Osc 2 Semitone | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
-| 19 | Osc 2 Detune | OscNFinePitch | ⚠️ deviation | centered `0.5+(raw-64)/254` (was norm(); cent scale live-TODO) |
+| 19 | Osc 2 Detune | OscNFinePitch | ✅ direct | centered `0.5+(raw-64)/127` (live-calibrated 2026-11-21: Blofeld ±101 cent, Iridium 203 cent/norm) |
 | 20 | Osc 2 Bend Range | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 21 | Osc 2 Keytrack | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 22 | Osc 2 FM Source | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 23 | Osc 2 FM Amount | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 24 | Osc 2 Shape | OscNType + OscNWaveformShape | 🟡 approximation | VA shapes direct; wavetables -> Type + WavetableTable (bridge, e.g. MalletSyn=2) + WavetablePosition (from pulsewidth) + Brilliance; Spectrum unmapped |
 | 25 | Osc 2 Pulsewidth | OscNWaveformPW | ✅ direct | Waveform mode -> WaveformPW; wavetable mode -> WavetablePosition (Blofeld 'PW/Wave') |
-| 26 | Osc 2 PWM Source | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
-| 27 | Osc 2 PWM Amount | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
+| 26 | Osc 2 PWM Source | Matrix-Slot -> WFn Warp / WTn Position | 🟡 conditional | hard-wired slot >= 21; pulse-like shapes only (A1) |
+| 27 | Osc 2 PWM Amount | MatrixAmount | 🟡 conditional | amt_bipolar; only for pulse-like shapes |
 | 30 | Osc 2 Limit WT | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 32 | Osc 2 Brilliance | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 33 | Osc 3 Octave | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
 | 34 | Osc 3 Semitone | OscNCoarsePitch | 🟡 approximation | reconstructed from raw SDATA values (64 = center) |
-| 35 | Osc 3 Detune | OscNFinePitch | ⚠️ deviation | centered `0.5+(raw-64)/254` (was norm(); cent scale live-TODO) |
+| 35 | Osc 3 Detune | OscNFinePitch | ✅ direct | centered `0.5+(raw-64)/127` (live-calibrated 2026-11-21: Blofeld ±101 cent, Iridium 203 cent/norm) |
 | 36 | Osc 3 Bend Range | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 37 | Osc 3 Keytrack | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 38 | Osc 3 FM Source | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 39 | Osc 3 FM Amount | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 40 | Osc 3 Shape | OscNType + OscNWaveformShape | 🟡 approximation | VA shapes direct; wavetables -> Type + WavetableTable (bridge, e.g. MalletSyn=2) + WavetablePosition (from pulsewidth) + Brilliance; Spectrum unmapped |
 | 41 | Osc 3 Pulsewidth | OscNWaveformPW | ✅ direct | Waveform mode -> WaveformPW; wavetable mode -> WavetablePosition (Blofeld 'PW/Wave') |
-| 42 | Osc 3 PWM Source | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
-| 43 | Osc 3 PWM Amount | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
+| 42 | Osc 3 PWM Source | Matrix-Slot -> WF3 Warp / WT3 Position | 🟡 conditional | hard-wired slot >= 21; pulse-like shapes only (A1) |
+| 43 | Osc 3 PWM Amount | MatrixAmount | 🟡 conditional | amt_bipolar; only for pulse-like shapes |
 | 46 | Osc 3 Limit WT | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 48 | Osc 3 Brilliance | - | ❌ unmapped | FM/PWM live in Kernels/mod matrix on the Iridium, no 1:1 |
 | 49 | Osc 2 Sync to O3 | Osc2WaveformSync | 🟡 approximation | 1.0 = Sync on (A071/A008) |
@@ -73,16 +75,16 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | SDATA | Blofeld parameter | Iridium qpat target | Status | Deviation / Notes |
 |---|---|---|---|---|
 | 57 | Glide Rate | GlideRate | 🟡 approximation | time-calibrated (exponential, anchors in `qpat_map.py`: raw 20 = norm 0.15 = 0.045 s; Iridium norm 0.378 = 0.29 s display; raw 127 ≈ 5 s). Linear norm() set too high (A073 raw 48: 0.378/0.29 s instead of correct ~0.30/~0.15 s) |
-| 58 | Allocation/Unisono | UnisonoCount + UnisonoDetune | 🟡 approximation | bitfield decoded (count = bits 5-7) |
+| 58 | Allocation/Unisono | UnisonoCount + UnisonoDetune + neutral Pan/Delay | 🟡 approximation | bitfield `0uuu000a` (spec 4.10): count = bits **4–6** (fixed 2026-11-21, A4); Pan 0.5 / Delay 0.0 because the Blofeld has neither |
 | 59 | Unisono Detune | UnisonoDetune | ✅ direct | norm |
 | 61 | Mixer Osc 1 Level | OscNVol | ✅ direct | norm raw/127 |
-| 62 | Mixer Osc 1 Balance | OscNPan | ⚠️ deviation | Blofeld Balance = F1/F2 share, Iridium Pan = stereo -> semantics differ |
+| 62 | Mixer Osc 1 Balance | OscNDestination (serial) / FilterLevel+Filter2Level (parallel) | 🟡 approximation | F1/F2 share: seriell 2…22 (`OscNDestination`), parallel global über die Filter-Level; per-Osc-Anteil in Parallel-Schaltung nicht darstellbar. Pan bleibt center. **Test E 2026-11-21:** L/R-Bild bleibt zentriert |
 | 63 | Mixer Osc 2 Level | OscNVol | ✅ direct | norm raw/127 |
-| 64 | Mixer Osc 2 Balance | OscNPan | ⚠️ deviation | Blofeld Balance = F1/F2 share, Iridium Pan = stereo -> semantics differ |
+| 64 | Mixer Osc 2 Balance | OscNDestination (serial) / FilterLevel+Filter2Level (parallel) | 🟡 approximation | wie 62: seriell Destination-Split, parallel globale Filter-Level; Pan bleibt center |
 | 65 | Mixer Osc 3 Level | OscNVol | ✅ direct | norm raw/127 |
-| 66 | Mixer Osc 3 Balance | OscNPan | ⚠️ deviation | Blofeld Balance = F1/F2 share, Iridium Pan = stereo -> semantics differ |
+| 66 | Mixer Osc 3 Balance | OscNDestination (serial) / FilterLevel+Filter2Level (parallel) | 🟡 approximation | wie 62: seriell Destination-Split, parallel globale Filter-Level; Pan bleibt center |
 | 67 | Mixer Noise Level | - | ❌ unmapped | no direct qpat key (Particle/Resonator noise) |
-| 68 | Mixer Noise Balance | - | ❌ unmapped | no direct qpat key (Particle/Resonator noise) |
+| 68 | Mixer Noise Balance | Osc<free>Destination (serial) / Filter-Level (parallel) | 🟡 approximation | Noise läuft über einen freien Osc; Balance ist der F1/F2-Anteil, **kein Pan** (Test E: beidseitig zentriert) |
 | 69 | Mixer Noise Colour | - | ❌ unmapped | no direct qpat key (Particle/Resonator noise) |
 | 71 | Mixer RingMod Level | RingmodOsc12 | ✅ direct | only O1->O2; O1->O3 (CC75) unmapped |
 | 72 | Mixer RingMod Balance | RingmodOsc12 | ✅ direct | only O1->O2; O1->O3 (CC75) unmapped |
@@ -96,24 +98,24 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 80 | Filter 1 Resonance | Filter1Reso | ✅ direct | norm |
 | 81 | Filter 1 Drive | - | ❌ unmapped | Drive -> FX Drive possible, Pan -> DigiFormer PAN (CC78) |
 | 82 | Filter 1 Drive Curve | - | ❌ unmapped | Global/System/etc. |
-| 86 | Filter 1 Keytrack | Filter1Keytrack | ✅ direct | norm(raw): Blofeld 0..127 = -200%..+196% (offset binary, 64=0%), Iridium 0..1 = -200%..+200% (0.5=0%); old (kt-64)/64 gave -200% at 64 |
+| 86 | Filter 1 Keytrack | Filter1Keytrack | ✅ direct | norm(raw); **Test E (2 Noten, 2026-11-21): cos 0,86, teilweise** — bei 0 % weicht die Wirkung ab |
 | 87 | Filter 1 Env Amount | FilterNEnvAmount | ✅ direct | norm |
-| 88 | Filter 1 Env Velocity | FilterNVeloAmount | ✅ direct | norm |
+| 88 | Filter 1 Env Velocity | FilterNVeloAmount | ⚠️ deviation | norm; **Test E (2 Anschläge): cos 0,36** — Kennlinie/Sustain-Abhängigkeit prüfen |
 | 89 | Filter 1 Mod Source | Matrix-Slot -> Filter1 Cutoff | 🟡 approximation | direct filter mod as extra matrix slot (dst 100) |
 | 90 | Filter 1 Mod Amount | MatrixAmount | 🟡 approximation | amt_bipolar |
 | 91 | Filter 1 FM Source | - | ❌ unmapped | Drive -> FX Drive possible, Pan -> DigiFormer PAN (CC78) |
 | 92 | Filter 1 FM Amount | - | ❌ unmapped | Drive -> FX Drive possible, Pan -> DigiFormer PAN (CC78) |
 | 93 | Filter 1 Pan | - | ❌ unmapped | Drive -> FX Drive possible, Pan -> DigiFormer PAN (CC78) |
 | 94 | Filter 1 Pan Source | - | ❌ unmapped | Global/System/etc. |
-| 95 | Filter 1 Pan Amount | - | ❌ unmapped | Global/System/etc. |
+| 95 | Filter 1 Pan Amount | Matrix-Slot -> Filter1 Pan | ✅ direct | Matrixzeile jetzt ab Amount 0, Betrag `0,5+(raw−64)/127`; **Test E: 0 % cos 0,998, 100 % cos 0,997** |
 | 97 | Filter 2 Type | DigiFormerType | 🟡 approximation | Blofeld F2 model -> Former model (Nave/PPG/Largo/SVF), not identical |
 | 98 | Filter 2 Cutoff | DigiFormerAmount + Filter2CutOff | 🟡 approximation | Cutoff -> Former Amount (approximation), F2 stage itself Off |
 | 100 | Filter 2 Resonance | DigiFormerColor + Filter2Reso | 🟡 approximation | Reso -> Former Color |
 | 101 | Filter 2 Drive | - | ❌ unmapped |  |
 | 102 | Filter 2 Drive Curve | - | ❌ unmapped | Global/System/etc. |
-| 106 | Filter 2 Keytrack | Filter2Keytrack | ✅ direct | norm(raw) like F1 keytrack (see 86) |
+| 106 | Filter 2 Keytrack | Filter2Keytrack | ✅ direct | norm(raw) wie F1; **noch nicht messtechnisch bestätigt** (F2-Mapping blockiert, TODO A2) |
 | 107 | Filter 2 Env Amount | FilterNEnvAmount | ✅ direct | norm |
-| 108 | Filter 2 Env Velocity | FilterNVeloAmount | ✅ direct | norm |
+| 108 | Filter 2 Env Velocity | FilterNVeloAmount | ✅ direct | norm; **noch nicht messtechnisch bestätigt** (F2-Mapping blockiert, TODO A2) |
 | 109 | Filter 2 Mod Source | Matrix-Slot -> DF Amount (serial) / Filter2 Cutoff (parallel) | 🟡 approximation | serial: F2 lives in the DigiFormer -> dst 95 (P1-2, 2026-11-18) |
 | 110 | Filter 2 Mod Amount | MatrixAmount | 🟡 approximation | amt_bipolar |
 | 111 | Filter 2 FM Source | - | ❌ unmapped |  |
@@ -128,7 +130,7 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | SDATA | Blofeld parameter | Iridium qpat target | Status | Deviation / Notes |
 |---|---|---|---|---|
 | 121 | Amplifier Volume | MainVolume | ✅ direct | norm |
-| 122 | Amplifier Velocity | Matrix-Slot Velocity->Volume (AmpVeloAmount=0) | 🟡 approximation | AmpVelo barely works on the device (CC17 ~0.4 dB); Vel->Volume in matrix, amount bipolar |
+| 122 | Amplifier Velocity | Matrix-Slot Velocity->Volume (AmpVeloAmount=0) | 🟡 approximation | AmpVelo barely works on the device; Vel->Volume in matrix. **Test E: bei Amount 0 ist der Iridium 2,5× anschlagempfindlicher** (I 6,1 / B 2,4, cos 0,97) |
 | 123 | Amplifier Mod Source | Matrix-Slot -> Volume | 🟡 approximation | 2026-11-18: extra matrix slot (A008 AmpEnv, others LFO3) |
 | 124 | Amplifier Mod Amount | MatrixAmount | 🟡 approximation | amt_bipolar |
 
@@ -137,11 +139,11 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | SDATA | Blofeld parameter | Iridium qpat target | Status | Deviation / Notes |
 |---|---|---|---|---|
 | 128 | Effect 1 Type | FX1Type | 🟡 approximation | Enum v14; Triple FX -> Chorus; watch enum shift (v8/v14/v15, enum scan) |
-| 129 | Effect 1 Mix | DryWet key of the MAPPED type | ✅ direct | 2026-11-18: by type not slot (Chorus->ChorusDryWet, Delay->DelayDryWet, Phaser/Flanger/Drive likewise; Reverb -> matrix slot Constant->FX DryWet) |
+| 129 | Effect 1 Mix | DryWet key of the MAPPED type | ✅ direct | 2026-11-18: by type not slot (Chorus->ChorusDryWet, Delay->DelayDryWet, Phaser/Flanger/Drive likewise; **Reverb -> ReverbGain**, A3 2026-11-21) |
 | 130-143 | Effect 1 Parameter 1-14 | per-FX keys | 🟡 approximation | 2026-11-18 per spec 5.2-5.9: Chorus Speed/Depth (p1/p2), Flanger +Feedback p5, Phaser +p5/p6 Center, Overdrive Drive p2/PostGain p3 -> DriveAmount/DriveGain, Clk.Delay Feedback p5/Cutoff p6/Length p11 -> DelayFeed/DelayHiCut/DelaySync+Sync, Reverb Shape/Decay -> ReverbColor/ReverbTime |
 | 144 | Effect 2 Type | FX2Type | 🟡 approximation | as FX1 |
 | 145 | Effect 2 Mix | DryWet key of the MAPPED type | ✅ direct | as 129 |
-| 146-159 | Effect 2 Parameter 1-14 | per-FX keys | 🟡 approximation | as 130-143 (Delay: Length p4 free time not mapped; Reverb params unmapped) |
+| 146-159 | Effect 2 Parameter 1-14 | per-FX keys | 🟡 approximation | as 130-143 (Delay: Length p4 free time not mapped; Reverb Shape/Decay -> ReverbColor/ReverbTime) |
 
 ## LFO 1-3 (SDATA 160-194)
 
@@ -342,9 +344,9 @@ srcs without equivalent: Control W-Z, Unisono V., Modifier 1-4, Sustain/Foot/Bre
 
 ## Statistics
 
-- ✅ direct: 37
+- ✅ direct: 40
 - 🟡 approximation: 70
-- ⚠️ deviation: 9
+- ⚠️ deviation: 6
 - ❌ unmapped: 174
 - **total: 290 Blofeld parameters**
 

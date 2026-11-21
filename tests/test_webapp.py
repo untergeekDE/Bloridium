@@ -166,6 +166,21 @@ def test_estimate_prefers_exact_over_approx(core, sample_sdata):
     assert e_arp["score"] < e_base["score"]
 
 
+def test_ignored_notes_are_not_counted_as_midi_map_gaps(core, sample_sdata):
+    # A1 (2026-11-21): PWM on a sawtooth is deliberately ignored by qpat_map.
+    # The web app must not list that as "not in MIDI map".
+    parsed = core.blofeld_dump.parse_sndd(_sndd_bytes(0, 42, sample_sdata))
+    parsed["params"]["Osc 1 Shape"] = "Saw"
+    parsed["params"]["Osc 1 PWM Source"] = "LFO 1"
+    parsed["params"]["Osc 1 PWM Amount"] = 64
+    template = core.qpat.load(convert.default_template_path())
+    conv = convert.convert_sound(core, template, parsed, "A043")
+    assert any(u.startswith("Ignored: Osc 1 PWM") for u in conv["ignored"])
+    assert not any("Osc 1 PWM" in u for u in conv["unmapped"])
+    gaps, ignored = convert.split_unmapped(["Ignored: x", "real gap"])
+    assert gaps == ["real gap"] and ignored == ["Ignored: x"]
+
+
 def test_flask_routes(core, sample_sdata, tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)  # placeholder path for stable assertions

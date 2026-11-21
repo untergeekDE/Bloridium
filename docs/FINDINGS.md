@@ -342,3 +342,18 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
 | A007@206: Detune-Anzeige am Panel „hoch" | DOKUMENTIERT, offen: FinePitch-Kalibrierung live (FIXES_TODO), Mapping raw 64 -> 0.5 bleibt bis dahin | — (FIXES_TODO) |
 | SD `2:rf200` war veraltet (A007 las CoarsePitch 36) | kein Code-Bug; frische Kopie aus transfer/rf100_v2 noetig (plain cp) | — |
 | Matrix-Runtime nur 40 Rows (kein 41) | Doku; Hard-wired-Block nutzt 21..40 | — |
+
+### P0-Fixes A1/A3/A4 (2026-11-21)
+
+| Befund (Messung) | Fix in qpat_map.py | Test |
+|---|---|---|
+| PWM Amount nur auf dem Iridium hörbar (3,3–6,6×), weil `WFn Warp` auch Sägezahn/Triangle verändert | `has_pulse_width()`: Matrixzeile nur für pulsartige Shapes; Saw/Triangle/Sine -> `Ignored: …`-Hinweis, Wavetable weiter `WTn Position` | test_pwm_row_only_for_pulse_shapes, test_a007_osc_pwm_mapped_to_wf_warp_rows_ge_21 |
+| Reverb-Mix über `Constant -> FX2 DryWet` konnte keinen statischen Zwischenwert erzeugen | `ReverbGain = norm(Effect N Mix)`; Matrixzeile entfernt. Handbuch OS3: Reverb Gain ist der Dry/Wet-Regler (0 % trocken, 100 % nur Hall) | test_reverb_fx2_mix_via_reverb_gain_and_params |
+| Unisono Detune ohne monotone Reaktion, obwohl Count gesetzt wurde | `Allocation/Unisono = 0uuu000a` (Spec 4.10): Bits **4–6** statt 5–7 -> `unison_count()`; `UnisonoPan=0.5`, `UnisonoDelay=0.0` (Blofeld hat keinen Pan-Spread/Voice-Delay) | test_unison_count_uses_bits_4_to_6 |
+
+- Geräte-Verifikation (QUIR, lesend): `param-info 3691` = UnisonoCount, Enum
+  0 Off / 1 = 2 … 7 = 8; `param-info 2747` = FXTotalDryWet, `ReverbGain` existiert
+  als eigener kontinuierlicher Parameter.
+- Offen: Neumessung der drei Punkte (`profile_testb_sweep.py osc2|unison|fx`);
+  die frühere Unison-Aufnahme zeigte bei Detune 127 eine Reaktion (Centroid
+  3536 -> 3140 Hz), aber nicht monoton.

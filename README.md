@@ -145,7 +145,10 @@ Parameters & safety:
 - Todo: Iridium parameters without CC (e.g. Filter1 Cutoff, mod matrix) reachable only via MIDI Learn on the device.
 - Todo: mapping model trained from `recordings/sim_log.jsonl`.
 - Full findings: `docs/FINDINGS.md`; inventory + next-session plan: `docs/STATUS.md`.
-- 2026-11-20: review fixes, v0.4.0 – similarity score v2, unified version, GPL-3.0 (`FIXES_TODO.md`).
+- 2026-11-20: review fixes, v0.4.0 – similarity score v2, unified version, GPL-3.0 (`FIXES_HISTORY.md`).
+- 2026-11-21: converter fixes v0.5.1 – PWM only for pulse shapes, Reverb mix via
+  `ReverbGain`, unisono bits 4–6 + neutral pan/delay; measurement backlog in
+  `TODO_MEASURE.md`.
 
 ## License
 

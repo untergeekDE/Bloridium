@@ -83,6 +83,16 @@ class Iridium:
         time.sleep(0.30)
         self.drain(quiet=0.10)
 
+    # ---- notes (Part 1 = ch 6 -> 0-based 5) -----------------------------
+    def note_on(self, note: int = 60, velocity: int = 100, channel: int = 5) -> None:
+        self.out.send(mido.Message("note_on", note=note, velocity=velocity, channel=channel))
+
+    def note_off(self, note: int = 60, channel: int = 5) -> None:
+        self.out.send(mido.Message("note_off", note=note, velocity=0, channel=channel))
+
+    def silence_part(self, channel: int = 5) -> None:
+        self.out.send(mido.Message("control_change", control=123, value=0, channel=channel))
+
     def close(self) -> None:
         self.out.close()
         self.inp.close()

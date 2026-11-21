@@ -5,6 +5,6 @@ Used by pyproject.toml (dynamic version), the CLI (--version), the web app
 imports so the web app can read it without loading the package.
 """
 
-__version__ = "0.5.0"  # 2026-11-21: Mapping-Update (PPG->24dB LP, Filter-Drive->FX1,
-# LFOx*MW->Matrix Ctrl, Env-Curves Lin, PWM/FM/Filter-Mod -> Matrix 21+, Oktav-Clamp
-# + Constant-Shift, .mid-Upload); Webapp-UI ohne "mapped"-Spalte
+__version__ = "0.5.1"  # 2026-11-21: Konverter-Fixes A1/A3/A4 (PWM nur fuer
+# Puls-Shapes, Reverb-Mix ueber ReverbGain, Unisono-Bits 4-6 + neutrale Pan/Delay);
+# Webapp trennt bewusste "Ignored:"-Hinweise von echten MIDI-Map-Luecken

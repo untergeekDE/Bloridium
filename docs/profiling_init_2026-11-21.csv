@@ -1,140 +1,833 @@
-sdata,block,parameter,typ,wert,iridium_wert,status,wirkung_blofeld,wirkung_iridium,cosinus,paar_score,iridium_keys
-1,Oszillatoren,Osc 1 Octave,cont,32,0.0,OK,"6,61","6,69","0,98","94,0",MatrixAmount27 MatrixDst27 MatrixOnOff27 MatrixSrc27 Osc1CoarsePitch
-1,Oszillatoren,Osc 1 Octave,cont,48,8.0,OK,"6,17","6,64","0,99","96,4",Osc1CoarsePitch
-1,Oszillatoren,Osc 1 Octave,cont,64,24.0,n/a,"0,36","0,58",–,"96,0",
-1,Oszillatoren,Osc 1 Octave,cont,80,40.0,OK,"6,79","5,73","0,98","90,6",Osc1CoarsePitch
-2,Oszillatoren,Osc 1 Semitone,cont,52,12.0,OK,"5,79","6,17","0,99","96,2",Osc1CoarsePitch
-2,Oszillatoren,Osc 1 Semitone,cont,58,18.0,OK,"5,50","5,57","0,99","96,4",Osc1CoarsePitch
-2,Oszillatoren,Osc 1 Semitone,cont,64,24.0,n/a,"0,26","0,50",–,"96,5",
-2,Oszillatoren,Osc 1 Semitone,cont,76,36.0,OK,"5,96","5,38","0,98","91,7",Osc1CoarsePitch
-3,Oszillatoren,Osc 1 Detune,cont,0,0.24803149606299213,defekt,"3,20","1,93",–,"86,0",Osc1FinePitch
-3,Oszillatoren,Osc 1 Detune,cont,32,0.37401574803149606,Mismatch,"1,72","3,15",–,"72,1",Osc1FinePitch
-3,Oszillatoren,Osc 1 Detune,cont,64,0.5,n/a,"0,21","0,34",–,"94,8",
-3,Oszillatoren,Osc 1 Detune,cont,127,0.7480314960629921,teilweise,"2,95","2,39","0,71","87,4",Osc1FinePitch
-8,Oszillatoren,Osc 1 Shape,enum,0,6.0,teilweise,"9,04","8,17","0,76","67,7",Osc1Type
-8,Oszillatoren,Osc 1 Shape,enum,18,0.0,OK,"8,94","8,91","0,99","93,1",MatrixDst22 Osc1Type Osc1WavetableBrilliance Osc1WavetablePosition Osc1WavetableTable
-8,Oszillatoren,Osc 1 Shape,enum,36,0.0,OK,"11,04","9,45","0,99","89,1",MatrixDst22 Osc1Type Osc1WavetableBrilliance Osc1WavetablePosition Osc1WavetableTable
-8,Oszillatoren,Osc 1 Shape,enum,72,0.0,OK,"8,44","8,06","1,00","95,0",MatrixDst22 Osc1Type Osc1WavetableBrilliance Osc1WavetablePosition Osc1WavetableTable
-10,Oszillatoren,Osc 1 PWM Source,enum,0,49.0,n/a,"0,53","0,61",–,"95,7",MatrixDst22 MatrixDst23 MatrixDst24 MatrixDst25 MatrixSrc22 MatrixSrc23 MatrixSrc24 MatrixSrc25
-10,Oszillatoren,Osc 1 PWM Source,enum,8,4.0,n/a,"0,30","0,42",–,"96,0",MatrixSrc22
-10,Oszillatoren,Osc 1 PWM Source,enum,15,15.0,n/a,"0,35","0,54",–,"96,3",MatrixSrc22
-10,Oszillatoren,Osc 1 PWM Source,enum,30,40.0,n/a,"0,50","0,63",–,"96,3",MatrixSrc22
-11,Oszillatoren,Osc 1 PWM Amount,cont,0,49.0,n/a,"0,38","0,67",–,"96,9",MatrixDst22 MatrixDst23 MatrixDst24 MatrixDst25 MatrixSrc22 MatrixSrc23 MatrixSrc24 MatrixSrc25
-11,Oszillatoren,Osc 1 PWM Amount,cont,32,0.37401574803149606,n/a,"0,11","1,80",–,"93,0",MatrixAmount22
-11,Oszillatoren,Osc 1 PWM Amount,cont,64,0.5,n/a,"0,31","0,46",–,"96,7",
-11,Oszillatoren,Osc 1 PWM Amount,cont,127,0.7480314960629921,Mismatch,"0,31","2,91",–,"87,7",MatrixAmount22
-17,Oszillatoren,Osc 2 Octave,cont,32,0.0,n/a,"0,44","0,54",–,"96,4",MatrixAmount27 MatrixDst27 MatrixOnOff27 MatrixSrc27 Osc2CoarsePitch
-17,Oszillatoren,Osc 2 Octave,cont,48,8.0,n/a,"0,39","0,54",–,"96,7",Osc2CoarsePitch
-17,Oszillatoren,Osc 2 Octave,cont,64,24.0,n/a,"0,80","0,96",–,"95,2",
-17,Oszillatoren,Osc 2 Octave,cont,80,40.0,n/a,"0,64","0,67",–,"95,1",Osc2CoarsePitch
-18,Oszillatoren,Osc 2 Semitone,cont,52,12.0,n/a,"0,67","0,63",–,"96,5",Osc2CoarsePitch
-18,Oszillatoren,Osc 2 Semitone,cont,58,18.0,n/a,"0,48","0,68",–,"95,4",Osc2CoarsePitch
-18,Oszillatoren,Osc 2 Semitone,cont,64,24.0,n/a,"0,56","0,52",–,"96,6",
-18,Oszillatoren,Osc 2 Semitone,cont,76,36.0,n/a,"0,47","0,65",–,"95,5",Osc2CoarsePitch
-19,Oszillatoren,Osc 2 Detune,cont,0,0.24803149606299213,n/a,"0,46","0,56",–,"95,6",Osc2FinePitch
-19,Oszillatoren,Osc 2 Detune,cont,32,0.37401574803149606,n/a,"0,49","0,74",–,"95,0",Osc2FinePitch
-19,Oszillatoren,Osc 2 Detune,cont,64,0.5,n/a,"0,82","0,63",–,"96,5",
-19,Oszillatoren,Osc 2 Detune,cont,127,0.7480314960629921,n/a,"0,81","0,83",–,"96,2",Osc2FinePitch
-24,Oszillatoren,Osc 2 Shape,enum,0,6.0,n/a,"0,71","0,75",–,"96,7",
-24,Oszillatoren,Osc 2 Shape,enum,18,0.0,n/a,"1,66","1,44",–,"89,8",MatrixDst23 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
-24,Oszillatoren,Osc 2 Shape,enum,36,0.0,n/a,"0,87","0,70",–,"95,0",MatrixDst23 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
-24,Oszillatoren,Osc 2 Shape,enum,72,0.0,n/a,"0,69","1,11",–,"93,3",MatrixDst23 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
-26,Oszillatoren,Osc 2 PWM Source,enum,0,80.0,n/a,"0,88","0,74",–,"95,8",MatrixDst23 MatrixDst24 MatrixDst25 MatrixSrc23 MatrixSrc24 MatrixSrc25
-26,Oszillatoren,Osc 2 PWM Source,enum,8,4.0,n/a,"0,96","0,89",–,"96,8",MatrixSrc23
-26,Oszillatoren,Osc 2 PWM Source,enum,15,15.0,n/a,"0,91","1,02",–,"95,8",MatrixSrc23
-26,Oszillatoren,Osc 2 PWM Source,enum,30,40.0,n/a,"0,93","0,95",–,"95,9",MatrixSrc23
-27,Oszillatoren,Osc 2 PWM Amount,cont,0,80.0,n/a,"0,61","0,63",–,"95,7",MatrixDst23 MatrixDst24 MatrixDst25 MatrixSrc23 MatrixSrc24 MatrixSrc25
-27,Oszillatoren,Osc 2 PWM Amount,cont,32,0.37401574803149606,n/a,"0,57","0,64",–,"96,1",MatrixAmount23
-27,Oszillatoren,Osc 2 PWM Amount,cont,64,0.5,n/a,"0,63","0,64",–,"96,1",
-27,Oszillatoren,Osc 2 PWM Amount,cont,127,0.7480314960629921,n/a,"0,81","0,93",–,"94,9",MatrixAmount23
-33,Oszillatoren,Osc 3 Octave,cont,32,0.0,n/a,"0,71","0,93",–,"94,8",MatrixAmount27 MatrixDst27 MatrixOnOff27 MatrixSrc27 Osc3CoarsePitch
-33,Oszillatoren,Osc 3 Octave,cont,48,8.0,n/a,"0,79","0,73",–,"96,6",Osc3CoarsePitch
-33,Oszillatoren,Osc 3 Octave,cont,64,24.0,n/a,"0,85","0,93",–,"96,2",Osc3CoarsePitch
-33,Oszillatoren,Osc 3 Octave,cont,80,40.0,n/a,"0,91","0,85",–,"96,3",Osc3CoarsePitch
-34,Oszillatoren,Osc 3 Semitone,cont,52,0.0,n/a,"0,66","0,61",–,"96,9",Osc3CoarsePitch
-34,Oszillatoren,Osc 3 Semitone,cont,58,6.0,n/a,"0,83","0,73",–,"96,5",Osc3CoarsePitch
-34,Oszillatoren,Osc 3 Semitone,cont,64,12.0,n/a,"0,69","0,63",–,"96,7",
-34,Oszillatoren,Osc 3 Semitone,cont,76,24.0,n/a,"0,60","0,79",–,"95,2",Osc3CoarsePitch
-35,Oszillatoren,Osc 3 Detune,cont,0,0.24803149606299213,n/a,"0,67","0,64",–,"96,0",Osc3FinePitch
-35,Oszillatoren,Osc 3 Detune,cont,32,0.37401574803149606,n/a,"0,81","0,78",–,"96,4",Osc3FinePitch
-35,Oszillatoren,Osc 3 Detune,cont,64,0.5,n/a,"0,59","0,78",–,"94,5",
-35,Oszillatoren,Osc 3 Detune,cont,127,0.7480314960629921,n/a,"0,72","0,75",–,"95,2",Osc3FinePitch
-40,Oszillatoren,Osc 3 Shape,enum,0,6.0,n/a,"0,78","0,79",–,"96,1",
-40,Oszillatoren,Osc 3 Shape,enum,18,0.0,OK,"5,81","4,80","0,91","82,6",MatrixDst24 Osc3Type Osc3WavetableBrilliance Osc3WavetablePosition Osc3WavetableTable
-40,Oszillatoren,Osc 3 Shape,enum,36,0.0,defekt,"5,81","1,57",–,"62,5",MatrixDst24 Osc3Type Osc3WavetableBrilliance Osc3WavetablePosition Osc3WavetableTable
-40,Oszillatoren,Osc 3 Shape,enum,72,0.0,OK,"5,84","5,56","0,95","89,8",MatrixDst24 Osc3Type Osc3WavetableBrilliance Osc3WavetablePosition Osc3WavetableTable
-42,Oszillatoren,Osc 3 PWM Source,enum,0,111.0,n/a,"0,76","0,79",–,"95,7",MatrixDst24 MatrixDst25 MatrixSrc24 MatrixSrc25
-42,Oszillatoren,Osc 3 PWM Source,enum,8,4.0,n/a,"0,63","0,62",–,"95,9",MatrixSrc24
-42,Oszillatoren,Osc 3 PWM Source,enum,15,15.0,n/a,"0,66","0,74",–,"95,7",MatrixSrc24
-42,Oszillatoren,Osc 3 PWM Source,enum,30,40.0,n/a,"0,58","0,52",–,"95,8",MatrixSrc24
-43,Oszillatoren,Osc 3 PWM Amount,cont,0,111.0,n/a,"0,80","0,72",–,"96,3",MatrixDst24 MatrixDst25 MatrixSrc24 MatrixSrc25
-43,Oszillatoren,Osc 3 PWM Amount,cont,32,0.37401574803149606,n/a,"0,56","0,61",–,"96,6",MatrixAmount24
-43,Oszillatoren,Osc 3 PWM Amount,cont,64,0.5,n/a,"0,54","0,56",–,"97,0",
-43,Oszillatoren,Osc 3 PWM Amount,cont,127,0.7480314960629921,n/a,"0,70","0,78",–,"96,0",MatrixAmount24
-49,Oszillatoren,Osc 2 Sync to O3,cont,0,,n/a,"0,82","0,82",–,"95,8",
-49,Oszillatoren,Osc 2 Sync to O3,cont,32,1.0,n/a,"0,98","0,74",–,"95,2",Osc2WaveformSync
-49,Oszillatoren,Osc 2 Sync to O3,cont,64,1.0,n/a,"0,89","1,06",–,"94,9",Osc2WaveformSync
-49,Oszillatoren,Osc 2 Sync to O3,cont,127,1.0,n/a,"0,78","0,88",–,"95,5",Osc2WaveformSync
-50,Oszillatoren,Osc Pitch Source,enum,0,,n/a,"0,80","0,75",–,"95,9",
-50,Oszillatoren,Osc Pitch Source,enum,8,4.0,n/a,"0,58","0,57",–,"95,8",MatrixSrc4
-50,Oszillatoren,Osc Pitch Source,enum,15,15.0,n/a,"0,64","0,65",–,"96,1",MatrixSrc4
-50,Oszillatoren,Osc Pitch Source,enum,30,40.0,n/a,"0,95","0,99",–,"95,8",MatrixSrc4
-51,Oszillatoren,Osc Pitch Amount,cont,0,0.24803149606299213,Mismatch,"0,85","4,17",–,"63,0",MatrixAmount4
-51,Oszillatoren,Osc Pitch Amount,cont,32,0.37401574803149606,Mismatch,"1,05","2,17",–,"81,8",MatrixAmount4
-51,Oszillatoren,Osc Pitch Amount,cont,64,0.5,n/a,"0,51","0,54",–,"96,1",
-51,Oszillatoren,Osc Pitch Amount,cont,127,0.7480314960629921,Mismatch,"0,47","4,12",–,"65,8",MatrixAmount4
-53,Oszillatoren,Glide,cont,0,0.0,n/a,"0,74","0,76",–,"95,7",
-53,Oszillatoren,Glide,cont,32,1.0,n/a,"0,52","0,50",–,"96,5",GlideOnOff
-53,Oszillatoren,Glide,cont,64,1.0,n/a,"0,77","0,81",–,"96,0",GlideOnOff
-53,Oszillatoren,Glide,cont,127,1.0,n/a,"1,03","1,11",–,"95,2",GlideOnOff
-57,Mixer,Glide Rate,cont,0,0.04225747937841505,n/a,"0,96","0,87",–,"96,1",GlideRate
-57,Mixer,Glide Rate,cont,32,0.21464551237295096,n/a,"0,53","0,65",–,"96,3",GlideRate
-57,Mixer,Glide Rate,cont,64,0.3870335453674869,n/a,"0,46","0,77",–,"95,0",GlideRate
-57,Mixer,Glide Rate,cont,127,0.7264224853254795,n/a,"0,76","0,92",–,"95,0",GlideRate
-58,Mixer,Allocation/Unisono,cont,0,0.0,n/a,"0,72","0,68",–,"96,6",
-58,Mixer,Allocation/Unisono,cont,32,1.0,n/a,"1,16","1,60",–,"87,6",UnisonoCount
-58,Mixer,Allocation/Unisono,cont,64,2.0,n/a,"1,79","1,72",–,"81,6",UnisonoCount
-58,Mixer,Allocation/Unisono,cont,127,3.0,n/a,"1,58","1,16",–,"91,4",UnisonoCount
-59,Mixer,Unisono Detune,cont,0,0.0,n/a,"0,36","0,62",–,"97,0",
-59,Mixer,Unisono Detune,cont,32,0.25196850393700787,n/a,"0,59","0,64",–,"95,8",UnisonoDetune
-59,Mixer,Unisono Detune,cont,64,0.5039370078740157,n/a,"0,94","0,98",–,"96,2",UnisonoDetune
-59,Mixer,Unisono Detune,cont,127,1.0,n/a,"0,17","0,53",–,"96,8",UnisonoDetune
-61,Mixer,Mixer Osc 1 Level,cont,0,0.0,OK,"9,42","8,01","0,88","70,3",Osc1Vol
-61,Mixer,Mixer Osc 1 Level,cont,32,0.25196850393700787,OK,"3,10","3,21","0,99","95,0",Osc1Vol
-61,Mixer,Mixer Osc 1 Level,cont,64,0.5039370078740157,n/a,"1,54","1,59",–,"96,4",Osc1Vol
-61,Mixer,Mixer Osc 1 Level,cont,127,1.0,n/a,"0,24","0,36",–,"96,5",
-63,Mixer,Mixer Osc 2 Level,cont,0,0.0,n/a,"0,58","0,60",–,"95,7",Osc2Vol
-63,Mixer,Mixer Osc 2 Level,cont,32,0.25196850393700787,n/a,"0,19","0,42",–,"95,7",Osc2Vol
-63,Mixer,Mixer Osc 2 Level,cont,64,0.5039370078740157,n/a,"0,19","0,44",–,"96,0",Osc2Vol
-63,Mixer,Mixer Osc 2 Level,cont,127,1.0,n/a,"0,24","0,50",–,"95,6",
-65,Mixer,Mixer Osc 3 Level,cont,0,0.0,n/a,"0,53","0,60",–,"96,3",Osc3Vol
-65,Mixer,Mixer Osc 3 Level,cont,32,0.25196850393700787,n/a,"0,20","0,41",–,"95,8",Osc3Vol
-65,Mixer,Mixer Osc 3 Level,cont,64,0.5039370078740157,n/a,"0,28","0,60",–,"96,7",Osc3Vol
-65,Mixer,Mixer Osc 3 Level,cont,127,1.0,n/a,"0,88","1,03",–,"96,8",
-67,Mixer,Mixer Noise Level,cont,0,0.5,n/a,"0,63","0,85",–,"96,8",
-67,Mixer,Mixer Noise Level,cont,32,0.0,defekt,"2,13","1,46",–,"89,7",Osc3Pan Osc3Type Osc3Vol Osc3WaveformShape
-67,Mixer,Mixer Noise Level,cont,64,0.0,teilweise,"3,58","2,63","0,63","83,6",Osc3Pan Osc3Type Osc3Vol Osc3WaveformShape
-67,Mixer,Mixer Noise Level,cont,127,0.0,teilweise,"4,87","3,89","0,70","76,7",Osc3Pan Osc3Type Osc3WaveformShape
-71,Mixer,Mixer RingMod Level,cont,0,0.0,n/a,"0,94","1,04",–,"96,0",
-71,Mixer,Mixer RingMod Level,cont,32,0.25196850393700787,n/a,"0,16","0,28",–,"95,6",RingModOsc1ToOsc2
-71,Mixer,Mixer RingMod Level,cont,64,0.5039370078740157,n/a,"0,39","0,63",–,"96,4",RingModOsc1ToOsc2
-71,Mixer,Mixer RingMod Level,cont,127,1.0,n/a,"0,28","0,44",–,"96,0",RingModOsc1ToOsc2
-77,Filter,Filter 1 Type,enum,0,1.0,n/a,"0,64","0,78",–,"95,2",FilterState
-77,Filter,Filter 1 Type,enum,3,15.0,teilweise,"7,40","6,18","0,74","60,2",Filter12Type
-77,Filter,Filter 1 Type,enum,6,9.0,OK,"7,97","8,10","0,87","66,0",Filter12Type
-77,Filter,Filter 1 Type,enum,11,0.0,n/a,"0,22","0,30",–,"95,6",
-78,Filter,Filter 1 Cutoff,cont,0,0.037277639881395874,OK,"11,96","7,77","0,91","61,4",Filter1CutOff
-78,Filter,Filter 1 Cutoff,cont,32,0.27428580495489746,OK,"9,33","7,28","0,90","73,2",Filter1CutOff
-78,Filter,Filter 1 Cutoff,cont,64,0.511293970028399,OK,"8,11","8,00","0,99","95,6",Filter1CutOff
-78,Filter,Filter 1 Cutoff,cont,127,0.9779037950168553,n/a,"0,54","0,71",–,"96,7",
-80,Filter,Filter 1 Resonance,cont,0,0.0,n/a,"0,53","0,76",–,"96,7",
-80,Filter,Filter 1 Resonance,cont,32,0.25196850393700787,n/a,"0,94","0,95",–,"96,0",Filter1Reso
-80,Filter,Filter 1 Resonance,cont,64,0.5039370078740157,n/a,"0,33","0,70",–,"95,9",Filter1Reso
-80,Filter,Filter 1 Resonance,cont,127,1.0,n/a,"0,25","1,65",–,"93,0",Filter1Reso
-81,Filter,Filter 1 Drive,cont,0,3.0,n/a,"0,79","0,87",–,"95,0",
-81,Filter,Filter 1 Drive,cont,32,0.25196850393700787,n/a,"1,70","0,51",–,"93,4",DriveAmount DriveDryWet DriveGain DriveType FX1Type
-81,Filter,Filter 1 Drive,cont,64,0.5039370078740157,defekt,"2,39","1,67",–,"90,5",DriveAmount DriveDryWet DriveGain DriveType FX1Type
-81,Filter,Filter 1 Drive,cont,127,1.0,OK,"3,03","3,13","0,97","94,5",DriveAmount DriveDryWet DriveGain DriveType FX1Type
-86,Filter,Filter 1 Keytrack,cont,0,0.0,n/a,"0,22","0,40",–,"96,1",Filter1Keytrack
-86,Filter,Filter 1 Keytrack,cont,32,0.25196850393700787,n/a,"0,46","0,50",–,"95,4",Filter1Keytrack
-86,Filter,Filter 1 Keytrack,cont,64,0.5039370078740157,n/a,"0,14","0,38",–,"94,5",
+variante,sdata,block,parameter,typ,wert,iridium_wert,status,wirkung_blofeld,wirkung_iridium,cosinus,paar_score,iridium_keys
+clean,17,Oszillatoren,Osc 2 Octave,cont,32,0.0,OK,"4,78","4,30","0,90","91,2",MatrixAmount21 MatrixDst21 MatrixOnOff21 MatrixSrc21 Osc2CoarsePitch
+clean,17,Oszillatoren,Osc 2 Octave,cont,48,8.0,OK,"4,60","4,69",–,"91,8",Osc2CoarsePitch
+clean,17,Oszillatoren,Osc 2 Octave,cont,64,24.0,n/a,"1,12","1,56",–,"84,2",
+clean,17,Oszillatoren,Osc 2 Octave,cont,80,40.0,OK,"2,06","1,96",–,"94,9",Osc2CoarsePitch
+clean,18,Oszillatoren,Osc 2 Semitone,cont,52,12.0,OK,"4,75","4,75",–,"89,8",Osc2CoarsePitch
+clean,18,Oszillatoren,Osc 2 Semitone,cont,58,18.0,OK,"3,50","3,40",–,"94,4",Osc2CoarsePitch
+clean,18,Oszillatoren,Osc 2 Semitone,cont,64,24.0,n/a,"1,73","0,86",–,"86,8",
+clean,18,Oszillatoren,Osc 2 Semitone,cont,76,36.0,n/a,"1,22","1,73",–,"90,3",Osc2CoarsePitch
+clean,19,Oszillatoren,Osc 2 Detune,cont,0,0.0,n/a,"2,38","2,09",–,"94,0",Osc2FinePitch
+clean,19,Oszillatoren,Osc 2 Detune,cont,32,0.24803149606299213,n/a,"2,09","1,60",–,"94,9",Osc2FinePitch
+clean,19,Oszillatoren,Osc 2 Detune,cont,64,0.5,n/a,"1,78","1,52",–,"83,2",
+clean,19,Oszillatoren,Osc 2 Detune,cont,127,0.9960629921259843,n/a,"1,99","1,71",–,"94,3",Osc2FinePitch
+clean,24,Oszillatoren,Osc 2 Shape,enum,0,6.0,n/a,"1,16","0,98",–,"91,3",Osc2Type
+clean,24,Oszillatoren,Osc 2 Shape,enum,18,0.0,n/a,"1,47","1,17",–,"89,4",MatrixAmount21 MatrixDst21 MatrixOnOff21 MatrixSrc21 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+clean,24,Oszillatoren,Osc 2 Shape,enum,36,0.0,n/a,"1,14","0,60",–,"93,8",MatrixAmount21 MatrixDst21 MatrixOnOff21 MatrixSrc21 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+clean,24,Oszillatoren,Osc 2 Shape,enum,72,0.0,n/a,"1,62","1,39",–,"91,5",MatrixAmount21 MatrixDst21 MatrixOnOff21 MatrixSrc21 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+clean,33,Oszillatoren,Osc 3 Octave,cont,32,0.0,OK,"4,84","4,37","0,90","89,9",MatrixAmount21 MatrixDst21 MatrixOnOff21 MatrixSrc21 Osc3CoarsePitch
+clean,33,Oszillatoren,Osc 3 Octave,cont,48,8.0,OK,"4,78","4,88",–,"93,5",Osc3CoarsePitch
+clean,33,Oszillatoren,Osc 3 Octave,cont,64,24.0,n/a,"1,36","1,50",–,"89,3",Osc3CoarsePitch
+clean,33,Oszillatoren,Osc 3 Octave,cont,80,40.0,OK,"2,37","2,09",–,"91,5",Osc3CoarsePitch
+clean,34,Oszillatoren,Osc 3 Semitone,cont,52,0.0,n/a,"1,43","1,10",–,"93,5",Osc3CoarsePitch
+clean,34,Oszillatoren,Osc 3 Semitone,cont,58,6.0,teilweise,"2,98","2,69",–,"93,1",Osc3CoarsePitch
+clean,34,Oszillatoren,Osc 3 Semitone,cont,64,12.0,n/a,"1,68","0,86",–,"88,2",
+clean,34,Oszillatoren,Osc 3 Semitone,cont,76,24.0,n/a,"1,48","1,44",–,"87,2",Osc3CoarsePitch
+clean,35,Oszillatoren,Osc 3 Detune,cont,0,0.0,n/a,"2,23","1,85",–,"94,0",Osc3FinePitch
+clean,35,Oszillatoren,Osc 3 Detune,cont,32,0.24803149606299213,n/a,"1,77","1,30",–,"89,2",Osc3FinePitch
+clean,35,Oszillatoren,Osc 3 Detune,cont,64,0.5,n/a,"1,27","1,12",–,"87,8",
+clean,35,Oszillatoren,Osc 3 Detune,cont,127,0.9960629921259843,n/a,"2,13","1,51",–,"90,6",Osc3FinePitch
+clean,40,Oszillatoren,Osc 3 Shape,enum,0,6.0,n/a,"0,79","1,46",–,"84,0",Osc3Type
+clean,40,Oszillatoren,Osc 3 Shape,enum,18,0.5,n/a,"1,35","1,35",–,"92,9",MatrixAmount21 MatrixDst21 MatrixOnOff21 MatrixSrc21 Osc3WaveformShape
+clean,40,Oszillatoren,Osc 3 Shape,enum,36,0.5,n/a,"1,55","1,15",–,"92,7",MatrixAmount21 MatrixDst21 MatrixOnOff21 MatrixSrc21 Osc3WaveformShape
+clean,40,Oszillatoren,Osc 3 Shape,enum,72,0.5,n/a,"1,58","1,35",–,"91,0",MatrixAmount21 MatrixDst21 MatrixOnOff21 MatrixSrc21 Osc3WaveformShape
+clean,49,Oszillatoren,Osc 2 Sync to O3,cont,0,,n/a,"1,48","1,21",–,"92,8",
+clean,49,Oszillatoren,Osc 2 Sync to O3,cont,32,1.0,n/a,"1,54","1,03",–,"93,2",
+clean,49,Oszillatoren,Osc 2 Sync to O3,cont,64,1.0,n/a,"1,67","1,40",–,"81,1",
+clean,49,Oszillatoren,Osc 2 Sync to O3,cont,127,1.0,n/a,"1,56","1,05",–,"92,5",
+clean,63,Mixer,Mixer Osc 2 Level,cont,0,0.0,n/a,"1,35","0,71",–,"92,9",Osc2Vol
+clean,63,Mixer,Mixer Osc 2 Level,cont,32,0.25196850393700787,n/a,"1,29","1,16",–,"93,3",Osc2Vol
+clean,63,Mixer,Mixer Osc 2 Level,cont,64,0.5039370078740157,n/a,"1,36","0,96",–,"93,9",Osc2Vol
+clean,63,Mixer,Mixer Osc 2 Level,cont,127,1.0,n/a,"1,62","0,99",–,"85,8",Osc2Vol
+clean,65,Mixer,Mixer Osc 3 Level,cont,0,0.0,n/a,"1,02","1,28",–,"88,6",Osc3Vol
+clean,65,Mixer,Mixer Osc 3 Level,cont,32,0.25196850393700787,n/a,"1,03","1,16",–,"89,7",Osc3Vol
+clean,65,Mixer,Mixer Osc 3 Level,cont,64,0.5039370078740157,n/a,"1,27","0,95",–,"87,0",Osc3Vol
+clean,65,Mixer,Mixer Osc 3 Level,cont,127,1.0,n/a,"1,05","1,13",–,"92,3",Osc3Vol
+clean,71,Mixer,Mixer RingMod Level,cont,0,0.0,n/a,"1,61","1,26",–,"91,0",
+clean,71,Mixer,Mixer RingMod Level,cont,32,0.25196850393700787,n/a,"1,77","1,37",–,"90,2",RingModOsc1ToOsc2
+clean,71,Mixer,Mixer RingMod Level,cont,64,0.5039370078740157,n/a,"1,55","1,95",–,"88,3",RingModOsc1ToOsc2
+clean,71,Mixer,Mixer RingMod Level,cont,127,1.0,n/a,"1,72","1,50",–,"85,9",RingModOsc1ToOsc2
+clean,98,Filter,Filter 2 Cutoff,cont,0,0.037277639881395874,n/a,"1,04","1,74",–,"90,4",Filter2CutOff
+clean,98,Filter,Filter 2 Cutoff,cont,32,0.27428580495489746,n/a,"1,03","1,67",–,"91,5",Filter2CutOff
+clean,98,Filter,Filter 2 Cutoff,cont,64,0.511293970028399,n/a,"1,02","1,86",–,"86,3",Filter2CutOff
+clean,98,Filter,Filter 2 Cutoff,cont,127,0.9779037950168553,n/a,"1,02","1,56",–,"91,3",Filter2CutOff
+clean,100,Filter,Filter 2 Resonance,cont,0,0.0,n/a,"0,82","1,16",–,"90,7",Filter2Reso
+clean,100,Filter,Filter 2 Resonance,cont,32,0.25196850393700787,n/a,"0,84","1,65",–,"89,5",Filter2Reso
+clean,100,Filter,Filter 2 Resonance,cont,64,0.5039370078740157,n/a,"0,84","1,34",–,"90,5",Filter2Reso
+clean,100,Filter,Filter 2 Resonance,cont,127,1.0,n/a,"1,14","1,86",–,"84,5",Filter2Reso
+clean,106,Filter,Filter 2 Keytrack,cont,0,0.0,n/a,"0,83","0,99",–,"92,2",Filter2Keytrack
+clean,106,Filter,Filter 2 Keytrack,cont,32,0.25196850393700787,n/a,"0,72","1,07",–,"91,0",Filter2Keytrack
+clean,106,Filter,Filter 2 Keytrack,cont,64,0.5039370078740157,n/a,"1,13","1,34",–,"86,9",
+clean,106,Filter,Filter 2 Keytrack,cont,127,1.0,n/a,"1,02","1,17",–,"84,3",Filter2Keytrack
+clean,117,Filter,Filter Routing,cont,0,,n/a,"0,64","1,06",–,"86,7",
+clean,117,Filter,Filter Routing,cont,1,0.0,OK,"3,83","3,86","0,93","87,4",DigiFormerAmount DigiFormerColor DigiFormerType Filter2State FilterFormerRouting FilterLink MatrixAmount5 MatrixDst5 MatrixOnOff5 MatrixSrc5 Osc2Destination Osc3Destination
+clean,199,Hüllkurven,Filter Envelope Attack,cont,0,0.0,n/a,"0,70","1,05",–,"88,6",
+clean,199,Hüllkurven,Filter Envelope Attack,cont,32,0.25196850393700787,n/a,"0,77","1,31",–,"89,3",Filter1EnvAttack Filter2EnvAttack
+clean,199,Hüllkurven,Filter Envelope Attack,cont,64,0.5039370078740157,n/a,"0,71","0,94",–,"88,2",Filter1EnvAttack Filter2EnvAttack
+clean,199,Hüllkurven,Filter Envelope Attack,cont,127,1.0,n/a,"0,95","1,28",–,"86,3",Filter1EnvAttack Filter2EnvAttack
+clean,201,Hüllkurven,Filter Envelope Decay,cont,0,0.0,n/a,"0,68","0,72",–,"84,8",Filter1EnvDecay Filter2EnvDecay
+clean,201,Hüllkurven,Filter Envelope Decay,cont,32,0.25196850393700787,n/a,"0,96","1,19",–,"85,1",Filter1EnvDecay Filter2EnvDecay
+clean,201,Hüllkurven,Filter Envelope Decay,cont,64,0.5039370078740157,n/a,"0,76","1,46",–,"90,9",Filter1EnvDecay Filter2EnvDecay
+clean,201,Hüllkurven,Filter Envelope Decay,cont,127,1.0,n/a,"0,73","1,78",–,"86,6",Filter1EnvDecay Filter2EnvDecay
+clean,202,Hüllkurven,Filter Envelope Sustain,cont,0,0.0,n/a,"0,84","1,34",–,"86,1",
+clean,202,Hüllkurven,Filter Envelope Sustain,cont,32,0.25196850393700787,n/a,"0,78","1,16",–,"88,7",Filter1EnvSustain Filter2EnvSustain
+clean,202,Hüllkurven,Filter Envelope Sustain,cont,64,0.5039370078740157,n/a,"0,77","1,13",–,"87,6",Filter1EnvSustain Filter2EnvSustain
+clean,202,Hüllkurven,Filter Envelope Sustain,cont,127,1.0,n/a,"0,70","1,59",–,"91,3",Filter1EnvSustain Filter2EnvSustain
+f2,97,Filter,Filter 2 Type,enum,0,2.0,Mismatch,"6,17","6,30","0,25","58,6",Filter2State FilterLink
+f2,97,Filter,Filter 2 Type,enum,3,,defekt,"5,65","0,56",–,"61,7",
+f2,97,Filter,Filter 2 Type,enum,6,,defekt,"8,95","0,39",–,"38,3",
+f2,97,Filter,Filter 2 Type,enum,11,,n/a,"0,62","0,34",–,"84,7",
+f2,98,Filter,Filter 2 Cutoff,cont,0,0.037277639881395874,teilweise,"10,45","5,81","0,77","82,9",Filter2CutOff
+f2,98,Filter,Filter 2 Cutoff,cont,32,0.27428580495489746,OK,"6,90","4,16","0,92","89,4",Filter2CutOff
+f2,98,Filter,Filter 2 Cutoff,cont,64,0.511293970028399,teilweise,"4,54","2,16","0,74","83,1",Filter2CutOff
+f2,98,Filter,Filter 2 Cutoff,cont,127,0.9779037950168553,OK,"6,32","4,85","0,97","97,0",Filter2CutOff
+f2,100,Filter,Filter 2 Resonance,cont,0,0.0,n/a,"0,69","0,34",–,"86,3",Filter2Reso
+f2,100,Filter,Filter 2 Resonance,cont,32,0.25196850393700787,n/a,"0,54","0,43",–,"84,3",Filter2Reso
+f2,100,Filter,Filter 2 Resonance,cont,64,0.5039370078740157,n/a,"1,48","1,08",–,"84,7",Filter2Reso
+f2,100,Filter,Filter 2 Resonance,cont,127,1.0,Mismatch,"7,32","4,84","0,22","57,1",Filter2Reso
+f2,101,Filter,Filter 2 Drive,cont,0,3.0,n/a,"0,33","0,18",–,"85,9",
+f2,101,Filter,Filter 2 Drive,cont,32,0.25196850393700787,defekt,"2,10","0,43",–,"88,7",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+f2,101,Filter,Filter 2 Drive,cont,64,0.5039370078740157,defekt,"5,53","1,65",–,"83,3",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+f2,101,Filter,Filter 2 Drive,cont,127,1.0,OK,"7,11","5,66","0,97","95,0",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+f2,106,Filter,Filter 2 Keytrack,cont,0,0.0,n/a,"1,91","0,27",–,"90,0",Filter2Keytrack
+f2,106,Filter,Filter 2 Keytrack,cont,32,0.25196850393700787,n/a,"1,46","0,64",–,"88,5",Filter2Keytrack
+f2,106,Filter,Filter 2 Keytrack,cont,64,0.5039370078740157,n/a,"0,20","0,33",–,"85,0",
+f2,106,Filter,Filter 2 Keytrack,cont,127,1.0,n/a,"1,80","0,23",–,"78,1",Filter2Keytrack
+f2,107,Filter,Filter 2 Env Amount,cont,0,0.0,n/a,"0,90","0,71",–,"86,2",Filter2EnvAmount
+f2,107,Filter,Filter 2 Env Amount,cont,32,0.25196850393700787,n/a,"0,35","0,19",–,"86,7",Filter2EnvAmount
+f2,107,Filter,Filter 2 Env Amount,cont,64,0.5039370078740157,n/a,"0,23","0,39",–,"86,0",
+f2,107,Filter,Filter 2 Env Amount,cont,127,1.0,n/a,"0,76","0,47",–,"86,0",Filter2EnvAmount
+f2,108,Filter,Filter 2 Env Velocity,cont,0,0.0,n/a,"0,30","0,32",–,"86,7",Filter2VeloAmount
+f2,108,Filter,Filter 2 Env Velocity,cont,32,0.25196850393700787,n/a,"0,26","0,25",–,"85,6",Filter2VeloAmount
+f2,108,Filter,Filter 2 Env Velocity,cont,64,0.5039370078740157,n/a,"0,53","0,44",–,"85,8",
+f2,108,Filter,Filter 2 Env Velocity,cont,127,1.0,n/a,"0,54","0,44",–,"85,5",Filter2VeloAmount
+f2,117,Filter,Filter Routing,cont,0,,n/a,"0,80","0,53",–,"86,1",
+f2,117,Filter,Filter Routing,cont,1,0.0,n/a,"0,81","1,66",–,"96,0",DigiFormerAmount DigiFormerColor DigiFormerType Filter2State FilterFormerRouting FilterLink MatrixAmount5 MatrixDst5 MatrixOnOff5 MatrixSrc5 Osc1Destination Osc2Destination Osc3Destination
+f2_envamount,107,Filter,Filter 2 Env Amount,cont,0,0.0,Mismatch,"1,88","6,42",–,–,Filter2EnvAmount
+f2_envamount,107,Filter,Filter 2 Env Amount,cont,32,0.25196850393700787,OK,"4,42","2,87","0,99",–,Filter2EnvAmount
+f2_envamount,107,Filter,Filter 2 Env Amount,cont,64,0.5039370078740157,n/a,"0,09","0,00",–,–,
+f2_envamount,107,Filter,Filter 2 Env Amount,cont,127,1.0,n/a,"1,83","1,81",–,–,Filter2EnvAmount
+f2_keytrack,106,Filter,Filter 2 Keytrack,cont,0,0.0,OK,"2,87","2,17","0,93",–,Filter2Keytrack
+f2_keytrack,106,Filter,Filter 2 Keytrack,cont,32,0.25196850393700787,n/a,"1,52","1,00",–,–,Filter2Keytrack
+f2_keytrack,106,Filter,Filter 2 Keytrack,cont,64,0.5039370078740157,n/a,"0,21","0,24",–,–,
+f2_keytrack,106,Filter,Filter 2 Keytrack,cont,127,1.0,defekt,"2,81","1,89",–,–,Filter2Keytrack
+f2_velocity,108,Filter,Filter 2 Env Velocity,cont,0,0.0,teilweise,"8,55","7,34","0,58",–,Filter2VeloAmount
+f2_velocity,108,Filter,Filter 2 Env Velocity,cont,32,0.25196850393700787,teilweise,"6,47","2,84","0,50",–,Filter2VeloAmount
+f2_velocity,108,Filter,Filter 2 Env Velocity,cont,64,0.5039370078740157,n/a,"0,20","0,28",–,–,
+f2_velocity,108,Filter,Filter 2 Env Velocity,cont,127,1.0,OK,"6,13","4,11","0,90",–,Filter2VeloAmount
+fe,86,Filter,Filter 1 Keytrack,cont,0,0.0,n/a,"0,65","0,43",–,"98,0",Filter1Keytrack
+fe,86,Filter,Filter 1 Keytrack,cont,32,0.25196850393700787,n/a,"0,51","0,49",–,"97,4",Filter1Keytrack
+fe,86,Filter,Filter 1 Keytrack,cont,64,0.5039370078740157,n/a,"0,44","0,35",–,"96,8",
+fe,86,Filter,Filter 1 Keytrack,cont,127,1.0,n/a,"1,21","0,49",–,"93,0",Filter1Keytrack
+fe,87,Filter,Filter 1 Env Amount,cont,0,0.0,OK,"10,99","6,90","0,82","82,0",Filter1EnvAmount
+fe,87,Filter,Filter 1 Env Amount,cont,32,0.25196850393700787,OK,"9,28","6,52","0,91","88,9",Filter1EnvAmount
+fe,87,Filter,Filter 1 Env Amount,cont,64,0.5039370078740157,OK,"7,91","6,11","0,99","90,0",Filter1EnvAmount
+fe,87,Filter,Filter 1 Env Amount,cont,127,1.0,n/a,"0,67","0,37",–,"96,7",Filter1EnvAmount
+fe,199,Hüllkurven,Filter Envelope Attack,cont,0,0.0,n/a,"0,76","0,53",–,"96,7",
+fe,199,Hüllkurven,Filter Envelope Attack,cont,32,0.25196850393700787,n/a,"0,29","0,31",–,"97,3",Filter1EnvAttack Filter2EnvAttack
+fe,199,Hüllkurven,Filter Envelope Attack,cont,64,0.5039370078740157,n/a,"0,77","0,97",–,"94,7",Filter1EnvAttack Filter2EnvAttack
+fe,199,Hüllkurven,Filter Envelope Attack,cont,127,1.0,OK,"8,01","6,34","0,99","89,9",Filter1EnvAttack Filter2EnvAttack
+fe,201,Hüllkurven,Filter Envelope Decay,cont,0,0.0,n/a,"0,59","0,50",–,"97,0",Filter1EnvDecay Filter2EnvDecay
+fe,201,Hüllkurven,Filter Envelope Decay,cont,32,0.25196850393700787,n/a,"0,36","0,27",–,"97,6",Filter1EnvDecay Filter2EnvDecay
+fe,201,Hüllkurven,Filter Envelope Decay,cont,64,0.5039370078740157,n/a,"0,53","0,35",–,"96,4",Filter1EnvDecay Filter2EnvDecay
+fe,201,Hüllkurven,Filter Envelope Decay,cont,127,1.0,n/a,"0,69","0,42",–,"96,6",Filter1EnvDecay Filter2EnvDecay
+fe,202,Hüllkurven,Filter Envelope Sustain,cont,0,0.0,OK,"7,42","6,12","0,99","89,5",Filter1EnvSustain Filter2EnvSustain
+fe,202,Hüllkurven,Filter Envelope Sustain,cont,32,0.25196850393700787,OK,"6,04","5,61","1,00","96,0",Filter1EnvSustain Filter2EnvSustain
+fe,202,Hüllkurven,Filter Envelope Sustain,cont,64,0.5039370078740157,OK,"4,01","4,16","1,00","97,8",Filter1EnvSustain Filter2EnvSustain
+fe,202,Hüllkurven,Filter Envelope Sustain,cont,127,1.0,n/a,"0,71","0,38",–,"97,0",Filter1EnvSustain Filter2EnvSustain
+fe,205,Hüllkurven,Filter Envelope Release,cont,0,0.0,n/a,"0,40","0,31",–,"97,6",
+fe,205,Hüllkurven,Filter Envelope Release,cont,32,0.25196850393700787,n/a,"0,81","0,49",–,"96,7",Filter1EnvRelease Filter2EnvRelease
+fe,205,Hüllkurven,Filter Envelope Release,cont,64,0.5039370078740157,n/a,"0,32","0,20",–,"97,6",Filter1EnvRelease Filter2EnvRelease
+fe,205,Hüllkurven,Filter Envelope Release,cont,127,1.0,n/a,"0,50","0,23",–,"97,2",Filter1EnvRelease Filter2EnvRelease
+fe4,199,Hüllkurven,Filter Envelope Attack,cont,0,0.0,n/a,"0,34","0,32",–,"97,6",
+fe4,199,Hüllkurven,Filter Envelope Attack,cont,32,0.25196850393700787,n/a,"0,15","0,35",–,"97,1",Filter1EnvAttack Filter2EnvAttack
+fe4,199,Hüllkurven,Filter Envelope Attack,cont,64,0.5039370078740157,n/a,"0,46","1,23",–,"94,0",Filter1EnvAttack Filter2EnvAttack
+fe4,199,Hüllkurven,Filter Envelope Attack,cont,127,1.0,OK,"6,15","5,31","0,99","93,1",Filter1EnvAttack Filter2EnvAttack
+fe4,201,Hüllkurven,Filter Envelope Decay,cont,0,0.0,n/a,"0,33","0,29",–,"97,2",Filter1EnvDecay Filter2EnvDecay
+fe4,201,Hüllkurven,Filter Envelope Decay,cont,32,0.25196850393700787,n/a,"0,78","0,69",–,"98,3",Filter1EnvDecay Filter2EnvDecay
+fe4,201,Hüllkurven,Filter Envelope Decay,cont,64,0.5039370078740157,n/a,"0,20","1,00",–,"94,9",Filter1EnvDecay Filter2EnvDecay
+fe4,201,Hüllkurven,Filter Envelope Decay,cont,127,1.0,n/a,"1,33","1,64",–,"97,1",Filter1EnvDecay Filter2EnvDecay
+fe4,202,Hüllkurven,Filter Envelope Sustain,cont,0,0.0,OK,"6,63","5,53","0,97","90,9",Filter1EnvSustain Filter2EnvSustain
+fe4,202,Hüllkurven,Filter Envelope Sustain,cont,32,0.25196850393700787,OK,"4,61","4,16","0,99","97,7",Filter1EnvSustain Filter2EnvSustain
+fe4,202,Hüllkurven,Filter Envelope Sustain,cont,64,0.5039370078740157,n/a,"0,65","0,85",–,"98,2",Filter1EnvSustain Filter2EnvSustain
+fe4,202,Hüllkurven,Filter Envelope Sustain,cont,127,1.0,n/a,"1,38","1,78",–,"96,7",Filter1EnvSustain Filter2EnvSustain
+fe4_release,205,Hüllkurven,Filter Envelope Release,cont,0,0.0,n/a,"1,20","1,37",–,–,
+fe4_release,205,Hüllkurven,Filter Envelope Release,cont,32,0.25196850393700787,n/a,"1,38","1,46",–,–,Filter1EnvRelease Filter2EnvRelease
+fe4_release,205,Hüllkurven,Filter Envelope Release,cont,64,0.5039370078740157,n/a,"1,70","3,09",–,–,Filter1EnvRelease Filter2EnvRelease
+fe4_release,205,Hüllkurven,Filter Envelope Release,cont,127,1.0,OK,"6,20","5,39","0,93",–,Filter1EnvRelease Filter2EnvRelease
+fe4b,199,Hüllkurven,Filter Envelope Attack,cont,0,0.0,n/a,"0,29","0,48",–,"86,9",
+fe4b,199,Hüllkurven,Filter Envelope Attack,cont,32,0.25196850393700787,Mismatch,"0,25","3,63",–,"77,7",Filter1EnvAttack Filter2EnvAttack
+fe4b,199,Hüllkurven,Filter Envelope Attack,cont,64,0.5039370078740157,Mismatch,"0,52","3,98",–,"65,3",Filter1EnvAttack Filter2EnvAttack
+fe4b,199,Hüllkurven,Filter Envelope Attack,cont,127,1.0,n/a,"1,72","1,31",–,"91,7",Filter1EnvAttack Filter2EnvAttack
+fe4b,201,Hüllkurven,Filter Envelope Decay,cont,0,0.0,n/a,"0,33","1,10",–,"87,0",Filter1EnvDecay Filter2EnvDecay
+fe4b,201,Hüllkurven,Filter Envelope Decay,cont,32,0.25196850393700787,n/a,"0,46","1,11",–,"87,1",Filter1EnvDecay Filter2EnvDecay
+fe4b,201,Hüllkurven,Filter Envelope Decay,cont,64,0.5039370078740157,Mismatch,"0,75","3,48",–,"79,1",Filter1EnvDecay Filter2EnvDecay
+fe4b,201,Hüllkurven,Filter Envelope Decay,cont,127,1.0,OK,"8,72","6,58","0,97","96,6",Filter1EnvDecay Filter2EnvDecay
+fe4b,202,Hüllkurven,Filter Envelope Sustain,cont,0,0.0,n/a,"0,27","1,13",–,"83,9",
+fe4b,202,Hüllkurven,Filter Envelope Sustain,cont,32,0.25196850393700787,OK,"4,74","3,61","0,82","96,0",Filter1EnvSustain Filter2EnvSustain
+fe4b,202,Hüllkurven,Filter Envelope Sustain,cont,64,0.5039370078740157,OK,"8,18","6,04","0,97","98,0",Filter1EnvSustain Filter2EnvSustain
+fe4b,202,Hüllkurven,Filter Envelope Sustain,cont,127,1.0,OK,"8,64","6,29","0,97","96,6",Filter1EnvSustain Filter2EnvSustain
+fe_decay,201,Hüllkurven,Filter Envelope Decay,cont,0,0.0,n/a,"0,43","0,19",–,"98,0",Filter1EnvDecay Filter2EnvDecay
+fe_decay,201,Hüllkurven,Filter Envelope Decay,cont,32,0.25196850393700787,n/a,"0,47","0,19",–,"97,6",Filter1EnvDecay Filter2EnvDecay
+fe_decay,201,Hüllkurven,Filter Envelope Decay,cont,64,0.5039370078740157,n/a,"0,42","0,88",–,"95,0",Filter1EnvDecay Filter2EnvDecay
+fe_decay,201,Hüllkurven,Filter Envelope Decay,cont,127,1.0,OK,"2,22","2,33","0,97","97,2",Filter1EnvDecay Filter2EnvDecay
+fe_rel,205,Hüllkurven,Filter Envelope Release,cont,0,0.0,n/a,"0,52","0,12",–,"97,4",
+fe_rel,205,Hüllkurven,Filter Envelope Release,cont,32,0.25196850393700787,n/a,"0,43","0,16",–,"97,0",Filter1EnvRelease Filter2EnvRelease
+fe_rel,205,Hüllkurven,Filter Envelope Release,cont,64,0.5039370078740157,n/a,"0,64","0,24",–,"96,3",Filter1EnvRelease Filter2EnvRelease
+fe_rel,205,Hüllkurven,Filter Envelope Release,cont,127,1.0,n/a,"0,25","0,39",–,"97,5",Filter1EnvRelease Filter2EnvRelease
+fx,129,Effekte,Effect 1 Mix,cont,0,0.0,defekt,"3,28","2,81",–,"87,5",ChorusDryWet
+fx,129,Effekte,Effect 1 Mix,cont,32,0.25196850393700787,n/a,"2,02","1,57",–,"87,0",ChorusDryWet
+fx,129,Effekte,Effect 1 Mix,cont,64,0.5039370078740157,n/a,"1,68","1,59",–,"90,3",ChorusDryWet
+fx,129,Effekte,Effect 1 Mix,cont,127,1.0,n/a,"1,94","1,12",–,"91,7",ChorusDryWet
+fx,130,Effekte,Effect 1 Parameter 1,cont,0,0.0,teilweise,"2,95","2,86","0,67","90,4",ChorusSpeed
+fx,130,Effekte,Effect 1 Parameter 1,cont,32,0.25196850393700787,n/a,"1,40","1,73",–,"94,1",ChorusSpeed
+fx,130,Effekte,Effect 1 Parameter 1,cont,64,0.5039370078740157,n/a,"1,90","2,27",–,"91,9",ChorusSpeed
+fx,130,Effekte,Effect 1 Parameter 1,cont,127,1.0,Mismatch,"2,57","4,50",–,"79,1",ChorusSpeed
+fx,131,Effekte,Effect 1 Parameter 2,cont,0,0.0,teilweise,"3,13","3,30","0,53","85,5",ChorusDepth
+fx,131,Effekte,Effect 1 Parameter 2,cont,32,0.25196850393700787,n/a,"2,08","2,62",–,"89,2",ChorusDepth
+fx,131,Effekte,Effect 1 Parameter 2,cont,64,0.5039370078740157,n/a,"1,73","1,87",–,"93,4",ChorusDepth
+fx,131,Effekte,Effect 1 Parameter 2,cont,127,1.0,n/a,"1,28","2,83",–,"83,5",ChorusDepth
+fx,145,Effekte,Effect 2 Mix,cont,0,0.0,n/a,"1,64","1,08",–,"92,3",
+fx,145,Effekte,Effect 2 Mix,cont,32,,n/a,"1,16","1,58",–,"95,2",MatrixAmount5
+fx,145,Effekte,Effect 2 Mix,cont,64,0.5039370078740157,n/a,"1,58","1,21",–,"93,0",
+fx,145,Effekte,Effect 2 Mix,cont,127,,n/a,"1,60","1,37",–,"85,1",MatrixAmount5
+fx,147,Effekte,Effect 2 Parameter 2,cont,0,0.0,n/a,"1,44","1,91",–,"94,9",ReverbColor
+fx,147,Effekte,Effect 2 Parameter 2,cont,32,0.25196850393700787,n/a,"0,90","1,07",–,"92,5",ReverbColor
+fx,147,Effekte,Effect 2 Parameter 2,cont,64,0.5039370078740157,n/a,"1,15","1,13",–,"92,5",
+fx,147,Effekte,Effect 2 Parameter 2,cont,127,1.0,n/a,"1,69","1,11",–,"91,6",ReverbColor
+fx,148,Effekte,Effect 2 Parameter 3,cont,0,0.0,n/a,"1,45","1,47",–,"93,0",ReverbTime
+fx,148,Effekte,Effect 2 Parameter 3,cont,32,0.25196850393700787,n/a,"1,23","1,40",–,"94,3",ReverbTime
+fx,148,Effekte,Effect 2 Parameter 3,cont,64,0.5039370078740157,n/a,"1,43","1,53",–,"93,2",ReverbTime
+fx,148,Effekte,Effect 2 Parameter 3,cont,127,1.0,n/a,"2,36","1,73",–,"88,4",ReverbTime
+fx1,129,Effekte,Effect 1 Mix,cont,0,0.0,OK,"2,35","3,23","0,90","98,4",ChorusDryWet
+fx1,129,Effekte,Effect 1 Mix,cont,32,0.25196850393700787,n/a,"1,27","1,45",–,"94,1",ChorusDryWet
+fx1,129,Effekte,Effect 1 Mix,cont,64,0.5039370078740157,n/a,"1,22","1,08",–,"94,3",ChorusDryWet
+fx1,129,Effekte,Effect 1 Mix,cont,127,1.0,n/a,"0,89","1,57",–,"94,6",
+fx1,130,Effekte,Effect 1 Parameter 1,cont,0,0.0,Mismatch,"2,81","3,79","0,13","82,6",ChorusSpeed
+fx1,130,Effekte,Effect 1 Parameter 1,cont,32,0.25196850393700787,n/a,"1,38","1,79",–,"95,3",ChorusSpeed
+fx1,130,Effekte,Effect 1 Parameter 1,cont,64,0.5039370078740157,Mismatch,"1,87","2,77",–,"88,0",ChorusSpeed
+fx1,130,Effekte,Effect 1 Parameter 1,cont,127,1.0,teilweise,"2,95","5,61","0,59","72,6",ChorusSpeed
+fx1,131,Effekte,Effect 1 Parameter 2,cont,0,0.0,teilweise,"2,45","3,66","0,75","88,1",ChorusDepth
+fx1,131,Effekte,Effect 1 Parameter 2,cont,32,0.25196850393700787,Mismatch,"2,55","3,10","0,12","84,8",ChorusDepth
+fx1,131,Effekte,Effect 1 Parameter 2,cont,64,0.5039370078740157,n/a,"1,00","1,67",–,"95,5",ChorusDepth
+fx1,131,Effekte,Effect 1 Parameter 2,cont,127,1.0,Mismatch,"0,96","3,50",–,"75,1",ChorusDepth
+fx1,132,Effekte,Effect 1 Parameter 3,cont,0,,n/a,"1,12","1,10",–,"94,1",
+fx1,132,Effekte,Effect 1 Parameter 3,cont,32,,n/a,"1,05","1,21",–,"95,0",
+fx1,132,Effekte,Effect 1 Parameter 3,cont,64,,n/a,"0,91","0,95",–,"94,5",
+fx1,132,Effekte,Effect 1 Parameter 3,cont,127,,n/a,"0,92","1,21",–,"94,2",
+fx1,133,Effekte,Effect 1 Parameter 4,cont,0,,n/a,"0,62","1,33",–,"94,2",
+fx1,133,Effekte,Effect 1 Parameter 4,cont,32,,n/a,"0,89","1,48",–,"94,5",
+fx1,133,Effekte,Effect 1 Parameter 4,cont,64,,n/a,"0,77","1,14",–,"94,8",
+fx1,133,Effekte,Effect 1 Parameter 4,cont,127,,n/a,"1,22","0,94",–,"94,2",
+fx1,134,Effekte,Effect 1 Parameter 5,cont,0,,n/a,"0,75","1,77",–,"94,8",
+fx1,134,Effekte,Effect 1 Parameter 5,cont,32,,OK,"5,40","5,27","0,94","93,9",
+fx1,134,Effekte,Effect 1 Parameter 5,cont,64,,Mismatch,"1,28","10,63",–,"47,9",
+fx1,134,Effekte,Effect 1 Parameter 5,cont,127,,Mismatch,"1,08","11,57",–,"47,5",
+init,1,Oszillatoren,Osc 1 Octave,cont,32,0.0,OK,"6,56","6,17",–,"94,3",MatrixAmount25 MatrixDst25 MatrixOnOff25 MatrixSrc25 Osc1CoarsePitch
+init,1,Oszillatoren,Osc 1 Octave,cont,48,8.0,OK,"5,99","6,21",–,"96,7",Osc1CoarsePitch
+init,1,Oszillatoren,Osc 1 Octave,cont,64,24.0,n/a,"0,27","0,27",–,"98,3",
+init,1,Oszillatoren,Osc 1 Octave,cont,80,40.0,OK,"5,64","5,69",–,"97,8",Osc1CoarsePitch
+init,2,Oszillatoren,Osc 1 Semitone,cont,52,12.0,OK,"5,55","5,81",–,"97,1",Osc1CoarsePitch
+init,2,Oszillatoren,Osc 1 Semitone,cont,58,18.0,OK,"5,28","5,35",–,"97,4",Osc1CoarsePitch
+init,2,Oszillatoren,Osc 1 Semitone,cont,64,24.0,n/a,"0,58","0,45",–,"98,4",
+init,2,Oszillatoren,Osc 1 Semitone,cont,76,36.0,OK,"6,07","6,06",–,"97,0",Osc1CoarsePitch
+init,3,Oszillatoren,Osc 1 Detune,cont,0,0.0,OK,"3,02","3,04",–,"98,5",Osc1FinePitch
+init,3,Oszillatoren,Osc 1 Detune,cont,32,0.24803149606299213,OK,"1,62","1,68",–,"98,4",Osc1FinePitch
+init,3,Oszillatoren,Osc 1 Detune,cont,64,0.5,n/a,"0,32","0,27",–,"98,2",
+init,3,Oszillatoren,Osc 1 Detune,cont,127,0.9960629921259843,OK,"2,75","2,77",–,"97,9",Osc1FinePitch
+init,8,Oszillatoren,Osc 1 Shape,enum,0,6.0,OK,"9,05","10,12","0,97","77,1",Osc1Type
+init,8,Oszillatoren,Osc 1 Shape,enum,18,0.0,OK,"9,51","8,95","1,00","97,6",MatrixDst22 Osc1Type Osc1WavetableBrilliance Osc1WavetablePosition Osc1WavetableTable
+init,8,Oszillatoren,Osc 1 Shape,enum,36,0.0,OK,"11,49","10,81","0,99","94,5",MatrixDst22 Osc1Type Osc1WavetableBrilliance Osc1WavetablePosition Osc1WavetableTable
+init,8,Oszillatoren,Osc 1 Shape,enum,72,0.0,OK,"8,98","8,81","1,00","98,8",MatrixDst22 Osc1Type Osc1WavetableBrilliance Osc1WavetablePosition Osc1WavetableTable
+init,10,Oszillatoren,Osc 1 PWM Source,enum,0,,n/a,"0,27","0,27",–,"98,5",MatrixDst22 MatrixDst23 MatrixSrc22 MatrixSrc23
+init,10,Oszillatoren,Osc 1 PWM Source,enum,8,,n/a,"0,45","0,43",–,"98,5",MatrixSrc22
+init,10,Oszillatoren,Osc 1 PWM Source,enum,15,,n/a,"0,48","0,45",–,"98,3",MatrixSrc22
+init,10,Oszillatoren,Osc 1 PWM Source,enum,30,,n/a,"0,55","0,47",–,"98,0",MatrixSrc22
+init,11,Oszillatoren,Osc 1 PWM Amount,cont,0,,n/a,"0,59","0,61",–,"98,3",MatrixDst22 MatrixDst23 MatrixSrc22 MatrixSrc23
+init,11,Oszillatoren,Osc 1 PWM Amount,cont,32,,Mismatch,"0,46","2,19",–,"93,5",MatrixAmount22
+init,11,Oszillatoren,Osc 1 PWM Amount,cont,64,,n/a,"0,33","0,30",–,"98,4",
+init,11,Oszillatoren,Osc 1 PWM Amount,cont,127,,Mismatch,"0,29","3,17",–,"87,6",MatrixAmount22
+init,17,Oszillatoren,Osc 2 Octave,cont,32,0.0,n/a,"0,31","0,29",–,"98,0",MatrixAmount25 MatrixDst25 MatrixOnOff25 MatrixSrc25 Osc2CoarsePitch
+init,17,Oszillatoren,Osc 2 Octave,cont,48,8.0,n/a,"0,23","0,11",–,"98,3",Osc2CoarsePitch
+init,17,Oszillatoren,Osc 2 Octave,cont,64,24.0,n/a,"0,21","0,44",–,"98,3",
+init,17,Oszillatoren,Osc 2 Octave,cont,80,40.0,n/a,"0,49","0,50",–,"98,3",Osc2CoarsePitch
+init,18,Oszillatoren,Osc 2 Semitone,cont,52,12.0,n/a,"0,19","0,28",–,"98,1",Osc2CoarsePitch
+init,18,Oszillatoren,Osc 2 Semitone,cont,58,18.0,n/a,"0,14","0,12",–,"97,8",Osc2CoarsePitch
+init,18,Oszillatoren,Osc 2 Semitone,cont,64,24.0,n/a,"0,23","0,21",–,"98,1",
+init,18,Oszillatoren,Osc 2 Semitone,cont,76,36.0,n/a,"0,18","0,17",–,"98,0",Osc2CoarsePitch
+init,19,Oszillatoren,Osc 2 Detune,cont,0,0.0,n/a,"0,24","0,22",–,"98,2",Osc2FinePitch
+init,19,Oszillatoren,Osc 2 Detune,cont,32,0.24803149606299213,n/a,"0,21","0,24",–,"98,3",Osc2FinePitch
+init,19,Oszillatoren,Osc 2 Detune,cont,64,0.5,n/a,"0,22","0,26",–,"98,5",
+init,19,Oszillatoren,Osc 2 Detune,cont,127,0.9960629921259843,n/a,"0,15","0,17",–,"98,5",Osc2FinePitch
+init,24,Oszillatoren,Osc 2 Shape,enum,0,6.0,n/a,"0,28","0,29",–,"98,5",
+init,24,Oszillatoren,Osc 2 Shape,enum,18,0.0,n/a,"1,10","0,63",–,"91,0",MatrixDst23 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+init,24,Oszillatoren,Osc 2 Shape,enum,36,0.0,n/a,"0,62","0,29",–,"96,1",MatrixDst23 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+init,24,Oszillatoren,Osc 2 Shape,enum,72,0.0,n/a,"0,41","1,10",–,"95,6",MatrixDst23 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+init,26,Oszillatoren,Osc 2 PWM Source,enum,0,,n/a,"0,26","0,26",–,"97,9",MatrixDst23 MatrixSrc23
+init,26,Oszillatoren,Osc 2 PWM Source,enum,8,,n/a,"0,30","0,46",–,"97,6",MatrixSrc23
+init,26,Oszillatoren,Osc 2 PWM Source,enum,15,,n/a,"0,18","0,15",–,"98,4",MatrixSrc23
+init,26,Oszillatoren,Osc 2 PWM Source,enum,30,,n/a,"0,39","0,37",–,"98,3",MatrixSrc23
+init,27,Oszillatoren,Osc 2 PWM Amount,cont,0,,n/a,"0,16","0,26",–,"97,7",MatrixDst23 MatrixSrc23
+init,27,Oszillatoren,Osc 2 PWM Amount,cont,32,,n/a,"0,36","0,33",–,"97,8",MatrixAmount23
+init,27,Oszillatoren,Osc 2 PWM Amount,cont,64,,n/a,"0,39","0,44",–,"97,7",
+init,27,Oszillatoren,Osc 2 PWM Amount,cont,127,,n/a,"0,24","0,32",–,"98,6",MatrixAmount23
+init,33,Oszillatoren,Osc 3 Octave,cont,32,0.0,n/a,"0,13","0,19",–,"98,2",MatrixAmount25 MatrixDst25 MatrixOnOff25 MatrixSrc25 Osc3CoarsePitch
+init,33,Oszillatoren,Osc 3 Octave,cont,48,8.0,n/a,"0,24","0,26",–,"98,4",Osc3CoarsePitch
+init,33,Oszillatoren,Osc 3 Octave,cont,64,24.0,n/a,"0,44","0,44",–,"98,0",Osc3CoarsePitch
+init,33,Oszillatoren,Osc 3 Octave,cont,80,40.0,n/a,"0,28","0,35",–,"98,5",Osc3CoarsePitch
+init,34,Oszillatoren,Osc 3 Semitone,cont,52,0.0,n/a,"0,34","0,32",–,"98,5",Osc3CoarsePitch
+init,34,Oszillatoren,Osc 3 Semitone,cont,58,6.0,n/a,"0,22","0,16",–,"98,4",Osc3CoarsePitch
+init,34,Oszillatoren,Osc 3 Semitone,cont,64,12.0,n/a,"0,30","0,45",–,"98,2",
+init,34,Oszillatoren,Osc 3 Semitone,cont,76,24.0,n/a,"0,24","0,37",–,"98,4",Osc3CoarsePitch
+init,35,Oszillatoren,Osc 3 Detune,cont,0,0.0,n/a,"0,27","0,37",–,"97,5",Osc3FinePitch
+init,35,Oszillatoren,Osc 3 Detune,cont,32,0.24803149606299213,n/a,"0,13","0,13",–,"97,9",Osc3FinePitch
+init,35,Oszillatoren,Osc 3 Detune,cont,64,0.5,n/a,"0,60","0,63",–,"97,9",
+init,35,Oszillatoren,Osc 3 Detune,cont,127,0.9960629921259843,n/a,"0,46","0,47",–,"97,9",Osc3FinePitch
+init,40,Oszillatoren,Osc 3 Shape,enum,0,6.0,n/a,"0,37","0,39",–,"98,3",
+init,40,Oszillatoren,Osc 3 Shape,enum,18,0.0,OK,"6,48","6,79","1,00","97,1",Osc3Type Osc3WaveformShape
+init,40,Oszillatoren,Osc 3 Shape,enum,36,0.0,OK,"6,49","6,79","1,00","97,2",Osc3Type Osc3WaveformShape
+init,40,Oszillatoren,Osc 3 Shape,enum,72,0.0,OK,"6,47","6,79","1,00","97,0",Osc3Type Osc3WaveformShape
+init,42,Oszillatoren,Osc 3 PWM Source,enum,0,,n/a,"0,25","0,35",–,"98,5",
+init,42,Oszillatoren,Osc 3 PWM Source,enum,8,,n/a,"0,35","0,37",–,"98,2",MatrixSrc24
+init,42,Oszillatoren,Osc 3 PWM Source,enum,15,,n/a,"0,17","0,38",–,"98,5",MatrixSrc24
+init,42,Oszillatoren,Osc 3 PWM Source,enum,30,,n/a,"0,08","0,16",–,"98,1",MatrixSrc24
+init,43,Oszillatoren,Osc 3 PWM Amount,cont,0,,n/a,"0,36","0,23",–,"98,2",
+init,43,Oszillatoren,Osc 3 PWM Amount,cont,32,,n/a,"0,36","0,32",–,"98,4",MatrixAmount24
+init,43,Oszillatoren,Osc 3 PWM Amount,cont,64,,n/a,"0,14","0,14",–,"97,9",
+init,43,Oszillatoren,Osc 3 PWM Amount,cont,127,,n/a,"0,13","0,20",–,"97,8",MatrixAmount24
+init,49,Oszillatoren,Osc 2 Sync to O3,cont,0,,n/a,"0,27","0,20",–,"98,4",
+init,49,Oszillatoren,Osc 2 Sync to O3,cont,32,1.0,n/a,"0,35","0,46",–,"98,3",
+init,49,Oszillatoren,Osc 2 Sync to O3,cont,64,1.0,n/a,"0,12","0,34",–,"98,5",
+init,49,Oszillatoren,Osc 2 Sync to O3,cont,127,1.0,n/a,"0,17","0,14",–,"98,1",
+init,50,Oszillatoren,Osc Pitch Source,enum,0,,n/a,"0,45","0,35",–,"98,3",
+init,50,Oszillatoren,Osc Pitch Source,enum,8,4.0,n/a,"0,45","0,17",–,"98,2",MatrixSrc4
+init,50,Oszillatoren,Osc Pitch Source,enum,15,15.0,n/a,"0,15","0,40",–,"98,3",MatrixSrc4
+init,50,Oszillatoren,Osc Pitch Source,enum,30,40.0,n/a,"0,14","0,20",–,"98,6",MatrixSrc4
+init,51,Oszillatoren,Osc Pitch Amount,cont,0,0.24803149606299213,Mismatch,"0,29","4,57",–,"67,3",MatrixAmount4
+init,51,Oszillatoren,Osc Pitch Amount,cont,32,0.37401574803149606,n/a,"0,16","2,21",–,"85,0",MatrixAmount4
+init,51,Oszillatoren,Osc Pitch Amount,cont,64,0.5,n/a,"0,24","0,43",–,"98,5",
+init,51,Oszillatoren,Osc Pitch Amount,cont,127,0.7480314960629921,Mismatch,"0,20","4,50",–,"66,7",MatrixAmount4
+init,53,Oszillatoren,Glide,cont,0,0.0,n/a,"0,29","0,26",–,"97,8",
+init,53,Oszillatoren,Glide,cont,1,1.0,n/a,"0,22","0,23",–,"98,3",GlideOnOff
+init,57,Mixer,Glide Rate,cont,0,0.04225747937841505,n/a,"0,15","0,17",–,"98,1",GlideRate
+init,57,Mixer,Glide Rate,cont,32,0.21464551237295096,n/a,"0,16","0,20",–,"98,2",GlideRate
+init,57,Mixer,Glide Rate,cont,64,0.3870335453674869,n/a,"0,16","0,28",–,"98,4",GlideRate
+init,57,Mixer,Glide Rate,cont,127,0.7264224853254795,n/a,"0,34","0,27",–,"98,1",GlideRate
+init,58,Mixer,Allocation/Unisono,cont,0,0.0,n/a,"0,12","0,20",–,"98,2",
+init,58,Mixer,Allocation/Unisono,cont,32,2.0,n/a,"1,10","1,48",–,"84,5",UnisonoCount
+init,58,Mixer,Allocation/Unisono,cont,64,4.0,teilweise,"1,94","1,49","0,79","86,0",UnisonoCount
+init,58,Mixer,Allocation/Unisono,cont,127,7.0,n/a,"1,74","1,81",–,"85,8",UnisonoCount
+init,59,Mixer,Unisono Detune,cont,0,0.0,n/a,"0,43","0,21",–,"98,2",
+init,59,Mixer,Unisono Detune,cont,32,0.25196850393700787,n/a,"0,31","0,41",–,"98,4",UnisonoDetune
+init,59,Mixer,Unisono Detune,cont,64,0.5039370078740157,n/a,"0,14","0,14",–,"97,6",UnisonoDetune
+init,59,Mixer,Unisono Detune,cont,127,1.0,n/a,"0,31","0,42",–,"98,0",UnisonoDetune
+init,61,Mixer,Mixer Osc 1 Level,cont,0,0.0,OK,"9,16","10,26","0,97","77,6",Osc1Vol
+init,61,Mixer,Mixer Osc 1 Level,cont,32,0.25196850393700787,OK,"3,20","3,18","0,99","97,8",Osc1Vol
+init,61,Mixer,Mixer Osc 1 Level,cont,64,0.5039370078740157,OK,"1,61","1,59","0,98","98,2",Osc1Vol
+init,61,Mixer,Mixer Osc 1 Level,cont,127,1.0,n/a,"0,31","0,15",–,"98,3",
+init,62,Mixer,Mixer Osc 1 Balance,cont,0,0.0,n/a,"0,22","0,25",–,"98,3",
+init,62,Mixer,Mixer Osc 1 Balance,cont,32,0.25196850393700787,n/a,"0,15","0,78",–,"98,0",Filter2Level FilterLevel
+init,62,Mixer,Mixer Osc 1 Balance,cont,64,0.5039370078740157,n/a,"0,18","1,70",–,"97,4",Filter2Level FilterLevel
+init,62,Mixer,Mixer Osc 1 Balance,cont,127,1.0,n/a,"0,22","10,27",–,"53,3",Filter2Level FilterLevel
+init,63,Mixer,Mixer Osc 2 Level,cont,0,0.0,n/a,"0,19","0,31",–,"98,1",Osc2Vol
+init,63,Mixer,Mixer Osc 2 Level,cont,32,0.25196850393700787,n/a,"0,17","0,11",–,"98,3",Osc2Vol
+init,63,Mixer,Mixer Osc 2 Level,cont,64,0.5039370078740157,n/a,"0,18","0,20",–,"98,5",Osc2Vol
+init,63,Mixer,Mixer Osc 2 Level,cont,127,1.0,n/a,"0,09","0,10",–,"98,2",
+init,65,Mixer,Mixer Osc 3 Level,cont,0,0.0,n/a,"0,49","0,54",–,"98,4",Osc3Vol
+init,65,Mixer,Mixer Osc 3 Level,cont,32,0.25196850393700787,n/a,"0,20","0,33",–,"98,2",Osc3Vol
+init,65,Mixer,Mixer Osc 3 Level,cont,64,0.5039370078740157,n/a,"0,18","0,18",–,"98,0",Osc3Vol
+init,65,Mixer,Mixer Osc 3 Level,cont,127,1.0,n/a,"0,39","0,36",–,"98,2",
+init,67,Mixer,Mixer Noise Level,cont,0,6.0,n/a,"0,24","0,33",–,"98,5",
+init,67,Mixer,Mixer Noise Level,cont,32,1.0,n/a,"2,64","1,82",–,"87,5",Osc3Type Osc3Vol Osc3WaveformShape
+init,67,Mixer,Mixer Noise Level,cont,64,1.0,teilweise,"4,15","3,47","0,60","82,6",Osc3Type Osc3Vol Osc3WaveformShape
+init,67,Mixer,Mixer Noise Level,cont,127,1.0,teilweise,"5,35","4,82","0,70","76,5",Osc3Type Osc3WaveformShape
+init,71,Mixer,Mixer RingMod Level,cont,0,0.0,n/a,"0,12","0,12",–,"98,1",
+init,71,Mixer,Mixer RingMod Level,cont,32,0.25196850393700787,n/a,"0,17","0,36",–,"98,0",RingModOsc1ToOsc2
+init,71,Mixer,Mixer RingMod Level,cont,64,0.5039370078740157,n/a,"0,12","0,14",–,"98,2",RingModOsc1ToOsc2
+init,71,Mixer,Mixer RingMod Level,cont,127,1.0,n/a,"0,27","0,20",–,"97,7",RingModOsc1ToOsc2
+init,77,Filter,Filter 1 Type,enum,0,1.0,n/a,"0,30","0,58",–,"97,3",FilterState
+init,77,Filter,Filter 1 Type,enum,3,15.0,OK,"7,39","9,78","0,90","92,1",Filter12Type
+init,77,Filter,Filter 1 Type,enum,6,9.0,OK,"7,89","10,63","0,96","79,8",Filter12Type
+init,77,Filter,Filter 1 Type,enum,11,0.0,n/a,"0,13","0,36",–,"98,1",
+init,78,Filter,Filter 1 Cutoff,cont,0,0.037277639881395874,teilweise,"12,50","10,28","0,73","55,7",Filter1CutOff
+init,78,Filter,Filter 1 Cutoff,cont,32,0.27428580495489746,OK,"8,91","8,94","0,97","83,6",Filter1CutOff
+init,78,Filter,Filter 1 Cutoff,cont,64,0.511293970028399,OK,"9,61","9,09","1,00","98,4",Filter1CutOff
+init,78,Filter,Filter 1 Cutoff,cont,127,0.9779037950168553,n/a,"0,23","0,22",–,"98,0",
+init,80,Filter,Filter 1 Resonance,cont,0,0.0,n/a,"0,29","0,21",–,"98,4",
+init,80,Filter,Filter 1 Resonance,cont,32,0.25196850393700787,n/a,"0,19","0,20",–,"98,4",Filter1Reso
+init,80,Filter,Filter 1 Resonance,cont,64,0.5039370078740157,n/a,"0,18","0,58",–,"97,5",Filter1Reso
+init,80,Filter,Filter 1 Resonance,cont,127,1.0,Mismatch,"0,26","1,97",–,"93,2",Filter1Reso
+init,81,Filter,Filter 1 Drive,cont,0,3.0,n/a,"0,53","0,28",–,"97,3",
+init,81,Filter,Filter 1 Drive,cont,32,0.25196850393700787,n/a,"1,60","0,42",–,"96,4",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+init,81,Filter,Filter 1 Drive,cont,64,0.5039370078740157,defekt,"2,05","1,39",–,"90,7",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+init,81,Filter,Filter 1 Drive,cont,127,1.0,OK,"2,89","2,85","0,95","94,8",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+init,86,Filter,Filter 1 Keytrack,cont,0,0.0,n/a,"0,22","0,36",–,"98,5",Filter1Keytrack
+init,86,Filter,Filter 1 Keytrack,cont,32,0.25196850393700787,n/a,"0,08","0,14",–,"98,0",Filter1Keytrack
+init,86,Filter,Filter 1 Keytrack,cont,64,0.5039370078740157,n/a,"0,50","0,37",–,"98,6",
+init,86,Filter,Filter 1 Keytrack,cont,127,1.0,n/a,"0,26","0,21",–,"97,0",Filter1Keytrack
+init,87,Filter,Filter 1 Env Amount,cont,0,0.0,n/a,"0,41","0,30",–,"98,3",Filter1EnvAmount
+init,87,Filter,Filter 1 Env Amount,cont,32,0.25196850393700787,n/a,"0,22","0,43",–,"98,2",Filter1EnvAmount
+init,87,Filter,Filter 1 Env Amount,cont,64,0.5039370078740157,n/a,"0,18","0,16",–,"98,1",
+init,87,Filter,Filter 1 Env Amount,cont,127,1.0,n/a,"0,18","0,18",–,"97,8",Filter1EnvAmount
+init,88,Filter,Filter 1 Env Velocity,cont,0,0.0,n/a,"0,20","0,22",–,"98,5",Filter1VeloAmount
+init,88,Filter,Filter 1 Env Velocity,cont,32,0.25196850393700787,n/a,"0,19","0,36",–,"98,0",Filter1VeloAmount
+init,88,Filter,Filter 1 Env Velocity,cont,64,0.5039370078740157,n/a,"0,10","0,19",–,"98,2",
+init,88,Filter,Filter 1 Env Velocity,cont,127,1.0,n/a,"0,47","0,44",–,"97,7",Filter1VeloAmount
+init,89,Filter,Filter 1 Mod Source,enum,0,,n/a,"0,11","0,19",–,"98,2",MatrixDst21 MatrixDst22 MatrixDst23 MatrixSrc22 MatrixSrc23
+init,89,Filter,Filter 1 Mod Source,enum,8,4.0,n/a,"0,10","0,36",–,"98,2",MatrixSrc21
+init,89,Filter,Filter 1 Mod Source,enum,15,15.0,n/a,"0,24","0,47",–,"98,2",MatrixSrc21
+init,89,Filter,Filter 1 Mod Source,enum,30,40.0,n/a,"0,22","0,28",–,"98,0",MatrixSrc21
+init,90,Filter,Filter 1 Mod Amount,cont,0,0.24803149606299213,teilweise,"5,62","4,21","0,65","81,8",MatrixAmount21
+init,90,Filter,Filter 1 Mod Amount,cont,32,0.37401574803149606,n/a,"0,33","2,25",–,"90,7",MatrixAmount21
+init,90,Filter,Filter 1 Mod Amount,cont,64,0.5,n/a,"0,09","0,19",–,"98,5",
+init,90,Filter,Filter 1 Mod Amount,cont,127,0.7480314960629921,teilweise,"5,10","3,70","0,66","81,4",MatrixAmount21
+init,95,Filter,Filter 1 Pan Amount,cont,0,,n/a,"1,51","1,89",–,"93,1",MatrixAmount25 MatrixDst25 MatrixOnOff25 MatrixSrc25
+init,95,Filter,Filter 1 Pan Amount,cont,32,,n/a,"0,29","1,40",–,"95,8",MatrixAmount25 MatrixDst25 MatrixOnOff25 MatrixSrc25
+init,95,Filter,Filter 1 Pan Amount,cont,64,,n/a,"0,14","0,21",–,"98,1",
+init,95,Filter,Filter 1 Pan Amount,cont,127,,n/a,"1,58","1,79",–,"93,2",MatrixAmount25 MatrixDst25 MatrixOnOff25 MatrixSrc25
+init,97,Filter,Filter 2 Type,enum,0,,n/a,"0,19","0,14",–,"98,4",
+init,97,Filter,Filter 2 Type,enum,3,0.0,n/a,"0,14","0,41",–,"98,1",Filter2State
+init,97,Filter,Filter 2 Type,enum,6,0.0,n/a,"0,11","0,15",–,"98,3",Filter2State
+init,97,Filter,Filter 2 Type,enum,11,0.0,n/a,"0,16","0,09",–,"97,6",Filter2State
+init,98,Filter,Filter 2 Cutoff,cont,0,0.037277639881395874,n/a,"0,13","0,30",–,"97,9",Filter2CutOff
+init,98,Filter,Filter 2 Cutoff,cont,32,0.27428580495489746,n/a,"0,27","0,39",–,"98,3",Filter2CutOff
+init,98,Filter,Filter 2 Cutoff,cont,64,0.511293970028399,n/a,"0,36","0,27",–,"98,3",Filter2CutOff
+init,98,Filter,Filter 2 Cutoff,cont,127,0.9779037950168553,n/a,"0,28","0,26",–,"98,0",
+init,100,Filter,Filter 2 Resonance,cont,0,0.0,n/a,"0,23","0,24",–,"98,3",
+init,100,Filter,Filter 2 Resonance,cont,32,0.25196850393700787,n/a,"0,08","0,32",–,"98,2",Filter2Reso
+init,100,Filter,Filter 2 Resonance,cont,64,0.5039370078740157,n/a,"0,26","0,35",–,"98,0",Filter2Reso
+init,100,Filter,Filter 2 Resonance,cont,127,1.0,n/a,"0,26","0,17",–,"97,6",Filter2Reso
+init,101,Filter,Filter 2 Drive,cont,0,3.0,n/a,"0,18","0,21",–,"97,9",
+init,101,Filter,Filter 2 Drive,cont,32,0.25196850393700787,n/a,"0,26","0,44",–,"98,3",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+init,101,Filter,Filter 2 Drive,cont,64,0.5039370078740157,n/a,"0,19","1,37",–,"96,5",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+init,101,Filter,Filter 2 Drive,cont,127,1.0,Mismatch,"0,37","2,82",–,"81,1",DriveAmount DriveDryWet DriveGain DriveType FX1Type
+init,106,Filter,Filter 2 Keytrack,cont,0,0.0,n/a,"0,25","0,12",–,"97,6",Filter2Keytrack
+init,106,Filter,Filter 2 Keytrack,cont,32,0.25196850393700787,n/a,"0,20","0,25",–,"98,1",Filter2Keytrack
+init,106,Filter,Filter 2 Keytrack,cont,64,0.5039370078740157,n/a,"0,26","0,35",–,"98,2",
+init,106,Filter,Filter 2 Keytrack,cont,127,1.0,n/a,"0,19","0,18",–,"98,3",Filter2Keytrack
+init,107,Filter,Filter 2 Env Amount,cont,0,0.0,n/a,"0,27","0,30",–,"98,0",Filter2EnvAmount
+init,107,Filter,Filter 2 Env Amount,cont,32,0.25196850393700787,n/a,"0,21","0,33",–,"98,3",Filter2EnvAmount
+init,107,Filter,Filter 2 Env Amount,cont,64,0.5039370078740157,n/a,"0,25","0,27",–,"98,0",
+init,107,Filter,Filter 2 Env Amount,cont,127,1.0,n/a,"0,17","0,30",–,"98,5",Filter2EnvAmount
+init,108,Filter,Filter 2 Env Velocity,cont,0,0.0,n/a,"0,11","0,09",–,"98,3",Filter2VeloAmount
+init,108,Filter,Filter 2 Env Velocity,cont,32,0.25196850393700787,n/a,"0,14","0,15",–,"97,7",Filter2VeloAmount
+init,108,Filter,Filter 2 Env Velocity,cont,64,0.5039370078740157,n/a,"0,13","0,36",–,"98,4",
+init,108,Filter,Filter 2 Env Velocity,cont,127,1.0,n/a,"0,12","0,12",–,"97,7",Filter2VeloAmount
+init,109,Filter,Filter 2 Mod Source,enum,0,,n/a,"0,37","0,28",–,"98,5",
+init,109,Filter,Filter 2 Mod Source,enum,8,113.0,n/a,"0,22","0,16",–,"98,4",MatrixAmount25 MatrixDst22 MatrixDst23 MatrixDst24 MatrixDst25 MatrixOnOff25 MatrixSrc22 MatrixSrc23 MatrixSrc24 MatrixSrc25
+init,109,Filter,Filter 2 Mod Source,enum,15,113.0,n/a,"0,24","0,36",–,"97,6",MatrixAmount25 MatrixDst22 MatrixDst23 MatrixDst24 MatrixDst25 MatrixOnOff25 MatrixSrc22 MatrixSrc23 MatrixSrc24 MatrixSrc25
+init,109,Filter,Filter 2 Mod Source,enum,30,113.0,n/a,"0,29","0,13",–,"97,3",MatrixAmount25 MatrixDst22 MatrixDst23 MatrixDst24 MatrixDst25 MatrixOnOff25 MatrixSrc22 MatrixSrc23 MatrixSrc24 MatrixSrc25
+init,115,Filter,Filter 2 Pan Amount,cont,0,,n/a,"0,17","0,31",–,"98,5",MatrixAmount25 MatrixDst25 MatrixOnOff25 MatrixSrc25
+init,115,Filter,Filter 2 Pan Amount,cont,32,,n/a,"0,18","0,27",–,"98,2",MatrixAmount25 MatrixDst25 MatrixOnOff25 MatrixSrc25
+init,115,Filter,Filter 2 Pan Amount,cont,64,,n/a,"0,16","0,20",–,"98,0",
+init,115,Filter,Filter 2 Pan Amount,cont,127,,n/a,"0,19","0,25",–,"98,3",MatrixAmount25 MatrixDst25 MatrixOnOff25 MatrixSrc25
+init,117,Filter,Filter Routing,cont,0,,n/a,"0,19","0,21",–,"97,7",
+init,117,Filter,Filter Routing,cont,1,1.0,n/a,"0,36","0,50",–,"98,5",FilterFormerRouting
+init,121,Verstärker,Amplifier Volume,cont,0,0.0,OK,"8,96","10,24","0,96","75,4",MainVolume
+init,121,Verstärker,Amplifier Volume,cont,32,0.25196850393700787,Mismatch,"1,58","3,16",–,"98,0",MainVolume
+init,121,Verstärker,Amplifier Volume,cont,64,0.5039370078740157,n/a,"0,82","1,60",–,"98,6",MainVolume
+init,121,Verstärker,Amplifier Volume,cont,127,1.0,n/a,"0,16","0,18",–,"98,2",
+init,122,Verstärker,Amplifier Velocity,cont,0,0.0,Mismatch,"1,52","4,29",–,"98,4",AmpVeloAmount MatrixAmount2 MatrixControl3 MatrixControlAmount3 MatrixDst3 MatrixSrc2 MatrixSrc3
+init,122,Verstärker,Amplifier Velocity,cont,32,0.25196850393700787,n/a,"0,39","1,53",–,"98,2",AmpVeloAmount MatrixAmount2
+init,122,Verstärker,Amplifier Velocity,cont,64,0.5039370078740157,n/a,"0,22","0,29",–,"98,5",AmpVeloAmount MatrixAmount2
+init,122,Verstärker,Amplifier Velocity,cont,127,1.0,n/a,"0,20","0,43",–,"98,1",AmpVeloAmount MatrixAmount2
+init,123,Verstärker,Amplifier Mod Source,enum,0,14.0,n/a,"0,19","0,23",–,"98,0",MatrixControl3 MatrixControlAmount3 MatrixDst3 MatrixSrc3
+init,123,Verstärker,Amplifier Mod Source,enum,8,4.0,n/a,"0,10","0,14",–,"98,1",MatrixSrc3
+init,123,Verstärker,Amplifier Mod Source,enum,15,15.0,n/a,"0,29","0,19",–,"97,7",MatrixSrc3
+init,123,Verstärker,Amplifier Mod Source,enum,30,40.0,n/a,"0,12","0,16",–,"98,0",MatrixSrc3
+init,124,Verstärker,Amplifier Mod Amount,cont,0,0.24803149606299213,Mismatch,"6,17","3,75","0,34","74,6",MatrixAmount3
+init,124,Verstärker,Amplifier Mod Amount,cont,32,0.37401574803149606,n/a,"0,36","1,29",–,"96,6",MatrixAmount3
+init,124,Verstärker,Amplifier Mod Amount,cont,64,0.5,n/a,"0,27","0,10",–,"97,4",
+init,124,Verstärker,Amplifier Mod Amount,cont,127,0.7480314960629921,teilweise,"6,29","3,22","0,51","74,3",MatrixAmount3
+init,128,Effekte,Effect 1 Type,enum,0,0.0,n/a,"0,24","0,28",–,"98,3",FX1Type
+init,128,Effekte,Effect 1 Type,enum,2,4.0,n/a,"0,16","0,34",–,"98,5",FX1Type FlangerDepth FlangerDryWet FlangerFeedback FlangerSpeed
+init,128,Effekte,Effect 1 Type,enum,4,0.5039370078740157,n/a,"0,14","0,24",–,"98,3",DriveAmount DriveDryWet DriveGain FX1Type
+init,128,Effekte,Effect 1 Type,enum,8,6.0,n/a,"0,22","0,20",–,"98,3",
+init,129,Effekte,Effect 1 Mix,cont,0,0.0,n/a,"0,25","0,25",–,"98,5",
+init,129,Effekte,Effect 1 Mix,cont,32,0.25196850393700787,OK,"2,24","2,86","0,87","94,5",ChorusDryWet
+init,129,Effekte,Effect 1 Mix,cont,64,0.5039370078740157,OK,"4,02","2,88","0,86","91,8",ChorusDryWet
+init,129,Effekte,Effect 1 Mix,cont,127,1.0,teilweise,"2,58","2,55","0,74","95,4",ChorusDryWet
+init,130,Effekte,Effect 1 Parameter 1,cont,0,0.0,n/a,"0,19","0,17",–,"98,0",ChorusSpeed
+init,130,Effekte,Effect 1 Parameter 1,cont,32,0.25196850393700787,n/a,"0,21","0,12",–,"97,5",ChorusSpeed
+init,130,Effekte,Effect 1 Parameter 1,cont,64,0.5039370078740157,n/a,"0,32","0,35",–,"98,0",ChorusSpeed
+init,130,Effekte,Effect 1 Parameter 1,cont,127,1.0,n/a,"0,15","0,23",–,"98,4",ChorusSpeed
+init,131,Effekte,Effect 1 Parameter 2,cont,0,0.0,n/a,"0,30","0,43",–,"98,3",ChorusDepth
+init,131,Effekte,Effect 1 Parameter 2,cont,32,0.25196850393700787,n/a,"0,27","0,40",–,"98,2",ChorusDepth
+init,131,Effekte,Effect 1 Parameter 2,cont,64,0.5039370078740157,n/a,"0,10","0,24",–,"98,3",
+init,131,Effekte,Effect 1 Parameter 2,cont,127,1.0,n/a,"0,18","0,25",–,"98,4",ChorusDepth
+init,144,Effekte,Effect 2 Type,enum,0,0.0,n/a,"0,18","0,16",–,"97,9",FX2Type
+init,144,Effekte,Effect 2 Type,enum,2,4.0,n/a,"0,35","0,38",–,"98,3",FX2Type FlangerDepth FlangerDryWet FlangerFeedback FlangerSpeed
+init,144,Effekte,Effect 2 Type,enum,4,0.5039370078740157,n/a,"0,19","0,43",–,"98,2",DriveAmount DriveDryWet DriveGain FX2Type
+init,144,Effekte,Effect 2 Type,enum,8,6.0,n/a,"0,38","0,55",–,"95,6",
+init,145,Effekte,Effect 2 Mix,cont,0,0.0,n/a,"0,09","0,45",–,"96,5",
+init,145,Effekte,Effect 2 Mix,cont,32,,Mismatch,"0,85","1,98",–,"86,6",MatrixAmount5 MatrixDst5 MatrixOnOff5 MatrixSrc5
+init,145,Effekte,Effect 2 Mix,cont,64,,Mismatch,"1,56","2,09",–,"84,1",MatrixAmount5 MatrixDst5 MatrixOnOff5 MatrixSrc5
+init,145,Effekte,Effect 2 Mix,cont,127,,defekt,"3,17","1,70",–,"82,1",MatrixAmount5 MatrixDst5 MatrixOnOff5 MatrixSrc5
+init,147,Effekte,Effect 2 Parameter 2,cont,0,0.0,n/a,"0,09","0,55",–,"97,6",ReverbColor
+init,147,Effekte,Effect 2 Parameter 2,cont,32,0.25196850393700787,n/a,"0,24","0,57",–,"96,7",ReverbColor
+init,147,Effekte,Effect 2 Parameter 2,cont,64,0.5039370078740157,n/a,"0,21","0,68",–,"95,7",
+init,147,Effekte,Effect 2 Parameter 2,cont,127,1.0,n/a,"0,18","0,13",–,"98,1",ReverbColor
+init,148,Effekte,Effect 2 Parameter 3,cont,0,0.0,n/a,"0,23","0,70",–,"95,6",ReverbTime
+init,148,Effekte,Effect 2 Parameter 3,cont,32,0.25196850393700787,n/a,"0,31","0,32",–,"97,2",ReverbTime
+init,148,Effekte,Effect 2 Parameter 3,cont,64,0.5039370078740157,n/a,"0,17","0,21",–,"97,3",ReverbTime
+init,148,Effekte,Effect 2 Parameter 3,cont,127,1.0,n/a,"0,18","1,43",–,"94,3",ReverbTime
+init,160,LFOs,LFO 1 Shape,enum,0,,n/a,"0,16","0,25",–,"97,8",
+init,160,LFOs,LFO 1 Shape,enum,1,1.0,n/a,"0,26","0,26",–,"98,1",Lfo1Shape
+init,160,LFOs,LFO 1 Shape,enum,2,2.0,n/a,"0,11","0,19",–,"98,2",Lfo1Shape
+init,160,LFOs,LFO 1 Shape,enum,5,5.0,n/a,"0,11","0,12",–,"98,1",Lfo1Shape
+init,161,LFOs,LFO 1 Speed,enum,0,0.0,n/a,"0,20","0,32",–,"97,6",Lfo1Speed
+init,161,LFOs,LFO 1 Speed,enum,31,0.2440944881889764,n/a,"0,16","0,38",–,"97,9",Lfo1Speed
+init,161,LFOs,LFO 1 Speed,enum,62,0.4881889763779528,n/a,"0,23","0,13",–,"98,2",Lfo1Speed
+init,161,LFOs,LFO 1 Speed,enum,125,0.984251968503937,n/a,"0,16","0,22",–,"98,5",Lfo1Speed
+init,163,LFOs,LFO 1 Sync,cont,0,0.0,n/a,"0,31","0,30",–,"97,7",
+init,163,LFOs,LFO 1 Sync,cont,32,1.0,n/a,"0,24","0,25",–,"98,3",
+init,163,LFOs,LFO 1 Sync,cont,64,1.0,n/a,"0,21","0,38",–,"97,6",
+init,163,LFOs,LFO 1 Sync,cont,127,1.0,n/a,"0,32","0,23",–,"97,9",
+init,165,LFOs,LFO 1 Start Phase,cont,0,0.0,n/a,"0,13","0,21",–,"98,4",
+init,165,LFOs,LFO 1 Start Phase,cont,32,0.25196850393700787,n/a,"0,30","0,22",–,"98,2",Lfo1Phase
+init,165,LFOs,LFO 1 Start Phase,cont,64,0.5039370078740157,n/a,"0,25","0,24",–,"98,2",Lfo1Phase
+init,165,LFOs,LFO 1 Start Phase,cont,127,1.0,n/a,"0,19","0,17",–,"98,0",Lfo1Phase
+init,166,LFOs,LFO 1 Delay,cont,0,0.0,n/a,"0,25","0,16",–,"98,4",
+init,166,LFOs,LFO 1 Delay,cont,32,0.25196850393700787,n/a,"0,30","0,28",–,"98,2",Lfo1Delay
+init,166,LFOs,LFO 1 Delay,cont,64,0.5039370078740157,n/a,"0,20","0,34",–,"98,2",Lfo1Delay
+init,166,LFOs,LFO 1 Delay,cont,127,1.0,n/a,"0,19","0,14",–,"98,2",Lfo1Delay
+init,172,LFOs,LFO 2 Shape,enum,0,,n/a,"0,26","0,29",–,"98,1",
+init,172,LFOs,LFO 2 Shape,enum,1,1.0,n/a,"0,21","0,36",–,"98,2",Lfo2Shape
+init,172,LFOs,LFO 2 Shape,enum,2,2.0,n/a,"0,18","0,28",–,"98,0",Lfo2Shape
+init,172,LFOs,LFO 2 Shape,enum,5,5.0,n/a,"0,27","0,30",–,"98,2",Lfo2Shape
+init,173,LFOs,LFO 2 Speed,enum,0,0.0,n/a,"0,29","0,25",–,"98,3",Lfo2Speed
+init,173,LFOs,LFO 2 Speed,enum,31,0.2440944881889764,n/a,"0,10","0,16",–,"98,3",Lfo2Speed
+init,173,LFOs,LFO 2 Speed,enum,62,0.4881889763779528,n/a,"0,19","0,11",–,"97,9",Lfo2Speed
+init,173,LFOs,LFO 2 Speed,enum,125,0.984251968503937,n/a,"0,19","0,16",–,"98,2",Lfo2Speed
+init,175,LFOs,LFO 2 Sync,cont,0,0.0,n/a,"0,20","0,30",–,"98,4",
+init,175,LFOs,LFO 2 Sync,cont,32,1.0,n/a,"0,14","0,15",–,"98,3",
+init,175,LFOs,LFO 2 Sync,cont,64,1.0,n/a,"0,25","0,24",–,"96,2",
+init,175,LFOs,LFO 2 Sync,cont,127,1.0,n/a,"0,40","0,36",–,"95,8",
+init,177,LFOs,LFO 2 Start Phase,cont,0,0.0,n/a,"0,24","0,16",–,"96,2",
+init,177,LFOs,LFO 2 Start Phase,cont,32,0.25196850393700787,n/a,"0,27","0,33",–,"97,1",Lfo2Phase
+init,177,LFOs,LFO 2 Start Phase,cont,64,0.5039370078740157,n/a,"0,33","0,17",–,"96,5",Lfo2Phase
+init,177,LFOs,LFO 2 Start Phase,cont,127,1.0,n/a,"0,39","0,58",–,"97,5",Lfo2Phase
+init,178,LFOs,LFO 2 Delay,cont,0,0.0,n/a,"0,20","0,27",–,"96,8",
+init,178,LFOs,LFO 2 Delay,cont,32,0.25196850393700787,n/a,"0,33","0,50",–,"97,5",Lfo2Delay
+init,178,LFOs,LFO 2 Delay,cont,64,0.5039370078740157,n/a,"0,37","0,26",–,"96,2",Lfo2Delay
+init,178,LFOs,LFO 2 Delay,cont,127,1.0,n/a,"0,26","0,28",–,"97,1",Lfo2Delay
+init,184,LFOs,LFO 3 Shape,enum,0,,n/a,"0,30","0,35",–,"97,0",
+init,184,LFOs,LFO 3 Shape,enum,1,1.0,n/a,"0,13","0,18",–,"97,4",Lfo3Shape
+init,184,LFOs,LFO 3 Shape,enum,2,2.0,n/a,"0,35","0,43",–,"97,1",Lfo3Shape
+init,184,LFOs,LFO 3 Shape,enum,5,5.0,n/a,"0,24","0,28",–,"97,3",Lfo3Shape
+init,185,LFOs,LFO 3 Speed,enum,0,0.0,n/a,"0,17","0,14",–,"97,2",Lfo3Speed
+init,185,LFOs,LFO 3 Speed,enum,31,0.2440944881889764,n/a,"0,36","0,39",–,"97,1",Lfo3Speed
+init,185,LFOs,LFO 3 Speed,enum,62,0.4881889763779528,n/a,"0,37","0,28",–,"97,5",Lfo3Speed
+init,185,LFOs,LFO 3 Speed,enum,125,0.984251968503937,n/a,"0,25","0,38",–,"97,4",Lfo3Speed
+init,187,LFOs,LFO 3 Sync,cont,0,0.0,n/a,"0,25","0,29",–,"97,2",
+init,187,LFOs,LFO 3 Sync,cont,32,1.0,n/a,"0,27","0,24",–,"96,8",
+init,187,LFOs,LFO 3 Sync,cont,64,1.0,n/a,"0,14","0,15",–,"97,2",
+init,187,LFOs,LFO 3 Sync,cont,127,1.0,n/a,"0,28","0,29",–,"97,0",
+init,189,LFOs,LFO 3 Start Phase,cont,0,0.0,n/a,"0,11","0,24",–,"97,4",
+init,189,LFOs,LFO 3 Start Phase,cont,32,0.25196850393700787,n/a,"0,20","0,21",–,"96,9",Lfo3Phase
+init,189,LFOs,LFO 3 Start Phase,cont,64,0.5039370078740157,n/a,"0,27","0,20",–,"97,1",Lfo3Phase
+init,189,LFOs,LFO 3 Start Phase,cont,127,1.0,n/a,"0,17","0,18",–,"97,1",Lfo3Phase
+init,190,LFOs,LFO 3 Delay,cont,0,0.0,n/a,"0,21","0,22",–,"96,9",
+init,190,LFOs,LFO 3 Delay,cont,32,0.25196850393700787,n/a,"0,13","0,16",–,"97,2",Lfo3Delay
+init,190,LFOs,LFO 3 Delay,cont,64,0.5039370078740157,n/a,"0,26","0,34",–,"97,1",Lfo3Delay
+init,190,LFOs,LFO 3 Delay,cont,127,1.0,n/a,"0,28","0,30",–,"96,9",Lfo3Delay
+init,199,Hüllkurven,Filter Envelope Attack,cont,0,0.0,n/a,"0,09","0,27",–,"97,7",
+init,199,Hüllkurven,Filter Envelope Attack,cont,32,0.25196850393700787,n/a,"0,38","0,34",–,"97,6",Filter1EnvAttack Filter2EnvAttack
+init,199,Hüllkurven,Filter Envelope Attack,cont,64,0.5039370078740157,n/a,"0,22","0,37",–,"96,9",Filter1EnvAttack Filter2EnvAttack
+init,199,Hüllkurven,Filter Envelope Attack,cont,127,1.0,n/a,"0,42","0,32",–,"96,4",Filter1EnvAttack Filter2EnvAttack
+init,201,Hüllkurven,Filter Envelope Decay,cont,0,0.0,n/a,"0,21","0,49",–,"97,6",Filter1EnvDecay Filter2EnvDecay
+init,201,Hüllkurven,Filter Envelope Decay,cont,32,0.25196850393700787,n/a,"0,44","0,41",–,"96,6",Filter1EnvDecay Filter2EnvDecay
+init,201,Hüllkurven,Filter Envelope Decay,cont,64,0.5039370078740157,n/a,"0,42","0,48",–,"97,2",Filter1EnvDecay Filter2EnvDecay
+init,201,Hüllkurven,Filter Envelope Decay,cont,127,1.0,n/a,"0,16","0,36",–,"96,5",Filter1EnvDecay Filter2EnvDecay
+init,202,Hüllkurven,Filter Envelope Sustain,cont,0,0.0,n/a,"0,34","0,38",–,"97,2",
+init,202,Hüllkurven,Filter Envelope Sustain,cont,32,0.25196850393700787,n/a,"0,22","0,22",–,"96,9",Filter1EnvSustain Filter2EnvSustain
+init,202,Hüllkurven,Filter Envelope Sustain,cont,64,0.5039370078740157,n/a,"0,34","0,38",–,"97,0",Filter1EnvSustain Filter2EnvSustain
+init,202,Hüllkurven,Filter Envelope Sustain,cont,127,1.0,n/a,"0,46","0,57",–,"96,4",Filter1EnvSustain Filter2EnvSustain
+init,205,Hüllkurven,Filter Envelope Release,cont,0,0.0,n/a,"0,23","0,19",–,"97,6",
+init,205,Hüllkurven,Filter Envelope Release,cont,32,0.25196850393700787,n/a,"0,50","0,23",–,"96,4",Filter1EnvRelease Filter2EnvRelease
+init,205,Hüllkurven,Filter Envelope Release,cont,64,0.5039370078740157,n/a,"0,21","0,34",–,"97,4",Filter1EnvRelease Filter2EnvRelease
+init,205,Hüllkurven,Filter Envelope Release,cont,127,1.0,n/a,"0,44","0,45",–,"97,0",Filter1EnvRelease Filter2EnvRelease
+init,211,Hüllkurven,Amplifier Envelope Attack,cont,0,0.0,n/a,"0,31","0,25",–,"97,3",
+init,211,Hüllkurven,Amplifier Envelope Attack,cont,32,0.25196850393700787,n/a,"0,28","0,17",–,"96,5",AmpEnvAttack
+init,211,Hüllkurven,Amplifier Envelope Attack,cont,64,0.5039370078740157,Mismatch,"0,44","3,30",–,"91,2",AmpEnvAttack
+init,211,Hüllkurven,Amplifier Envelope Attack,cont,127,1.0,teilweise,"5,55","6,69","0,76","67,0",AmpEnvAttack
+init,213,Hüllkurven,Amplifier Envelope Decay,cont,0,0.0,n/a,"0,54","0,45",–,"96,7",AmpEnvDecay
+init,213,Hüllkurven,Amplifier Envelope Decay,cont,32,0.25196850393700787,n/a,"0,65","0,48",–,"97,9",AmpEnvDecay
+init,213,Hüllkurven,Amplifier Envelope Decay,cont,64,0.5039370078740157,n/a,"0,75","0,57",–,"98,0",AmpEnvDecay
+init,213,Hüllkurven,Amplifier Envelope Decay,cont,127,1.0,n/a,"0,62","0,48",–,"98,0",AmpEnvDecay
+init,214,Hüllkurven,Amplifier Envelope Sustain,cont,0,0.0,OK,"8,86","7,82","0,98","93,4",AmpEnvSustain
+init,214,Hüllkurven,Amplifier Envelope Sustain,cont,32,0.25196850393700787,Mismatch,"1,69","5,42",–,"78,6",AmpEnvSustain
+init,214,Hüllkurven,Amplifier Envelope Sustain,cont,64,0.5039370078740157,Mismatch,"0,92","2,39",–,"92,9",AmpEnvSustain
+init,214,Hüllkurven,Amplifier Envelope Sustain,cont,127,1.0,n/a,"0,68","0,55",–,"97,8",
+init,217,Hüllkurven,Amplifier Envelope Release,cont,0,0.0,n/a,"0,43","0,36",–,"97,5",
+init,217,Hüllkurven,Amplifier Envelope Release,cont,32,0.25196850393700787,n/a,"0,61","0,47",–,"98,0",AmpEnvRelease
+init,217,Hüllkurven,Amplifier Envelope Release,cont,64,0.5039370078740157,n/a,"0,91","0,77",–,"97,9",AmpEnvRelease
+init,217,Hüllkurven,Amplifier Envelope Release,cont,127,1.0,n/a,"0,34","0,28",–,"97,4",AmpEnvRelease
+init,223,Hüllkurven,Envelope 3 Attack,cont,0,0.0,n/a,"0,62","0,55",–,"97,8",
+init,223,Hüllkurven,Envelope 3 Attack,cont,32,0.25196850393700787,n/a,"0,36","0,33",–,"97,7",FreeEnv1Attack
+init,223,Hüllkurven,Envelope 3 Attack,cont,64,0.5039370078740157,n/a,"0,54","0,41",–,"98,1",FreeEnv1Attack
+init,223,Hüllkurven,Envelope 3 Attack,cont,127,1.0,n/a,"0,71","0,59",–,"97,7",FreeEnv1Attack
+init,225,Hüllkurven,Envelope 3 Decay,cont,0,0.0,n/a,"0,94","0,73",–,"98,3",FreeEnv1Decay
+init,225,Hüllkurven,Envelope 3 Decay,cont,32,0.25196850393700787,n/a,"0,69","0,59",–,"97,9",FreeEnv1Decay
+init,225,Hüllkurven,Envelope 3 Decay,cont,64,0.5039370078740157,n/a,"0,89","0,69",–,"98,3",
+init,225,Hüllkurven,Envelope 3 Decay,cont,127,1.0,n/a,"0,56","0,39",–,"97,8",FreeEnv1Decay
+init,226,Hüllkurven,Envelope 3 Sustain,cont,0,0.0,n/a,"0,72","0,60",–,"97,6",FreeEnv1Sustain
+init,226,Hüllkurven,Envelope 3 Sustain,cont,32,0.25196850393700787,n/a,"0,53","0,40",–,"97,7",FreeEnv1Sustain
+init,226,Hüllkurven,Envelope 3 Sustain,cont,64,0.5039370078740157,n/a,"0,70","0,56",–,"98,1",
+init,226,Hüllkurven,Envelope 3 Sustain,cont,127,1.0,n/a,"0,92","0,78",–,"98,0",FreeEnv1Sustain
+init,229,Hüllkurven,Envelope 3 Release,cont,0,0.0,n/a,"0,71","0,56",–,"97,9",FreeEnv1Release
+init,229,Hüllkurven,Envelope 3 Release,cont,32,0.25196850393700787,n/a,"0,92","0,75",–,"98,0",FreeEnv1Release
+init,229,Hüllkurven,Envelope 3 Release,cont,64,0.5039370078740157,n/a,"0,53","0,38",–,"97,5",
+init,229,Hüllkurven,Envelope 3 Release,cont,127,1.0,n/a,"0,89","0,67",–,"98,1",FreeEnv1Release
+init,235,Hüllkurven,Envelope 4 Attack,cont,0,0.0,n/a,"0,53","0,45",–,"97,5",
+init,235,Hüllkurven,Envelope 4 Attack,cont,32,0.25196850393700787,n/a,"0,82","0,66",–,"98,1",FreeEnv2Attack
+init,235,Hüllkurven,Envelope 4 Attack,cont,64,0.5039370078740157,n/a,"0,64","0,49",–,"98,0",FreeEnv2Attack
+init,235,Hüllkurven,Envelope 4 Attack,cont,127,1.0,n/a,"1,05","0,86",–,"98,1",FreeEnv2Attack
+init,237,Hüllkurven,Envelope 4 Decay,cont,0,0.0,n/a,"0,39","0,34",–,"97,5",FreeEnv2Decay
+init,237,Hüllkurven,Envelope 4 Decay,cont,32,0.25196850393700787,n/a,"0,46","0,34",–,"97,8",FreeEnv2Decay
+init,237,Hüllkurven,Envelope 4 Decay,cont,64,0.5039370078740157,n/a,"0,78","0,56",–,"98,2",
+init,237,Hüllkurven,Envelope 4 Decay,cont,127,1.0,n/a,"0,61","0,46",–,"97,7",FreeEnv2Decay
+init,238,Hüllkurven,Envelope 4 Sustain,cont,0,0.0,n/a,"0,69","0,61",–,"97,5",FreeEnv2Sustain
+init,238,Hüllkurven,Envelope 4 Sustain,cont,32,0.25196850393700787,n/a,"0,33","0,23",–,"97,5",FreeEnv2Sustain
+init,238,Hüllkurven,Envelope 4 Sustain,cont,64,0.5039370078740157,n/a,"0,59","0,53",–,"97,6",
+init,238,Hüllkurven,Envelope 4 Sustain,cont,127,1.0,n/a,"0,59","0,47",–,"97,8",FreeEnv2Sustain
+init,241,Hüllkurven,Envelope 4 Release,cont,0,0.0,n/a,"0,55","0,44",–,"97,7",FreeEnv2Release
+init,241,Hüllkurven,Envelope 4 Release,cont,32,0.25196850393700787,n/a,"0,56","0,40",–,"97,9",FreeEnv2Release
+init,241,Hüllkurven,Envelope 4 Release,cont,64,0.5039370078740157,n/a,"0,71","0,55",–,"98,0",
+init,241,Hüllkurven,Envelope 4 Release,cont,127,1.0,n/a,"0,81","0,62",–,"98,2",FreeEnv2Release
+init,261,Modulationsmatrix,Modulation 1 Source,enum,0,0.9488188976377953,n/a,"0,54","0,51",–,"97,3",MatrixAmount1 MatrixAmount2 MatrixControl3 MatrixControlAmount3 MatrixDst1 MatrixDst3 MatrixSrc1 MatrixSrc2 MatrixSrc3
+init,261,Modulationsmatrix,Modulation 1 Source,enum,8,4.0,n/a,"0,46","0,36",–,"98,0",MatrixSrc1
+init,261,Modulationsmatrix,Modulation 1 Source,enum,15,15.0,n/a,"0,69","0,57",–,"97,9",MatrixSrc1
+init,261,Modulationsmatrix,Modulation 1 Source,enum,30,40.0,n/a,"0,60","0,52",–,"97,5",MatrixSrc1
+init,262,Modulationsmatrix,Modulation 1 Destination,enum,0,1.0,n/a,"0,74","0,67",–,"97,7",MatrixDst1
+init,262,Modulationsmatrix,Modulation 1 Destination,enum,13,,n/a,"0,86","0,61",–,"97,8",
+init,262,Modulationsmatrix,Modulation 1 Destination,enum,26,114.0,n/a,"0,57","0,40",–,"97,9",MatrixDst1
+init,262,Modulationsmatrix,Modulation 1 Destination,enum,53,,n/a,"0,33","0,28",–,"97,5",
+init,263,Modulationsmatrix,Modulation 1 Amount,cont,0,0.24803149606299213,teilweise,"8,06","4,37","0,65","69,8",MatrixAmount1
+init,263,Modulationsmatrix,Modulation 1 Amount,cont,32,0.37401574803149606,OK,"4,14","2,35","0,84","84,4",MatrixAmount1
+init,263,Modulationsmatrix,Modulation 1 Amount,cont,64,0.5,n/a,"0,38","0,26",–,"97,8",
+init,263,Modulationsmatrix,Modulation 1 Amount,cont,127,0.7480314960629921,teilweise,"8,03","4,39","0,74","71,6",MatrixAmount1
+init,264,Modulationsmatrix,Modulation 2 Source,enum,0,,n/a,"0,53","0,37",–,"97,9",
+init,264,Modulationsmatrix,Modulation 2 Source,enum,8,0.5,n/a,"0,38","0,30",–,"97,4",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,264,Modulationsmatrix,Modulation 2 Source,enum,15,0.5,n/a,"0,62","0,49",–,"97,9",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,264,Modulationsmatrix,Modulation 2 Source,enum,30,0.5,n/a,"0,34","0,33",–,"97,5",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,267,Modulationsmatrix,Modulation 3 Source,enum,0,,n/a,"0,75","0,55",–,"98,1",
+init,267,Modulationsmatrix,Modulation 3 Source,enum,8,0.5,n/a,"0,49","0,46",–,"97,4",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,267,Modulationsmatrix,Modulation 3 Source,enum,15,0.5,n/a,"0,63","0,54",–,"97,8",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,267,Modulationsmatrix,Modulation 3 Source,enum,30,0.5,n/a,"0,46","0,41",–,"97,7",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,270,Modulationsmatrix,Modulation 4 Source,enum,0,,n/a,"0,90","0,71",–,"97,8",
+init,270,Modulationsmatrix,Modulation 4 Source,enum,8,0.5,n/a,"0,30","0,25",–,"97,2",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,270,Modulationsmatrix,Modulation 4 Source,enum,15,0.5,n/a,"0,63","0,51",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,270,Modulationsmatrix,Modulation 4 Source,enum,30,0.5,n/a,"0,65","0,50",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,273,Modulationsmatrix,Modulation 5 Source,enum,0,,n/a,"0,76","0,52",–,"98,0",
+init,273,Modulationsmatrix,Modulation 5 Source,enum,8,0.5,n/a,"0,69","0,51",–,"97,8",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,273,Modulationsmatrix,Modulation 5 Source,enum,15,0.5,n/a,"1,18","0,90",–,"98,3",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,273,Modulationsmatrix,Modulation 5 Source,enum,30,0.5,n/a,"0,83","0,74",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,276,Modulationsmatrix,Modulation 6 Source,enum,0,,n/a,"0,62","0,48",–,"97,5",
+init,276,Modulationsmatrix,Modulation 6 Source,enum,8,0.5,n/a,"0,61","0,45",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,276,Modulationsmatrix,Modulation 6 Source,enum,15,0.5,n/a,"0,89","0,65",–,"98,3",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,276,Modulationsmatrix,Modulation 6 Source,enum,30,0.5,n/a,"0,84","0,66",–,"98,0",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,279,Modulationsmatrix,Modulation 7 Source,enum,0,,n/a,"0,45","0,45",–,"97,6",
+init,279,Modulationsmatrix,Modulation 7 Source,enum,8,0.5,n/a,"0,80","0,54",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,279,Modulationsmatrix,Modulation 7 Source,enum,15,0.5,n/a,"0,57","0,41",–,"97,5",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,279,Modulationsmatrix,Modulation 7 Source,enum,30,0.5,n/a,"0,68","0,60",–,"97,5",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,282,Modulationsmatrix,Modulation 8 Source,enum,0,,n/a,"0,56","0,34",–,"97,7",
+init,282,Modulationsmatrix,Modulation 8 Source,enum,8,0.5,n/a,"0,92","0,70",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,282,Modulationsmatrix,Modulation 8 Source,enum,15,0.5,n/a,"0,63","0,61",–,"97,4",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,282,Modulationsmatrix,Modulation 8 Source,enum,30,0.5,n/a,"0,81","0,54",–,"97,9",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,285,Modulationsmatrix,Modulation 9 Source,enum,0,,n/a,"0,82","0,60",–,"97,9",
+init,285,Modulationsmatrix,Modulation 9 Source,enum,8,0.5,n/a,"0,85","0,64",–,"97,8",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,285,Modulationsmatrix,Modulation 9 Source,enum,15,0.5,n/a,"1,00","0,85",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,285,Modulationsmatrix,Modulation 9 Source,enum,30,0.5,n/a,"0,48","0,34",–,"98,0",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,288,Modulationsmatrix,Modulation 10 Source,enum,0,,n/a,"0,73","0,54",–,"97,9",
+init,288,Modulationsmatrix,Modulation 10 Source,enum,8,0.5,n/a,"0,80","0,55",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,288,Modulationsmatrix,Modulation 10 Source,enum,15,0.5,n/a,"0,53","0,37",–,"98,0",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,288,Modulationsmatrix,Modulation 10 Source,enum,30,0.5,n/a,"0,85","0,68",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,291,Modulationsmatrix,Modulation 11 Source,enum,0,,n/a,"0,84","0,53",–,"97,9",
+init,291,Modulationsmatrix,Modulation 11 Source,enum,8,0.5,n/a,"0,49","0,35",–,"97,8",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,291,Modulationsmatrix,Modulation 11 Source,enum,15,0.5,n/a,"0,82","0,61",–,"98,3",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,291,Modulationsmatrix,Modulation 11 Source,enum,30,0.5,n/a,"0,84","0,65",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,294,Modulationsmatrix,Modulation 12 Source,enum,0,,n/a,"0,59","0,45",–,"98,1",
+init,294,Modulationsmatrix,Modulation 12 Source,enum,8,0.5,n/a,"0,61","0,48",–,"98,0",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,294,Modulationsmatrix,Modulation 12 Source,enum,15,0.5,n/a,"0,66","0,55",–,"97,8",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,294,Modulationsmatrix,Modulation 12 Source,enum,30,0.5,n/a,"0,75","0,53",–,"98,0",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,297,Modulationsmatrix,Modulation 13 Source,enum,0,,n/a,"0,68","0,58",–,"97,6",
+init,297,Modulationsmatrix,Modulation 13 Source,enum,8,0.5,n/a,"0,61","0,50",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,297,Modulationsmatrix,Modulation 13 Source,enum,15,0.5,n/a,"0,66","0,53",–,"97,6",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,297,Modulationsmatrix,Modulation 13 Source,enum,30,0.5,n/a,"1,12","0,88",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,300,Modulationsmatrix,Modulation 14 Source,enum,0,,n/a,"0,66","0,60",–,"97,4",
+init,300,Modulationsmatrix,Modulation 14 Source,enum,8,0.5,n/a,"0,66","0,48",–,"97,8",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,300,Modulationsmatrix,Modulation 14 Source,enum,15,0.5,n/a,"0,87","0,70",–,"98,2",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,300,Modulationsmatrix,Modulation 14 Source,enum,30,0.5,n/a,"0,65","0,50",–,"98,0",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,303,Modulationsmatrix,Modulation 15 Source,enum,0,,n/a,"0,48","0,36",–,"98,1",
+init,303,Modulationsmatrix,Modulation 15 Source,enum,8,0.5,n/a,"0,83","0,69",–,"97,8",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,303,Modulationsmatrix,Modulation 15 Source,enum,15,0.5,n/a,"0,80","0,71",–,"97,8",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,303,Modulationsmatrix,Modulation 15 Source,enum,30,0.5,n/a,"0,42","0,27",–,"97,8",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,306,Modulationsmatrix,Modulation 16 Source,enum,0,,n/a,"0,54","0,42",–,"97,7",
+init,306,Modulationsmatrix,Modulation 16 Source,enum,8,0.5,n/a,"0,65","0,54",–,"97,9",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,306,Modulationsmatrix,Modulation 16 Source,enum,15,0.5,n/a,"0,45","0,32",–,"97,7",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+init,306,Modulationsmatrix,Modulation 16 Source,enum,30,0.5,n/a,"0,52","0,33",–,"98,1",MatrixAmount2 MatrixAmount3 MatrixAmount5 MatrixControl5 MatrixControlAmount5 MatrixDst2 MatrixDst4 MatrixDst5 MatrixOnOff5 MatrixSrc2 MatrixSrc3 MatrixSrc4 MatrixSrc5
+keytrack,86,Filter,Filter 1 Keytrack,cont,0,0.0,teilweise,"2,91","5,06","0,76",–,Filter1Keytrack
+keytrack,86,Filter,Filter 1 Keytrack,cont,32,0.25196850393700787,n/a,"1,37","1,94",–,–,Filter1Keytrack
+keytrack,86,Filter,Filter 1 Keytrack,cont,64,0.5039370078740157,n/a,"0,12","0,13",–,–,
+keytrack,86,Filter,Filter 1 Keytrack,cont,127,1.0,OK,"2,69","2,86","0,87",–,Filter1Keytrack
+lfo1,161,LFOs,LFO 1 Speed,enum,0,0.0,defekt,"4,06","1,70",–,"83,3",Lfo1Speed
+lfo1,161,LFOs,LFO 1 Speed,enum,31,0.2440944881889764,n/a,"0,75","0,70",–,"91,9",Lfo1Speed
+lfo1,161,LFOs,LFO 1 Speed,enum,62,0.4881889763779528,n/a,"0,32","0,26",–,"91,8",Lfo1Speed
+lfo1,161,LFOs,LFO 1 Speed,enum,125,0.984251968503937,defekt,"2,14","1,78",–,"92,7",Lfo1Speed
+lfo1,163,LFOs,LFO 1 Sync,cont,0,0.0,n/a,"0,24","0,29",–,"91,4",
+lfo1,163,LFOs,LFO 1 Sync,cont,32,1.0,n/a,"0,55","0,35",–,"90,2",
+lfo1,163,LFOs,LFO 1 Sync,cont,64,1.0,n/a,"0,47","0,20",–,"91,4",
+lfo1,163,LFOs,LFO 1 Sync,cont,127,1.0,n/a,"0,41","0,34",–,"89,8",
+lfo1,165,LFOs,LFO 1 Start Phase,cont,0,0.0,n/a,"0,25","0,31",–,"91,9",
+lfo1,165,LFOs,LFO 1 Start Phase,cont,32,0.25196850393700787,n/a,"0,28","0,28",–,"92,0",Lfo1Phase
+lfo1,165,LFOs,LFO 1 Start Phase,cont,64,0.5039370078740157,n/a,"0,21","0,28",–,"93,3",Lfo1Phase
+lfo1,165,LFOs,LFO 1 Start Phase,cont,127,1.0,n/a,"0,23","0,22",–,"92,4",Lfo1Phase
+lfo1,166,LFOs,LFO 1 Delay,cont,0,0.0,n/a,"0,43","0,38",–,"92,5",
+lfo1,166,LFOs,LFO 1 Delay,cont,32,0.25196850393700787,n/a,"0,28","0,61",–,"89,0",Lfo1Delay
+lfo1,166,LFOs,LFO 1 Delay,cont,64,0.5039370078740157,defekt,"2,20","1,57",–,"97,7",Lfo1Delay
+lfo1,166,LFOs,LFO 1 Delay,cont,127,1.0,defekt,"2,20","1,56",–,"97,8",Lfo1Delay
+lfo1,167,LFOs,LFO 1 Fade,cont,0,,defekt,"2,10","0,33",–,"87,4",
+lfo1,167,LFOs,LFO 1 Fade,cont,32,,defekt,"2,51","0,39",–,"86,1",
+lfo1,167,LFOs,LFO 1 Fade,cont,64,,n/a,"0,62","0,59",–,"92,4",
+lfo1,167,LFOs,LFO 1 Fade,cont,127,,defekt,"2,26","0,40",–,"85,3",
+noise,67,Mixer,Mixer Noise Level,cont,0,6.0,OK,"9,18","4,61","0,92","95,6",Osc3Type Osc3Vol
+noise,67,Mixer,Mixer Noise Level,cont,32,0.25196850393700787,OK,"2,61","2,79","0,92","77,2",Osc3Vol
+noise,67,Mixer,Mixer Noise Level,cont,64,0.5039370078740157,n/a,"0,97","1,37",–,"77,9",Osc3Vol
+noise,67,Mixer,Mixer Noise Level,cont,127,1.0,n/a,"0,59","1,08",–,"74,9",Osc3Vol
+noise,68,Mixer,Mixer Noise Balance,cont,0,,n/a,"0,33","0,62",–,"75,6",
+noise,68,Mixer,Mixer Noise Balance,cont,32,0.0,n/a,"0,25","1,25",–,"76,8",Filter2Level FilterLevel
+noise,68,Mixer,Mixer Noise Balance,cont,64,0.0,n/a,"0,27","1,80",–,"76,2",Filter2Level FilterLevel
+noise,68,Mixer,Mixer Noise Balance,cont,127,0.0,n/a,"0,26","5,02",–,"78,5",Filter2Level FilterLevel
+noise,69,Mixer,Mixer Noise Colour,cont,0,,defekt,"3,97","1,17",–,"85,5",
+noise,69,Mixer,Mixer Noise Colour,cont,32,,n/a,"0,79","0,93",–,"82,4",
+noise,69,Mixer,Mixer Noise Colour,cont,64,,n/a,"0,24","0,68",–,"75,8",
+noise,69,Mixer,Mixer Noise Colour,cont,127,,Mismatch,"4,85","2,68","0,44","67,8",Osc3WaveformShape
+osc2,17,Oszillatoren,Osc 2 Octave,cont,32,0.0,OK,"6,38","5,88",–,"94,5",MatrixAmount22 MatrixDst22 MatrixOnOff22 MatrixSrc22 Osc2CoarsePitch
+osc2,17,Oszillatoren,Osc 2 Octave,cont,48,8.0,OK,"5,92","5,93",–,"96,9",Osc2CoarsePitch
+osc2,17,Oszillatoren,Osc 2 Octave,cont,64,24.0,n/a,"0,34","0,30",–,"97,2",
+osc2,17,Oszillatoren,Osc 2 Octave,cont,80,40.0,OK,"7,08","6,52",–,"92,2",Osc2CoarsePitch
+osc2,18,Oszillatoren,Osc 2 Semitone,cont,52,12.0,OK,"5,47","5,46",–,"97,1",Osc2CoarsePitch
+osc2,18,Oszillatoren,Osc 2 Semitone,cont,58,18.0,OK,"5,28","5,21",–,"97,6",Osc2CoarsePitch
+osc2,18,Oszillatoren,Osc 2 Semitone,cont,64,24.0,n/a,"0,21","0,24",–,"98,2",
+osc2,18,Oszillatoren,Osc 2 Semitone,cont,76,36.0,OK,"6,54","6,12",–,"91,6",Osc2CoarsePitch
+osc2,19,Oszillatoren,Osc 2 Detune,cont,0,0.0,OK,"2,98","2,87",–,"98,6",Osc2FinePitch
+osc2,19,Oszillatoren,Osc 2 Detune,cont,32,0.24803149606299213,OK,"1,62","1,66",–,"97,8",Osc2FinePitch
+osc2,19,Oszillatoren,Osc 2 Detune,cont,64,0.5,n/a,"0,40","0,52",–,"97,5",
+osc2,19,Oszillatoren,Osc 2 Detune,cont,127,0.9960629921259843,OK,"2,88","2,74",–,"97,5",Osc2FinePitch
+osc2,24,Oszillatoren,Osc 2 Shape,enum,0,6.0,OK,"8,83","7,86","0,98","92,8",Osc2Type
+osc2,24,Oszillatoren,Osc 2 Shape,enum,18,0.0,OK,"8,68","7,04","0,99","90,0",MatrixAmount22 MatrixDst22 MatrixOnOff22 MatrixSrc22 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+osc2,24,Oszillatoren,Osc 2 Shape,enum,36,0.0,OK,"10,43","7,08","0,97","73,7",MatrixAmount22 MatrixDst22 MatrixOnOff22 MatrixSrc22 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+osc2,24,Oszillatoren,Osc 2 Shape,enum,72,0.0,OK,"8,35","6,48","0,99","92,8",MatrixAmount22 MatrixDst22 MatrixOnOff22 MatrixSrc22 Osc2Type Osc2WavetableBrilliance Osc2WavetablePosition Osc2WavetableTable
+osc2,25,Oszillatoren,Osc 2 Pulsewidth,cont,0,,n/a,"0,55","0,45",–,"97,5",
+osc2,25,Oszillatoren,Osc 2 Pulsewidth,cont,32,,n/a,"0,27","0,17",–,"97,7",
+osc2,25,Oszillatoren,Osc 2 Pulsewidth,cont,64,,n/a,"0,16","0,21",–,"97,9",
+osc2,25,Oszillatoren,Osc 2 Pulsewidth,cont,127,,n/a,"0,28","0,26",–,"97,4",
+osc2,26,Oszillatoren,Osc 2 PWM Source,enum,0,,n/a,"0,21","0,25",–,"97,5",
+osc2,26,Oszillatoren,Osc 2 PWM Source,enum,8,,n/a,"0,23","0,21",–,"97,5",
+osc2,26,Oszillatoren,Osc 2 PWM Source,enum,15,,n/a,"0,13","0,17",–,"97,6",
+osc2,26,Oszillatoren,Osc 2 PWM Source,enum,30,,n/a,"0,40","0,37",–,"97,2",
+osc2,27,Oszillatoren,Osc 2 PWM Amount,cont,0,,n/a,"0,32","0,30",–,"97,3",
+osc2,27,Oszillatoren,Osc 2 PWM Amount,cont,32,,n/a,"0,20","0,26",–,"97,5",
+osc2,27,Oszillatoren,Osc 2 PWM Amount,cont,64,,n/a,"0,32","0,18",–,"97,2",
+osc2,27,Oszillatoren,Osc 2 PWM Amount,cont,127,,n/a,"0,26","0,25",–,"97,3",
+osc2,63,Mixer,Mixer Osc 2 Level,cont,0,0.0,OK,"8,32","6,48","0,98","95,9",Osc2Vol
+osc2,63,Mixer,Mixer Osc 2 Level,cont,32,0.25196850393700787,OK,"3,27","3,74","0,89","88,0",Osc2Vol
+osc2,63,Mixer,Mixer Osc 2 Level,cont,64,0.5039370078740157,n/a,"1,70","1,91",–,"93,6",Osc2Vol
+osc2,63,Mixer,Mixer Osc 2 Level,cont,127,1.0,n/a,"0,34","0,19",–,"96,9",
+osc3,33,Oszillatoren,Osc 3 Octave,cont,32,0.0,OK,"6,78","6,21",–,"94,2",MatrixAmount22 MatrixDst22 MatrixOnOff22 MatrixSrc22 Osc3CoarsePitch
+osc3,33,Oszillatoren,Osc 3 Octave,cont,48,8.0,OK,"6,26","6,17",–,"96,9",Osc3CoarsePitch
+osc3,33,Oszillatoren,Osc 3 Octave,cont,64,24.0,n/a,"0,35","0,17",–,"98,0",
+osc3,33,Oszillatoren,Osc 3 Octave,cont,80,40.0,OK,"7,26","6,51",–,"92,2",Osc3CoarsePitch
+osc3,34,Oszillatoren,Osc 3 Semitone,cont,52,0.0,OK,"5,88","5,78",–,"97,2",Osc3CoarsePitch
+osc3,34,Oszillatoren,Osc 3 Semitone,cont,58,6.0,OK,"5,57","5,40",–,"97,6",Osc3CoarsePitch
+osc3,34,Oszillatoren,Osc 3 Semitone,cont,64,12.0,n/a,"0,25","0,33",–,"98,0",
+osc3,34,Oszillatoren,Osc 3 Semitone,cont,76,24.0,OK,"6,33","5,93",–,"93,7",Osc3CoarsePitch
+osc3,35,Oszillatoren,Osc 3 Detune,cont,0,0.0,OK,"3,28","3,10",–,"98,3",Osc3FinePitch
+osc3,35,Oszillatoren,Osc 3 Detune,cont,32,0.24803149606299213,OK,"1,85","1,80",–,"98,1",Osc3FinePitch
+osc3,35,Oszillatoren,Osc 3 Detune,cont,64,0.5,n/a,"0,67","0,57",–,"98,0",
+osc3,35,Oszillatoren,Osc 3 Detune,cont,127,0.9960629921259843,OK,"3,03","2,89",–,"97,1",Osc3FinePitch
+osc3,40,Oszillatoren,Osc 3 Shape,enum,0,6.0,OK,"9,08","8,07","0,98","91,9",Osc3Type
+osc3,40,Oszillatoren,Osc 3 Shape,enum,18,0.5,OK,"5,66","5,32","0,99","96,8",MatrixAmount22 MatrixDst22 MatrixOnOff22 MatrixSrc22 Osc3WaveformShape
+osc3,40,Oszillatoren,Osc 3 Shape,enum,36,0.5,OK,"4,99","4,74","1,00","98,2",MatrixAmount22 MatrixDst22 MatrixOnOff22 MatrixSrc22 Osc3WaveformShape
+osc3,40,Oszillatoren,Osc 3 Shape,enum,72,0.5,OK,"4,99","4,70","1,00","98,2",MatrixAmount22 MatrixDst22 MatrixOnOff22 MatrixSrc22 Osc3WaveformShape
+osc3,41,Oszillatoren,Osc 3 Pulsewidth,cont,0,,n/a,"0,11","0,26",–,"97,5",
+osc3,41,Oszillatoren,Osc 3 Pulsewidth,cont,32,,n/a,"0,63","0,59",–,"98,3",
+osc3,41,Oszillatoren,Osc 3 Pulsewidth,cont,64,,n/a,"0,22","0,24",–,"97,0",
+osc3,41,Oszillatoren,Osc 3 Pulsewidth,cont,127,,n/a,"0,15","0,22",–,"97,1",
+osc3,42,Oszillatoren,Osc 3 PWM Source,enum,0,,n/a,"0,62","0,53",–,"97,8",
+osc3,42,Oszillatoren,Osc 3 PWM Source,enum,8,,n/a,"0,26","0,28",–,"97,5",
+osc3,42,Oszillatoren,Osc 3 PWM Source,enum,15,,n/a,"0,40","0,40",–,"97,5",
+osc3,42,Oszillatoren,Osc 3 PWM Source,enum,30,,n/a,"0,26","0,28",–,"97,3",
+osc3,43,Oszillatoren,Osc 3 PWM Amount,cont,0,,n/a,"0,20","0,21",–,"97,4",
+osc3,43,Oszillatoren,Osc 3 PWM Amount,cont,32,,n/a,"0,46","0,45",–,"97,5",
+osc3,43,Oszillatoren,Osc 3 PWM Amount,cont,64,,n/a,"0,32","0,30",–,"97,7",
+osc3,43,Oszillatoren,Osc 3 PWM Amount,cont,127,,n/a,"0,35","0,38",–,"97,1",
+osc3,65,Mixer,Mixer Osc 3 Level,cont,0,0.0,OK,"9,19","8,40","0,98","92,1",Osc3Vol
+osc3,65,Mixer,Mixer Osc 3 Level,cont,32,0.25196850393700787,OK,"3,30","3,95","0,92","88,7",Osc3Vol
+osc3,65,Mixer,Mixer Osc 3 Level,cont,64,0.5039370078740157,n/a,"1,62","1,68",–,"96,2",Osc3Vol
+osc3,65,Mixer,Mixer Osc 3 Level,cont,127,1.0,n/a,"0,56","0,45",–,"97,5",
+pan,62,Mixer,Mixer Osc 1 Balance,cont,0,0.0,n/a,"0,01","0,07",–,–,
+pan,62,Mixer,Mixer Osc 1 Balance,cont,32,0.25196850393700787,n/a,"0,05","0,51",–,–,Filter2Level FilterLevel
+pan,62,Mixer,Mixer Osc 1 Balance,cont,64,0.5039370078740157,n/a,"0,13","1,24",–,–,Filter2Level FilterLevel
+pan,62,Mixer,Mixer Osc 1 Balance,cont,127,1.0,Mismatch,"0,36","6,69",–,–,Filter2Level FilterLevel
+pan,64,Mixer,Mixer Osc 2 Balance,cont,0,,n/a,"0,06","0,21",–,–,
+pan,64,Mixer,Mixer Osc 2 Balance,cont,32,,n/a,"0,02","0,14",–,–,
+pan,64,Mixer,Mixer Osc 2 Balance,cont,64,,n/a,"0,12","0,10",–,–,
+pan,64,Mixer,Mixer Osc 2 Balance,cont,127,,n/a,"0,15","0,33",–,–,
+pan,95,Filter,Filter 1 Pan Amount,cont,0,,OK,"4,60","7,94","1,00",–,MatrixAmount24 MatrixDst24 MatrixOnOff24 MatrixSrc24
+pan,95,Filter,Filter 1 Pan Amount,cont,32,,Mismatch,"0,05","2,77",–,–,MatrixAmount24 MatrixDst24 MatrixOnOff24 MatrixSrc24
+pan,95,Filter,Filter 1 Pan Amount,cont,64,,n/a,"0,02","0,09",–,–,
+pan,95,Filter,Filter 1 Pan Amount,cont,127,,OK,"4,30","7,94","0,99",–,MatrixAmount24 MatrixDst24 MatrixOnOff24 MatrixSrc24
+pan_noise,68,Mixer,Mixer Noise Balance,cont,0,,n/a,"0,00","0,08",–,–,
+pan_noise,68,Mixer,Mixer Noise Balance,cont,32,0.0,n/a,"0,06","0,43",–,–,Filter2Level FilterLevel
+pan_noise,68,Mixer,Mixer Noise Balance,cont,64,0.0,n/a,"0,00","1,16",–,–,Filter2Level FilterLevel
+pan_noise,68,Mixer,Mixer Noise Balance,cont,127,0.0,Mismatch,"0,15","5,79",–,–,Filter2Level FilterLevel
+release,205,Hüllkurven,Filter Envelope Release,cont,0,0.0,n/a,"1,68","1,70",–,–,
+release,205,Hüllkurven,Filter Envelope Release,cont,32,0.25196850393700787,n/a,"1,66","1,63",–,–,Filter1EnvRelease Filter2EnvRelease
+release,205,Hüllkurven,Filter Envelope Release,cont,64,0.5039370078740157,n/a,"1,68","1,56",–,–,Filter1EnvRelease Filter2EnvRelease
+release,205,Hüllkurven,Filter Envelope Release,cont,127,1.0,n/a,"1,70","1,60",–,–,Filter1EnvRelease Filter2EnvRelease
+release,217,Hüllkurven,Amplifier Envelope Release,cont,0,0.0,OK,"11,45","12,18","0,98",–,AmpEnvRelease
+release,217,Hüllkurven,Amplifier Envelope Release,cont,32,0.25196850393700787,OK,"11,10","10,97","0,98",–,AmpEnvRelease
+release,217,Hüllkurven,Amplifier Envelope Release,cont,64,0.5039370078740157,OK,"8,32","5,78","0,94",–,AmpEnvRelease
+release,217,Hüllkurven,Amplifier Envelope Release,cont,127,1.0,n/a,"1,59","1,67",–,–,
+release,229,Hüllkurven,Envelope 3 Release,cont,0,0.0,n/a,"1,74","1,44",–,–,FreeEnv1Release
+release,229,Hüllkurven,Envelope 3 Release,cont,32,0.25196850393700787,n/a,"1,71","1,52",–,–,FreeEnv1Release
+release,229,Hüllkurven,Envelope 3 Release,cont,64,0.5039370078740157,n/a,"1,66","1,59",–,–,
+release,229,Hüllkurven,Envelope 3 Release,cont,127,1.0,n/a,"1,65","1,58",–,–,FreeEnv1Release
+release,241,Hüllkurven,Envelope 4 Release,cont,0,0.0,n/a,"1,69","1,50",–,–,FreeEnv2Release
+release,241,Hüllkurven,Envelope 4 Release,cont,32,0.25196850393700787,n/a,"1,67","1,53",–,–,FreeEnv2Release
+release,241,Hüllkurven,Envelope 4 Release,cont,64,0.5039370078740157,n/a,"1,66","1,57",–,–,
+release,241,Hüllkurven,Envelope 4 Release,cont,127,1.0,n/a,"1,71","1,64",–,–,FreeEnv2Release
+res1b,80,Filter,Filter 1 Resonance,cont,0,0.0,n/a,"0,35","0,20",–,"89,3",
+res1b,80,Filter,Filter 1 Resonance,cont,32,0.25196850393700787,n/a,"0,81","0,27",–,"90,0",Filter1Reso
+res1b,80,Filter,Filter 1 Resonance,cont,64,0.5039370078740157,n/a,"1,41","0,84",–,"90,4",Filter1Reso
+res1b,80,Filter,Filter 1 Resonance,cont,127,1.0,Mismatch,"8,55","5,65","0,25","68,2",Filter1Reso
+res1c,80,Filter,Filter 1 Resonance,cont,0,0.0,n/a,"0,23","0,16",–,"95,3",
+res1c,80,Filter,Filter 1 Resonance,cont,32,0.25196850393700787,n/a,"0,99","0,32",–,"88,8",Filter1Reso
+res1c,80,Filter,Filter 1 Resonance,cont,64,0.5039370078740157,n/a,"1,61","1,08",–,"92,7",Filter1Reso
+res1c,80,Filter,Filter 1 Resonance,cont,127,1.0,Mismatch,"7,68","5,83","0,11","49,0",Filter1Reso
+res2b,100,Filter,Filter 2 Resonance,cont,0,0.0,n/a,"0,51","0,29",–,"84,7",
+res2b,100,Filter,Filter 2 Resonance,cont,32,0.25196850393700787,n/a,"0,72","0,19",–,"82,4",Filter2Reso
+res2b,100,Filter,Filter 2 Resonance,cont,64,0.5039370078740157,n/a,"1,44","0,98",–,"84,1",Filter2Reso
+res2b,100,Filter,Filter 2 Resonance,cont,127,1.0,Mismatch,"8,84","4,59","0,44","74,5",Filter2Reso
+sync,49,Oszillatoren,Osc 2 Sync to O3,cont,0,,n/a,"0,49","1,13",–,"89,2",
+sync,49,Oszillatoren,Osc 2 Sync to O3,cont,32,1.0,n/a,"0,31","1,66",–,"91,4",
+sync,49,Oszillatoren,Osc 2 Sync to O3,cont,64,1.0,n/a,"0,25","1,12",–,"88,8",
+sync,49,Oszillatoren,Osc 2 Sync to O3,cont,127,1.0,n/a,"0,21","1,60",–,"90,4",
+unison,58,Mixer,Allocation/Unisono,cont,0,0.0,n/a,"1,24","1,75",–,"98,0",UnisonoCount
+unison,58,Mixer,Allocation/Unisono,cont,32,2.0,n/a,"1,77","2,14",–,"88,5",UnisonoCount
+unison,58,Mixer,Allocation/Unisono,cont,64,4.0,n/a,"1,69","1,50",–,"81,1",
+unison,58,Mixer,Allocation/Unisono,cont,127,7.0,n/a,"1,60","1,64",–,"82,8",UnisonoCount
+unison,59,Mixer,Unisono Detune,cont,0,0.0,n/a,"1,35","1,50",–,"88,2",
+unison,59,Mixer,Unisono Detune,cont,32,0.25196850393700787,teilweise,"3,18","3,21","0,73","92,8",UnisonoDetune
+unison,59,Mixer,Unisono Detune,cont,64,0.5039370078740157,teilweise,"2,78","3,17","0,67","89,1",UnisonoDetune
+unison,59,Mixer,Unisono Detune,cont,127,1.0,defekt,"3,27","2,66",–,"95,7",UnisonoDetune
+velocity,88,Filter,Filter 1 Env Velocity,cont,0,0.0,teilweise,"5,89","6,90","0,57",–,Filter1VeloAmount
+velocity,88,Filter,Filter 1 Env Velocity,cont,32,0.25196850393700787,Mismatch,"6,50","4,31","0,18",–,Filter1VeloAmount
+velocity,88,Filter,Filter 1 Env Velocity,cont,64,0.5039370078740157,n/a,"0,31","0,25",–,–,
+velocity,88,Filter,Filter 1 Env Velocity,cont,127,1.0,n/a,"0,31","0,41",–,–,Filter1VeloAmount
+velocity,122,Verstärker,Amplifier Velocity,cont,0,0.0,teilweise,"2,40","6,12","0,97",–,AmpVeloAmount MatrixAmount2 MatrixControl3 MatrixControlAmount3 MatrixDst3 MatrixSrc2 MatrixSrc3
+velocity,122,Verstärker,Amplifier Velocity,cont,32,0.25196850393700787,n/a,"0,76","1,89",–,–,AmpVeloAmount MatrixAmount2
+velocity,122,Verstärker,Amplifier Velocity,cont,64,0.5039370078740157,n/a,"0,68","1,23",–,–,AmpVeloAmount MatrixAmount2
+velocity,122,Verstärker,Amplifier Velocity,cont,127,1.0,n/a,"0,32","0,65",–,–,AmpVeloAmount MatrixAmount2

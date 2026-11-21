@@ -156,9 +156,24 @@ def safe_name(name: str, loc: str) -> str:
     return safe
 
 
+IGNORED_PREFIX = "Ignored: "
+
+
+def split_unmapped(unmapped: list[str]) -> tuple[list[str], list[str]]:
+    """Separate deliberate ignores from real mapping gaps.
+
+    qpat_map marks parameters that the Blofeld itself ignores (e.g. PWM on a
+    sawtooth) with `Ignored: …`. Those must not show up as "not in MIDI map".
+    """
+    ignored = [u for u in unmapped if u.startswith(IGNORED_PREFIX)]
+    gaps = [u for u in unmapped if not u.startswith(IGNORED_PREFIX)]
+    return gaps, ignored
+
+
 def convert_sound(core, template: dict, parsed: dict, loc: str) -> dict:
     """One parse_sndd result -> .qpat bytes (identical to workflow.convert_parsed)."""
-    overrides, unmapped = core.qpat_map.blofeld_to_qpat_params(parsed)
+    overrides, unmapped_all = core.qpat_map.blofeld_to_qpat_params(parsed)
+    unmapped, ignored = split_unmapped(unmapped_all)
     merged = core.qpat_map.apply_to_template(template, overrides, name=parsed["name"])
     qbytes = core.qpat.build_qpat(
         merged["name"], merged["params"], creator=merged["creator"],
@@ -166,7 +181,7 @@ def convert_sound(core, template: dict, parsed: dict, loc: str) -> dict:
         version=core.qpat.PRESET_VERSION,  # v14, target device OS4
         sample_maps=merged.get("sample_maps"))
     return {"loc": loc, "name": parsed["name"], "qpat_bytes": qbytes,
-            "mapped": len(overrides), "unmapped": unmapped}
+            "mapped": len(overrides), "unmapped": unmapped, "ignored": ignored}
 
 
 def process_upload(filename: str, data: bytes, data_dir, model_path=None) -> dict:
@@ -229,6 +244,7 @@ def process_upload(filename: str, data: bytes, data_dir, model_path=None) -> dic
                 "category": str(parsed["params"].get("Category", "")),
                 "chk_ok": parsed["chk_ok"], "qpat_file": fname,
                 "mapped": conv["mapped"], "unmapped": conv["unmapped"],
+                "ignored": conv["ignored"],
                 "score": est["score"], "std": est.get("std"), "matcher": est["matcher"],
                 "score_parts": est.get("parts"), "penalties": est.get("penalties"),
                 # Feature vector for (re-)training the RF prognosis:

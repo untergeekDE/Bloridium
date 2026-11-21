@@ -29,6 +29,7 @@ import mido
 
 from bloridium import audio, blofeld_dump as bd, midi, qpat, qpat_map, sim
 from _quir import Iridium, init_overrides
+import _measure as _M
 
 OUT = REPO / "recordings" / "profile"
 LOG = REPO / "recordings" / "profile_sweep.jsonl"
@@ -59,6 +60,7 @@ def load_init():
 VALUE_OVERRIDES = {
     1: [32, 48, 64, 80], 17: [32, 48, 64, 80], 33: [32, 48, 64, 80],   # Octave (+/-2)
     2: [52, 58, 64, 76], 18: [52, 58, 64, 76], 34: [52, 58, 64, 76],   # Semitone (+/-12)
+    53: [0, 1], 56: [0, 1, 2, 3], 117: [0, 1],                           # enums without table
 }
 
 
@@ -72,6 +74,13 @@ def values_for(idx: int) -> list[int]:
         picks = sorted({0, int(round((n - 1) * 0.25)), int(round((n - 1) * 0.5)), n - 1})
         return picks
     return [0, 32, 64, 127]
+
+
+def overrides_from_sdata(sdata: bytes):
+    body = [0x3E, 0x13, 0x00, 0x10, 0x7F, 0x00, *sdata]
+    body.append(bd.checksum(bytes(sdata)))
+    return qpat_map.blofeld_to_qpat_params(
+        bd.parse_sndd(bytes([0xF0, *body, 0xF7])))[0]
 
 
 def synth_params(idx: int, raw: int, init_sdata: bytes):
@@ -108,6 +117,8 @@ def mapped_params(init_parsed) -> list[tuple[int, str, bool]]:
 
 
 def effect_vector(x: np.ndarray) -> np.ndarray:
+    if x.size < int(0.2 * audio.SAMPLERATE):
+        return np.zeros(64)
     f = sim.features(x, sr=audio.SAMPLERATE, n_bands=48)
     spec = f["log_spec"].mean(axis=1)
     spec = (spec - np.median(spec)) / 20.0
@@ -190,9 +201,11 @@ def main(argv=None) -> int:
     touched = set()
     try:
         # ---- baseline: Init on both, twice (noise floor) -------------------
-        bl.send_sysex(bd.build_sndd(base_sd, bb=0x7F, nn=0x00))
+        if not _M.load_sndd_verified(bl, base_sd):
+            raise RuntimeError("Blofeld Init-Dump nicht verifiziert")
         irr.cmd("init-patch", wait=0.8)
         irr.set_many([(k, v[0]) for k, v in sorted(base_ov.items())])
+        irr.set_many([("FX1Type", 0.0), ("FX2Type", 0.0)])  # dry (no reverb/chorus)
         base_vecs = {"blofeld": [], "iridium": []}
         for rep in range(2):
             d = rec_once(bl, irr)
@@ -225,13 +238,20 @@ def main(argv=None) -> int:
                     if touched:
                         irr.set_many([(k, base_value(k)) for k in touched])
                         touched = set()
-                    sd, ov = synth_params(idx, raw, base_sd)
+                    sd = bytearray(base_sd)
+                    sd[idx] = raw & 0x7F
+                    actual = _M.load_sndd_actual(bl, bytes(sd))
+                    if actual is None:
+                        print(f"  SKIP idx {idx} raw {raw}: kein Readback", flush=True)
+                        continue
+                    ov = overrides_from_sdata(actual)
                     keys = {k: v[0] for k, v in ov.items()
                             if k not in base_ov or abs(v[0] - base_ov[k][0]) > 1e-9}
-                    bl.send_sysex(bd.build_sndd(sd, bb=0x7F, nn=0x00))
                     if keys:
                         irr.set_many(sorted(keys.items()))
                         touched |= set(keys)
+                    if not (128 <= idx <= 159) and idx not in (81, 101):  # FX/drive stay wet
+                        irr.set_many([("FX1Type", 0.0), ("FX2Type", 0.0)])
                     time.sleep(0.15)
                     d = rec_once(bl, irr)
                     vecs, feats = {}, {}
@@ -249,6 +269,7 @@ def main(argv=None) -> int:
                     row = {"kind": "row", "idx": idx, "param": pname, "enum": is_enum,
                            "raw": raw, "value_pct": raw / 127.0 if not is_enum else None,
                            "iridium_keys": sorted(keys), "status": status,
+                           "raw_effective": int(actual[idx]) if actual[idx] != (raw & 0x7F) else None,
                            "mag_b": round(mb, 4), "mag_i": round(mi, 4),
                            "pair_score": round(pair, 1),
                            "cos": None if cos is None else round(cos, 4),

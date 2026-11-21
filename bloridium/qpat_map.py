@@ -221,6 +221,29 @@ def norm(raw: int) -> float:
     return max(0.0, min(1.0, raw / 127.0))
 
 
+def osc_destination(raw: int) -> float:
+    """Blofeld F1/F2 balance (raw 0 = F1, 127 = F2) -> Iridium OscNDestination.
+
+    OscNDestination is continuous 2..22 (own exports: 2='DF 0 Fil 100',
+    10='DF 40 Fil 60', 22='DF 100 Fil 0'). The DigiFormer is the Iridium's F2
+    stage in the serial model, so balance 127 -> 22 ('all F2') and 0 -> 2
+    ('all F1'). Measured balance direction 2026-11-21 (direct test).
+    """
+    raw = max(0, min(127, int(raw)))
+    return 2.0 + 20.0 * raw / 127.0
+
+
+def bipolar_amount_full(raw: int) -> float:
+    """Blofeld bipolar amount raw 0..127 (64 = neutral) -> Iridium full-range norm.
+
+    The live calibration (detune 2026-11-21: 203 cent per norm unit; filter pan
+    2026-11-21: /254 gave only half the pan) shows that the Iridium matrix/offset
+    range is +/-100 % at 0/1, so the divisor is 127, not 254.
+    """
+    raw = max(0, min(127, int(raw)))
+    return max(0.0, min(1.0, 0.5 + (raw - 64) / 127.0))
+
+
 # ---- Glide Rate: time calibration (both sides are log-scaled in time) ----
 # Why not plain norm(): Blofeld "Glide Rate" raw 0..127 is NOT linear in time
 # (Blofeld manual: low values = milliseconds, high = several seconds); the
@@ -321,12 +344,41 @@ def matrix_pitch_amount_for_semi(semi: float) -> float:
     return 0.5
 
 
-def fine_pitch_norm(raw: int) -> float:
-    """Blofeld osc detune (bipolar, center 64 = 0, range +/-64 cent) -> Iridium
-    OscNFinePitch norm 0..1 centered at 0.5. Divisor 254 assumes the Iridium full
-    range is +/-127 cent - live-calibration TODO (audio pitch sweep)."""
+# Blofeld shapes whose PWM/PW actually affects the pulse width. On all other
+# waveform shapes (Saw/Triangle/Sine) the Blofeld ignores PWM, but the Iridium
+# "WF Warp" destination would audibly change the waveform (A1, profiling 2026-11-21).
+PULSE_LIKE_SHAPES = {"Pulse", "PWM Pulse", "PWM Saw", "True PWM", "Micro PWM"}
+
+
+def has_pulse_width(shape) -> bool:
+    """True if a Blofeld shape reacts to PWM (pulse width / wave position)."""
+    if not isinstance(shape, str):
+        return False
+    return (shape in PULSE_LIKE_SHAPES
+            or shape.startswith("Square") or shape.startswith("PulSync"))
+
+
+def unison_count(raw: int) -> float:
+    """Blofeld Allocation/Unisono (bitfield 0uuu000a, spec 4.10) -> Iridium enum.
+
+    uuu (bits 4-6) = 0 Off, 1 Dual/2 voices, 2 = 3 voices ... 5 = 6 voices.
+    Iridium UnisonoCount uses the same enum (runtime param-info 3691:
+    0 Off, 1 2 ... 7 8). The old >>5 read bits 5-7 and halved the voice count.
+    """
     raw = max(0, min(127, int(raw)))
-    return max(0.0, min(1.0, 0.5 + (raw - 64) / 254.0))
+    return float((raw >> 4) & 0x07)
+
+
+def fine_pitch_norm(raw: int) -> float:
+    """Blofeld osc detune (bipolar, center 64 = 0) -> Iridium OscNFinePitch norm 0..1.
+
+    Live calibration 2026-11-21 (Init sweep, docs/PROFILING-INIT-2026-11-21.md):
+    Blofeld raw 0/127 = -101/+100 cent, Iridium norm 0/1 = -101/+101 cent
+    (measured +203 cent per norm unit). The matching curve is therefore
+    norm = 0.5 + (raw-64)/127; the earlier divisor 254 produced only half the
+    detune (+/-51 cent) and is fixed here."""
+    raw = max(0, min(127, int(raw)))
+    return max(0.0, min(1.0, 0.5 + (raw - 64) / 127.0))
 
 
 # ---- filter cutoff calibration (2026-11-14) ----
@@ -457,7 +509,8 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         # FM/PWM Source+Amount are NOT unmapped here anymore: they are mapped as
         # matrix rows >= 21 in the hard-wired block below (2026-11-21, A007 @ 206);
         # only truly unmappable ones land in unmapped there.
-        unmapped.append(f"Mixer Osc {n} Balance (F1/F2 share, not pan; later maybe OscNDestination)")
+        # 'Mixer Osc N Balance' is the F1/F2 share -> OscNDestination (see the
+        # routing loop below; the earlier version left it unmapped).
         if otype != "Wavetable":
             unmapped.append(f"Osc {n} Brilliance")
     # Hard sync (P1-1, ANALYSIS-2026-11-15): Blofeld "Osc 2 Sync to O3" -> Osc2WaveformSync
@@ -469,7 +522,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # Iridium hat keinen eigenen Noise-Mixer-Eintrag, aber ein Osc KANN Noise sein
     # (OscNType=Waveform + WaveformShape White/Pink). Nur einen FREIEN Osc-Slot
     # verwenden (bevorzugt Osc3) - einen klingenden Osc nie ueberschreiben.
-    # Colour: <=64 dunkler -> Pink, >64 -> White. Balance bipolar um 64 -> Pan.
+    # Colour: <=64 dunkler -> Pink, >64 -> White. Balance = F1/F2-Anteil (nicht Pan).
     noise_level = p.get("Mixer Noise Level", 0)
     noise_osc = None
     if noise_level:
@@ -488,8 +541,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
             setp(f"Osc{free}WaveformShape", 5.0 if white else 4.0,
                  "White Noise" if white else "Pink Noise")
             setp(f"Osc{free}Vol", norm(noise_level))
-            setp(f"Osc{free}Pan", norm(p.get("Mixer Noise Balance", 64)))
-            setp(f"Osc{free}Destination", OSC_DESTINATION["DF 0 Fil 100"], "DF 0 Fil 100")
+            setp(f"Osc{free}Pan", 0.5, "center (Balance is F1/F2 share, not pan)")
     # (Osc Pitch Source/Amount now mapped as matrix slot -> Pitch, see below)
 
     # --- glide / unisono ---
@@ -497,10 +549,15 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # Glide Rate time-calibrated (log scale), not linear: norm() mapped too high (see above)
     _gr = p.get("Glide Rate", 0)
     setp("GlideRate", glide_rate_norm(_gr), f"~{blofeld_glide_seconds(_gr):.3f}s")
-    # UnisonoCount is an enum (runtime: 0=Off, 1=2 voices ... 7=8), not a norm.
-    # Blofeld Allocation/Unisono bits 5-7 = voices-1 (0 = mono) -> pass through as enum.
-    setp("UnisonoCount", float((p.get("Allocation/Unisono", 0) >> 5) & 0x07))
+    # UnisonoCount is an enum (runtime param-info 3691: 0=Off, 1=2 voices ... 7=8),
+    # not a norm. Blofeld Allocation/Unisono = 0uuu000a (spec 4.10): bits 4-6 are the
+    # voice index (0=mono/off, 1=dual ... 5=6 voices) -> same enum, see unison_count().
+    setp("UnisonoCount", unison_count(p.get("Allocation/Unisono", 0)))
     setp("UnisonoDetune", norm(p.get("Unisono Detune", 0)))
+    # The Blofeld has neither a unison pan spread nor a unison delay; the template
+    # defaults (pan 0.5, delay 0.25) would delay the Iridium voices (A4).
+    setp("UnisonoPan", 0.5, "center (Blofeld has no unison pan)")
+    setp("UnisonoDelay", 0.0, "no delay (Blofeld has no unison delay)")
     # Aftertouch (user decision 2026-11-18, live-verified): the Iridium reacts to
     # CHANNEL AT, but the keyboard produces POLY AT in general -> the conversion
     # targets POLY AT: AfterTouchDoPoly=1.0 ('Poly AT'; runtime enum param-info 2876:
@@ -622,11 +679,34 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         # Fade/Keytrack haben kein Iridium-LFO-Pendant (verbleiben unmapped)
         unmapped.append(f"LFO {n} Fade/Keytrack")
 
-    # --- routing: Blofeld Osc->Mixer->F1->F2->Amp corresponds to Iridium
-    #     Osc Destination 'DF 0 Fil 100' (100 % into the filter; Former share 0 -
-    #     Former is serial F2 resp. parallel Bypass, see filter block above) ---
+    # --- routing: Blofeld Osc->Mixer->F1->F2->Amp. The per-source Balance is the
+    #     F1/F2 share and maps to the Iridium Osc Destination (2 = all filter,
+    #     22 = all DigiFormer/F2; see osc_destination). The noise slot uses the
+    #     Mixer Noise Balance instead of the osc balance. ---
     for n in (1, 2, 3):
-        setp(f"Osc{n}Destination", OSC_DESTINATION["DF 0 Fil 100"], "DF 0 Fil 100")
+        bal = (p.get("Mixer Noise Balance", 64) if n == noise_osc
+               else p.get(f"Mixer Osc {n} Balance", 0))
+        if seriell:
+            # serial: F1 -> Former (the Former acts as F2) -> destination splits
+            setp(f"Osc{n}Destination", osc_destination(bal), f"Balance {bal} (F1/F2)")
+        else:
+            # parallel: both filters are real; destination stays "all into the
+            # filter block", the F1/F2 share is set globally below.
+            setp(f"Osc{n}Destination", OSC_DESTINATION["DF 0 Fil 100"], "all into filter")
+    if not seriell:
+        bals = []
+        for n in (1, 2, 3):
+            if p.get(f"Osc {n} Shape") != "off" and p.get(f"Mixer Osc {n} Level", 0) > 0:
+                bals.append(p.get(f"Mixer Osc {n} Balance", 0))
+        if noise_osc:
+            bals.append(p.get("Mixer Noise Balance", 64))
+        if bals and max(bals) - min(bals) <= 4:
+            share = (sum(bals) / len(bals)) / 127.0
+            setp("FilterLevel", 1.0 - share, f"Balance -> F1 share {1 - share:.2f}")
+            setp("Filter2Level", share, f"Balance -> F2 share {share:.2f}")
+        else:
+            unmapped.append("Per-Osc F1/F2 Balance in parallel mode "
+                            "(only global FilterLevel/Filter2Level)")
     # Filter keytrack: Blofeld raw 0..127 = -200%..+196% (64 = 0%, offset binary!),
     # Iridium FilterNKeytrack norm 0..1 = -200%..+200% (0.5 = 0%) -> directly norm(raw).
     # ATTENTION: the earlier (kt-64)/64 gave -1..+1 (raw 64 -> 0.0 = "-200%" on the Iridium!)
@@ -648,7 +728,9 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         d_disp = BLOFELD_MOD_DST.get(dst)
         if d_disp is None and noise_osc and dst in ("NoiseLevel", "Noise Bal."):
             # Blofeld-Modulation auf den Noise-Mixer -> Iridium Osc-Mix/Pan des Noise-Osc
-            d_disp = f"Osc{noise_osc} Mix" if dst == "NoiseLevel" else f"Osc{noise_osc} Pan"
+            # 'NoiseLevel' -> osc mix; 'Noise Bal.' is the F1/F2 share and has
+            # no matrix destination (OscNDestination is not modulatable)
+            d_disp = f"Osc{noise_osc} Mix" if dst == "NoiseLevel" else None
         if d_disp is None and isinstance(dst, str) and dst.endswith("PW/Wave"):
             # Blofeld "O1 PW/Wave": wavetable position for a wavetable osc, else WF warp (PW)
             try:
@@ -686,17 +768,30 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                 mrow(hw, s_disp, ctrl_disp, d_disp, amt_bipolar(p[f"Filter {n} Mod Amount"]))
             else:
                 unmapped.append(f"Filter {n} Mod Source {src!r}")
-    # Osc N PWM Source/Amount -> WF warp (waveform osc) resp. WT position (wavetable)
+    # Osc N PWM Source/Amount -> WF warp (pulse shapes) resp. WT position (wavetable).
+    # A1 (profiling 2026-11-21): only pulse-like shapes have a pulse width on the
+    # Blofeld. Mapping PWM to WF Warp on Saw/Triangle/Sine changed those waveforms
+    # on the Iridium (3-6x stronger than the Blofeld PWM) -> deliberately ignore it.
     for n in (1, 2, 3):
         src = p.get(f"Osc {n} PWM Source")
         amt = p.get(f"Osc {n} PWM Amount", 0)
         if isinstance(src, str) and src != "off" \
                 and isinstance(amt, (int, float)) and amt != 0:
-            hw += 1
             s_disp, ctrl_disp = _resolve_mod_source(p, src)
-            d_disp = f"WT{n} Position" if osc_is_wavetable.get(n) else f"WF{n} Warp"
-            if s_disp and d_disp in MATRIX_DST:
+            shape = p.get(f"Osc {n} Shape")
+            if osc_is_wavetable.get(n):
+                d_disp = f"WT{n} Position"
+            elif has_pulse_width(shape):
+                d_disp = f"WF{n} Warp"
+            else:
+                d_disp = None
+            if s_disp and d_disp and d_disp in MATRIX_DST:
+                hw += 1
                 mrow(hw, s_disp, ctrl_disp, d_disp, amt_bipolar(amt))
+            elif d_disp is None:
+                if shape != "off":
+                    unmapped.append(
+                        f"Ignored: Osc {n} PWM (shape {shape!r} has no pulse width)")
             else:
                 unmapped.append(f"Osc {n} PWM Source {src!r} (no Iridium dst)")
         # Osc N FM: no FM dst on the Iridium -> approximate via OscN Pitch
@@ -715,15 +810,17 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         for kind, d_base in (("FM", "Cutoff"), ("Pan", "Pan")):
             src = p.get(f"Filter {n} {kind} Source")
             amt = p.get(f"Filter {n} {kind} Amount", 0)
+            neutral = 64 if kind == "Pan" else 0
             if isinstance(src, str) and src != "off" \
-                    and isinstance(amt, (int, float)) and amt != 0:
+                    and isinstance(amt, (int, float)) and amt != neutral:
                 hw += 1
                 s_disp, ctrl_disp = _resolve_mod_source(p, src)
                 d_disp = f"Filter{n} {d_base}"
                 if n == 2 and seriell and not f2_bypass:
                     d_disp = "DF Amount" if d_base == "Cutoff" else "DF Pan"
                 if s_disp:
-                    mrow(hw, s_disp, ctrl_disp, d_disp, amt_bipolar(amt))
+                    mrow(hw, s_disp, ctrl_disp, d_disp,
+                         bipolar_amount_full(amt) if kind == "Pan" else amt_bipolar(amt))
                 else:
                     unmapped.append(f"Filter {n} {kind} Source {src!r}")
     # Octave excess beyond CoarsePitch (enum max +24 semi): Constant -> OscN Pitch.
@@ -809,17 +906,15 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         for ikey, pnum in FX_PARAMS.get(t, {}).items():
             setp(ikey, norm(p.get(f"Effect {n} Parameter {pnum}", 0)))
         if ir == "Reverb":
-            # no ReverbDryWet key exists -> mix via matrix slot Constant -> 'FX2 DryWet'
-            # (runtime dst 144); Reverb params (spec 5.9): p2 Shape -> Color, p3 Decay -> Time
+            # No ReverbDryWet key exists; ReverbGain IS the reverb dry/wet (manual:
+            # "0% = dry signal only ... 100% = pure reverb"). This is a real static
+            # intermediate value, unlike the old Constant -> FX2 DryWet matrix row,
+            # whose bipolar amount could not reach a partial mix (A3).
+            # Reverb params (spec 5.9): p2 Shape -> Color, p3 Decay -> Time.
             setp("ReverbColor", norm(p.get(f"Effect {n} Parameter 2", 0)))
             setp("ReverbTime", norm(p.get(f"Effect {n} Parameter 3", 0)))
-            mix = p.get(f"Effect {n} Mix", 0)
-            if isinstance(mix, (int, float)) and mix > 0 and n == 2:
-                slot += 1
-                setp(f"MatrixSrc{slot}", MATRIX_SRC["Constant"], "Constant")
-                setp(f"MatrixDst{slot}", MATRIX_DST["FX2 DryWet"], "FX2 DryWet")
-                setp(f"MatrixAmount{slot}", 0.5 + 0.5 * norm(mix))
-                setp(f"MatrixOnOff{slot}", 1.0, "Active")
+            setp("ReverbGain", norm(p.get(f"Effect {n} Mix", 0)),
+                 f"Reverb mix {norm(p.get(f'Effect {n} Mix', 0)):.2f}")
         if t == "Clk.Delay":
             # clock-synced delay: Length raw 0..29 (1/96..10 bars) -> sync index (approx)
             setp("DelaySync", 1.0, "On")

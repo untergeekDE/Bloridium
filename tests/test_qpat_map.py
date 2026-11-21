@@ -25,9 +25,51 @@ def overrides(parsed):
     return ov
 
 
-def test_osc_destinations_go_to_filter(overrides):
+def test_osc_destinations_follow_balance(parsed, overrides):
+    # 2026-11-21: 'Mixer Osc N Balance' (F1/F2 share, 0=F1, 127=F2) maps to
+    # OscNDestination (2 = all filter/F1 ... 22 = all DigiFormer/F2).
     for n in (1, 2, 3):
-        assert overrides[f"Osc{n}Destination"] == (2.0, "DF 0 Fil 100")
+        bal = parsed["params"][f"Mixer Osc {n} Balance"]
+        assert overrides[f"Osc{n}Destination"][0] == pytest.approx(
+            qpat_map.osc_destination(bal))
+
+
+def test_balance_maps_to_destination_not_pan():
+    # serial (A001): F2 = Former -> destination split
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A001"]))
+    parsed["params"]["Mixer Osc 1 Balance"] = 127
+    ov, _un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc1Destination"][0] == pytest.approx(22.0)   # all F2 / DigiFormer
+    assert ov["Osc1Pan"][0] == pytest.approx(0.5)            # still no stereo pan
+    # parallel (A043): both filters real -> destination stays, global levels split
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A043"]))
+    for n in (1, 2, 3):
+        parsed["params"][f"Mixer Osc {n} Balance"] = 127
+    ov, _un = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Osc1Destination"][0] == pytest.approx(2.0)
+    assert ov["FilterLevel"][0] == pytest.approx(0.0)
+    assert ov["Filter2Level"][0] == pytest.approx(1.0)
+
+
+def test_osc_pan_always_center_balance_is_not_pan():
+    # Finding 2026-11-15 (user, stereo image): Blofeld 'Mixer Osc N Balance' is the
+    # F1/F2 share (MAPPING-MASTER, warning), NOT a stereo pan. Pan stays center;
+    # the balance goes to OscNDestination (2026-11-21).
+    for loc, dump in DUMPS_9.items():
+        parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / dump))
+        ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
+        serial = parsed["params"]["Filter Routing"] == 1
+        for n in (1, 2, 3):
+            assert ov[f"Osc{n}Pan"][0] == pytest.approx(0.5), f"{loc} Osc{n}Pan"
+            if serial:
+                assert ov[f"Osc{n}Destination"][0] == pytest.approx(
+                    qpat_map.osc_destination(parsed["params"][f"Mixer Osc {n} Balance"]))
+            else:
+                assert ov[f"Osc{n}Destination"][0] == pytest.approx(2.0)
+        bals = [parsed["params"][f"Mixer Osc {n} Balance"] for n in (1, 2, 3)]
+        uniform = max(bals) - min(bals) <= 4
+        if uniform:
+            assert not any("Per-Osc F1/F2" in u for u in unmapped), loc
 
 
 def test_osc_octave_sign_a001():
@@ -347,19 +389,6 @@ def test_no_v8_enum_leak_in_v14_qpat_all_9():
                 assert val in VALID_DST, f"{loc}: {k}={val} is not a runtime enum value"
 
 
-def test_osc_pan_always_center_balance_is_not_pan():
-    # Finding 2026-11-15 (user, stereo image): Blofeld 'Mixer Osc N Balance' is the
-    # F1/F2 share (MAPPING-MASTER, warning), NOT a stereo pan. A043 Balance=0 -> OscNPan 0.0
-    # = hard left on the Iridium. Fix: pan always center 0.5; balance goes to the unmapped log
-    # (later maybe OscNDestination in parallel).
-    for loc, dump in DUMPS_9.items():
-        parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / dump))
-        ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
-        for n in (1, 2, 3):
-            assert ov[f"Osc{n}Pan"][0] == pytest.approx(0.5), f"{loc} Osc{n}Pan"
-        assert any("Mixer Osc 1 Balance" in u for u in unmapped), loc
-
-
 # --- 2026-11-18 rebuild: sync, serial F2 remap, FX by type, detune centering ---
 
 def test_osc2_sync_mapped_a071_a008_not_a001():
@@ -424,11 +453,12 @@ def test_fx_clk_delay_params_a039():
 
 def test_detune_centered_not_full_range_a008():
     # A008 Osc1 Detune raw 126: old norm() -> 0.992 (almost full Iridium range);
-    # bipolar centered: 0.5 + (126-64)/254 = 0.744
+    # bipolar centered with the live-calibrated cent scale: 0.5 + (126-64)/127 = 0.988
+    # (2026-11-21 Init sweep: Blofeld +/-101 cent, Iridium +/-101 cent at norm 0/1)
     parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A008"]))
     assert parsed["params"]["Osc 1 Detune"] == 126
     ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
-    assert ov["Osc1FinePitch"][0] == pytest.approx(0.5 + (126 - 64) / 254)
+    assert ov["Osc1FinePitch"][0] == pytest.approx(0.5 + (126 - 64) / 127)
     assert ov["Osc1FinePitch"][0] != pytest.approx(126 / 127)
     assert qpat_map.fine_pitch_norm(64) == pytest.approx(0.5)
 
@@ -520,9 +550,9 @@ def test_osc_type_off_is_6_runtime():
     assert qpat_map.OSC_TYPE["Off"] == 6.0
 
 
-def test_reverb_fx2_mix_via_matrix_slot_and_params():
-    # FX2=Reverb: no ReverbDryWet key -> mix via Constant -> 'FX2 DryWet' (144),
-    # ReverbColor from p2 (Shape), ReverbTime from p3 (Decay), spec 5.9
+def test_reverb_fx2_mix_via_reverb_gain_and_params():
+    # FX2=Reverb: Iridium has no ReverbDryWet, but ReverbGain IS the reverb dry/wet
+    # (manual: "0% = dry only, 100% = pure reverb") -> use it, no Constant matrix row.
     parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A039"]))
     parsed["params"]["Effect 2 Type"] = "Reverb"
     parsed["params"]["Effect 2 Mix"] = 64
@@ -532,11 +562,23 @@ def test_reverb_fx2_mix_via_matrix_slot_and_params():
     assert ov["FX2Type"][1] == "Reverb" and ov["FX2Type"][0] == 6.0   # runtime enum
     assert ov["ReverbTime"][0] == pytest.approx(80 / 127)
     assert ov["ReverbColor"][0] == pytest.approx(100 / 127)
-    dw = [k for k in ov if k.startswith("MatrixDst") and ov[k][1] == "FX2 DryWet"]
-    assert dw and all(ov[k][0] == 144.0 for k in dw)
-    amt = ov[dw[0].replace("Dst", "Amount")][0]
-    assert amt == pytest.approx(0.5 + 0.5 * 64 / 127)
+    assert ov["ReverbGain"][0] == pytest.approx(64 / 127)
+    assert not any(k.startswith("MatrixDst") and ov[k][1] == "FX2 DryWet" for k in ov)
     assert not any("Mix for Reverb" in u for u in unmapped)
+
+
+def test_unison_count_uses_bits_4_to_6():
+    # Blofeld Allocation/Unisono = 0uuu000a (spec 4.10): bits 4-6 are the unison
+    # index (0 off, 1 dual, 2 three voices ...). The old >>5 halved the voice count.
+    parsed = bd.parse_sndd((REPO / "dumps/banks/A/A066.bin").read_bytes())
+    for raw, count in ((0x00, 0.0), (0x10, 1.0), (0x20, 2.0), (0x40, 4.0), (0x50, 5.0)):
+        parsed["params"]["Allocation/Unisono"] = raw
+        ov, _un = qpat_map.blofeld_to_qpat_params(parsed)
+        assert ov["UnisonoCount"][0] == count, f"raw {raw:#04x}"
+    # Blofeld has neither unison pan spread nor unison delay -> neutral values,
+    # otherwise template defaults (pan 0.5, delay 0.25) delay the Iridium voices.
+    assert ov["UnisonoPan"][0] == pytest.approx(0.5)
+    assert ov["UnisonoDelay"][0] == pytest.approx(0.0)
 
 
 # --- Task 3 (2026-11-20): LFO Shape/Delay/Phase + Mixer Noise -> freier Osc -----
@@ -582,8 +624,9 @@ def test_noise_on_free_osc3_white():
     assert ov["Osc3Type"][0] == qpat_map.OSC_TYPE["Waveform"]
     assert ov["Osc3WaveformShape"][0] == 5.0               # Colour > 64 -> White Noise
     assert ov["Osc3Vol"][0] == pytest.approx(40 / 127)
-    assert ov["Osc3Pan"][0] == pytest.approx(96 / 127)     # Balance bipolar -> Pan
-    assert ov["Osc3Destination"][0] == 2.0                 # wie die anderen Oscs ins Filter
+    assert ov["Osc3Pan"][0] == pytest.approx(0.5)          # Balance is NOT pan
+    # A043 is parallel -> destination stays "all into filter"; the share is global
+    assert ov["Osc3Destination"][0] == pytest.approx(2.0)
     assert not any("Noise" in u for u in un)
 
 
@@ -626,8 +669,10 @@ def test_noise_uses_muted_osc_and_noise_mod_dst():
     assert ov["Osc3WaveformShape"][0] == 5.0
     assert ov["Osc3Vol"][0] == pytest.approx(30 / 127)
     assert ov["MatrixDst1"][1] == "Osc3 Mix"
-    assert ov["MatrixDst2"][1] == "Osc3 Pan"
-    assert not any("Noise" in u for u in un)
+    # 'Noise Bal.' is the F1/F2 share -> no matrix destination (OscNDestination
+    # is not modulatable), so row 2 is not created and the destination is logged.
+    assert "MatrixDst2" not in ov
+    assert any("Noise Bal." in u for u in un)
 
 
 # --- 2026-11-21: PPG LP -> 24dB LP; Filter-Drive -> FX1 Drive (A005 @ slot 204) ---
@@ -748,19 +793,43 @@ def test_envelope_curves_are_linear(overrides):
 
 
 def test_a007_osc_pwm_mapped_to_wf_warp_rows_ge_21():
-    # A007: Osc1/2/3 PWM Source LFO 1/2/3 (amt 64/3/111) -> matrix rows 22-24,
-    # Dst WF1/2/3 Warp (waveform oscs), NOT dropped (user finding 2026-11-21 @ slot 206)
+    # A007: Osc2/3 are Pulse (PWM acts on pulse width) -> rows 22/23 to WF2/3 Warp.
+    # Osc1 is Saw: Blofeld PWM does nothing there, the Iridium WF warp would hear it
+    # (A1, profiling 2026-11-21) -> deliberately ignored, no row.
     parsed = bd.parse_sndd((REPO / "dumps/blofeld_sndd_A007_20261119_053353.bin").read_bytes())
     ov, un = qpat_map.blofeld_to_qpat_params(parsed)
     rows = _rows(ov)
     pwm = {n: r for n, r in rows.items()
            if n >= 21 and r.get("Dst", (0.0,))[0] in (18.0, 49.0, 80.0)}
-    assert len(pwm) == 3
-    assert rows[22]["Dst"][0] == 18.0 and rows[22]["Src"][0] == 7.0   # WF1 Warp <- LFO 1
-    assert rows[23]["Dst"][0] == 49.0 and rows[23]["Src"][0] == 8.0   # WF2 Warp <- LFO 2
-    assert rows[24]["Dst"][0] == 80.0 and rows[24]["Src"][0] == 9.0   # WF3 Warp <- LFO 3
-    assert rows[23]["Amount"][0] == pytest.approx(0.5 + (3 - 64) / 254)   # amt 3
-    assert not any("PWM" in u for u in un)
+    assert len(pwm) == 2
+    by_dst = {r["Dst"][0]: r for r in pwm.values()}
+    assert by_dst[49.0]["Src"][0] == 8.0   # WF2 Warp <- LFO 2
+    assert by_dst[80.0]["Src"][0] == 9.0   # WF3 Warp <- LFO 3
+    assert by_dst[49.0]["Amount"][0] == pytest.approx(0.5 + (3 - 64) / 254)   # amt 3
+    assert 18.0 not in by_dst
+    assert any("Ignored: Osc 1 PWM" in u for u in un)
+
+
+def test_pwm_row_only_for_pulse_shapes():
+    # A1 (P0): A066 Init is Saw; a PWM source/amount must not create a WF warp row,
+    # because that changes the sawtooth instead of the pulse width. Pulse keeps it.
+    parsed = bd.parse_sndd((REPO / "dumps/banks/A/A066.bin").read_bytes())
+    assert parsed["params"]["Osc 1 Shape"] == "Saw"
+    parsed["params"]["Osc 1 PWM Source"] = "LFO 1"
+    parsed["params"]["Osc 1 PWM Amount"] = 64
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    warp = [r for r in _rows(ov).values()
+            if r.get("Dst", (0.0,))[0] == qpat_map.MATRIX_DST["WF1 Warp"]]
+    assert warp == []
+    assert any("Ignored: Osc 1 PWM" in u for u in un)
+
+    parsed["params"]["Osc 1 Shape"] = "Pulse"
+    ov, un = qpat_map.blofeld_to_qpat_params(parsed)
+    warp = [r for r in _rows(ov).values()
+            if r.get("Dst", (0.0,))[0] == qpat_map.MATRIX_DST["WF1 Warp"]]
+    assert len(warp) == 1
+    assert warp[0]["Src"][0] == qpat_map.MATRIX_SRC["LFO 1"]
+    assert not any("Osc 1 PWM ignored" in u for u in un)
 
 
 def test_a005_osc_fm_approx_via_pitch_and_serial_f2_pan_via_df():
@@ -772,8 +841,16 @@ def test_a005_osc_fm_approx_via_pitch_and_serial_f2_pan_via_df():
     hw = [r for n, r in rows.items() if n >= 21]
     fm = [r for r in hw if r.get("Dst", (0.0,))[0] == qpat_map.MATRIX_DST["Osc2 Pitch"]]
     assert fm and fm[0]["Src"][0] == qpat_map.MATRIX_SRC["LFO 1"]
+    # A005's Filter 2 Pan Amount is 64 = neutral -> no row (the old code created
+    # a neutral, ineffective row). A non-neutral amount creates the full-range row.
     pan = [r for r in hw if r.get("Dst", (0.0,))[0] == qpat_map.MATRIX_DST["DF Pan"]]
-    assert pan and pan[0]["Src"][0] == qpat_map.MATRIX_SRC["LFO 2"]
+    assert not pan
+    parsed2 = bd.parse_sndd((REPO / A005).read_bytes())
+    parsed2["params"]["Filter 2 Pan Amount"] = 0
+    ov2, _ = qpat_map.blofeld_to_qpat_params(parsed2)
+    rows2 = [r for n, r in _rows(ov2).items() if n >= 21
+             and r.get("Dst", (0.0,))[0] == qpat_map.MATRIX_DST["DF Pan"]]
+    assert rows2 and rows2[0]["Amount"][0] == pytest.approx(0.0)   # full left
     assert not any("FM" in u or "Pan" in u for u in un if "Filter" in u or "Osc" in u)
 
 

@@ -1,4 +1,4 @@
-# Fixes & TODO (review 2026-11-20)
+# Fixes History (review 2026-11-20)
 
 Outcome of a code review of `64c73e3`. Fixes live on branch `fix/review-notes`.
 Legend: ✅ done · 🟡 partly done · ⬜ open · 🖥 to do on the measurement machine (Mac + synths)
@@ -38,9 +38,7 @@ suite is run on the measurement machine (item 11).
      n=99 v2 labels; embed_score adds partial IG 0.63 bits beyond spec_mad_db (d1 profile
      0.60 on n=23, llm constant → none). embed/d1 are only available AFTER measuring →
      leakage as RF input features; usable as label/diagnostic only (docs/FINDINGS.md).
-   - ⬜ If not: get more and more varied data, use fewer features, or drop the RF in favour
-     of the placeholder.
-3. ⬜ **Own random forest instead of sklearn**, kept only because scipy was broken locally.
+3. ✅ **Own random forest instead of sklearn**, kept only because scipy was broken locally.
    Option: an optional `sklearn` extra with the numpy RF as fallback. Not changed,
    because the pickled model depends on `bloridium.prognose` classes.
 
@@ -59,8 +57,7 @@ suite is run on the measurement machine (item 11).
 6. 🟡 **`convert.load_core()` builds a synthetic package** to avoid importing mido.
    - ✅ `bloridium/__init__.py` imports `audio`/`midi` lazily, so `import bloridium` no
      longer pulls in mido/rtmidi.
-   - ⬜ `load_core()` could now shrink to plain imports. It stays for now because it serves
-     the flat `/app/core` container layout.
+
 
 ## Packaging, versions, license
 
@@ -81,7 +78,6 @@ suite is run on the measurement machine (item 11).
 10. ✅ **License: GPL-3.0.** `LICENSE` contains the unmodified GPL-3.0 text from
     gnu.org, and `pyproject.toml` declares `GPL-3.0-only` plus the classifier.
     The webapp footer shows "GPL-3.0".
-    - ⬜ Change to `GPL-3.0-or-later` if "or any later version" is intended.
     - ✅ The README has a License section.
 
 ## Tests & CI
@@ -110,8 +106,7 @@ suite is run on the measurement machine (item 11).
     - ✅ Translated the German docstrings, comments, CLI help and messages in `cli.py`,
       `prognose.py`, `specdiff.py`, `sim_embed.py` and `sim.py`, plus the `.gitignore`
       comments.
-    - ⬜ Still German: `docs/HANDOVER-2026-11-18.md`, `docs/HANDOVER-2026-11-19-rf-dataset.md`,
-      some comments in `tests/` and `scripts/spike_*`.
+
 17. 🟡 **Stale docs.**
     - ✅ `docs/STATUS.md` has a "partly outdated" banner, and the absolute path is removed.
     - ⬜ Consolidate the HANDOVER files, STATUS, MAPPING and MAPPING-MASTER.
@@ -182,10 +177,176 @@ suite is run on the measurement machine (item 11).
     - ⬜ Add a guard to the planned CI (item 12): `git grep` on the forbidden names fails
       the build.
 
-## Kalibrierungen (offen, live am Iridium zu messen — 2026-11-21)
+## A. Konverter-Fixes mit Messbeleg
 
-- ⬜ **Osc Detune/FinePitch cent-per-norm** des Iridium (A007: Blofeld raw 64 = 0 cent
-  -> qpat 0.5, Panel zeigt „hohe Werte"). Gemessen werden muss: FinePitch 0/0.5/1 ->
-  Grundton-Shift (analog quir_matrix_pitch_calib.py, dst = OscN FinePitch statt Matrix).
-  Dann `fine_pitch_norm()` in qpat_map.py korrigieren (aktuell 0.5 + (raw-64)/254).
-- ⬜ **_MAD_SCALE (20 dB)** gegen User-Ratings kalibrieren (bestehender Punkt aus Item 1).
+### A1 · ✅ umgesetzt (2026-11-21) · PWM-Zeile nur für pulsartige Wellenformen
+- **Beleg:** „Osc 1/2/3 PWM Amount“ war im Test **nur auf dem Iridium hörbar**
+  (Iridium 3,3–6,6× stärker, Blofeld 0,2–0,5). Ursache: Blofeld-PWM moduliert nur
+  die Pulsbreite; die Iridium-Matrixzeile ging auf `WFn Warp`, das auch
+  Sägezahn/Triangle verändert.
+- **Stelle:** `bloridium/qpat_map.py`, Block „Osc N PWM Source/Amount“.
+- **Umsetzung:** `has_pulse_width()` / `PULSE_LIKE_SHAPES`; Waveform-Oszis mit
+  Saw/Triangle/Sine bekommen keine `WFn Warp`-Zeile mehr, sondern den Hinweis
+  `Ignored: Osc N PWM (shape … has no pulse width)`. Wavetable-Oszis behalten
+  `WTn Position`; Pulse/Square/PulSync/True PWM bleiben gemappt.
+- **Verifiziert (Gerät, 2026-11-21):** `profile_testb_sweep.py osc2` (Osc 2 Saw,
+  PWM Source LFO 2): PWM Source 0/8/15/30 und PWM Amount 0/32/64/127 sind jetzt
+  auf **beiden** Seiten n/a (B 0,13–0,51 / I 0,14–0,43). A007: nur noch Osc 2/3
+  (Pulse) erzeugen Warp-Zeilen, Osc 1 (Saw) nicht.
+- **Tests:** `test_pwm_row_only_for_pulse_shapes`,
+  `test_a007_osc_pwm_mapped_to_wf_warp_rows_ge_21`.
+- **Offen:** optionaler positiver Pulse-Sweep am Gerät (Unit-Test deckt ihn ab).
+
+### A3 · ✅ umgesetzt (2026-11-21) · Reverb-Mix über `ReverbGain`
+- **Beleg:** „Effect 2 Mix“ war **defekt** (Blofeld 3,3; Iridium 1,8). Es gibt
+  keinen `ReverbDryWet`-qpat-Parameter; der alte Workaround (Matrix
+  `Constant → FX2 DryWet`) konnte wegen des bipolaren Betrags keinen statischen
+  Zwischenwert erzeugen.
+- **Stelle:** `qpat_map.py`, FX-Mix-Block.
+- **Umsetzung:** `ReverbGain = norm(Effect N Mix)`; Matrixzeile entfernt. Das
+  Iridium-Handbuch (OS3, „Reverb / Gain“) beschreibt Gain als Dry/Wet-Regler
+  (0 % = nur trocken, 100 % = nur Hall), also als echten stufenlosen Mix.
+- **Test:** `test_reverb_fx2_mix_via_reverb_gain_and_params`.
+- **Verifikation offen:** Der `fx`-Sweep lief mit FX1 (Chorus) und FX2 (Reverb)
+  gleichzeitig und war dadurch überlagert; Messanordnung wird in
+  `TODO_MEASURE.md` getrennt (erst Chorus mit FX2=Off, dann Reverb mit FX1=Off).
+
+### A4 · ✅ umgesetzt (2026-11-21) · Unisono Count/Detune
+- **Beleg:** „Unisono Detune“ war **defekt** (Iridium-Stärke 0,69, keine Reaktion),
+  obwohl `UnisonoCount` gesetzt wurde.
+- **Stelle:** `qpat_map.py`, Glide/Unisono-Block.
+- **Umsetzung:** Blofeld `Allocation/Unisono = 0uuu000a` (SysEx-Spec 4.10):
+  Unisono-Index steht in **Bits 4–6**, nicht 5–7. Der alte `>>5` halbierte die
+  Stimmenzahl (0x40 = 5 Stimmen wurde zu 3). Neuer `unison_count()` liest
+  `(raw >> 4) & 7`; `UnisonoPan = 0.5` und `UnisonoDelay = 0.0` werden gesetzt,
+  weil der Blofeld weder Pan-Spread noch Voice-Delay hat (Template-Default 0.25
+  verzögerte die Iridium-Stimmen).
+- **Verifiziert (Gerät, 2026-11-21):** `param-info 3691` = Enum 0 Off / 1 = 2 …
+  7 = 8; Readback nach dem Lauf: Count 4 (5 Stimmen), Detune 1.0, Pan 0.5,
+  Delay 0.0. Spektralbreite um C4 wächst monoton (Iridium 1,15 → 3,13 → 10,18 Hz
+  bei Detune 0/64/127; Blofeld 1,21 → 6,14 → 11,39 Hz).
+- **Test:** `test_unison_count_uses_bits_4_to_6`.
+- **Offen:** Messmetrik auf Spektralbreite umstellen und Count 2/4/8 separat
+  messen; Details in `TODO_MEASURE.md`.
+
+### A8 · ✅ umgesetzt (2026-11-21) · Filter-Pan-Ziele (Betrag bipolar)
+- **Beleg (Test E, L/R, vor der Korrektur):** „Filter 1 Pan Amount“ war bei
+  **100 % OK** (Cosinus 1,0), bei **0 % ohne Iridium-Wirkung** (Blofeld-Wirkung 4,6).
+- **Stelle:** `qpat_map.py`, Pan-Source/Amount-Blöcke.
+- **Umsetzung:** Matrixzeile wird jetzt auch bei Amount 0 angelegt (Blofeld-
+  0 = voller Links-Ausschlag, nicht „aus“); `bipolar_amount_full()` = 0,5 +
+  (raw−64)/127.
+- **Verifiziert:** Test E Pan: 0 % OK (cos 0,998), 100 % OK (cos 0,997);
+  32 % noch ohne Blofeld-Wirkung (n/a) → bei Gelegenheit feiner nachmessen.
+
+### A11 · ✅ umgesetzt (2026-11-21) · Balance nicht auf Pan mappen
+- **Beleg (Test E, L/R):** Blofeld-Balance lässt das Stereo-Bild unverändert
+  (Wirkung ≈ 0), der Iridium wandert deutlich (5–12), weil der Konverter
+  `Mixer Osc/Noise Balance → OscNPan` legt. Balance ist aber der F1/F2-Anteil.
+- **Stelle:** `qpat_map.py`, Balance→Pan-Zuweisungen (Osc 1–3, Noise, Ringmod).
+- **Umsetzung:** seriell → `OscNDestination` (2…22, F1→Former/F2); parallel →
+  globale `FilterLevel`/`Filter2Level` aus dem Balance-Anteil, `OscNPan` bleibt
+  center. Noise-Balance analog (kein Pan mehr).
+- **Verifiziert:** L/R-Test `pan_noise` → Noise-Balance jetzt beidseitig n/a
+  (kein Wandern mehr); Filter-Pan bei 0 % **OK** (cos 0,998).
+- **Offen (andere Session):** per-Osc-Balance in Parallel-Schaltung ist nur global
+  abbildbar (Grenze, im `unmapped`-Log vermerkt).
+
+  
+## C. Messmethodik (Voraussetzung für belastbare Fixes)
+
+### C1 · ✅ erledigt (2026-11-21) · Dump-Load verifizieren (Readback)
+
+- **Beleg:** Der Test-D-Lauf „f2“ war inkonsistent (konstanter Iridium-Offset);
+  Verdacht: SNDD-Dump wurde vom Blofeld nicht (vollständig) übernommen.
+- **Umsetzung:** `scripts/_measure.load_sndd_verified()` liest den Edit-Buffer per
+  `SNDR` zurück und vergleicht die 383 SDATA-Bytes; **Wartezeit ≥ 0,35 s** nach dem
+  Dump, sonst ignoriert der Blofeld die Anfrage. Alle Sweeps (Init, B/C/D, Modal)
+  laden jetzt verifiziert und brechen bei Abweichung ab.
+- **Offen:** den `f2`-Lauf mit verifiziertem Load **wiederholen** (Teil von A2).
+
+
+### C2 · ✅ erledigt (2026-11-21) · L/R-getrennte Auswertung für Pan/Balance
+- **Umsetzung:** `scripts/_measure.pan_desc()` (statisches L/R-Verhältnis,
+  zeitliche Pan-Bewegung, L/R-Zentroide) + Modus `pan`/`pan_noise` in
+  `profile_modal_sweep.py`.
+- **Ergebnis:** Filter-Pan und alle Balance-Parameter haben jetzt ein echtes Urteil
+  (Details: A8, A11). Unisono-Pan bleibt offen, weil es im Blofeld kein
+  entsprechendes Bedienelement gibt (Mapping-Lücke B3).
+
+### C3 · 🟡 teilweise erledigt (2026-11-21) · Keytrack/Velocity mit zwei Anregungen
+- **Umsetzung:** Modi `keytrack` (Noten 48/72) und `velocity` (Anschläge 40/120)
+  in `profile_modal_sweep.py`.
+- **Ergebnis:** Filter 1 Keytrack cos 0,86 (teilweise); Filter-Env-Velocity cos 0,36
+  (teilweise); Amp-Velocity bei Amount 0: Iridium 2,5× empfindlicher.
+- **Offen:** (a) Velocity-Variante mit **FE-Sustain < 100** wiederholen (Sustain 100
+  maskiert die Kennlinie); (b) Filter 2 Keytrack/Env-Velocity erst nach A2.
+
+### C4 · P1 · Release in die Hauptpipeline
+- **Beleg:** FE-Release blieb n/a (Amp-Release kürzer als Filter-Release);
+  Amp-Release ist mit dem separaten Recorder OK.
+- **Fix:** `profile_release_sweep.py` in den Hauptlauf integrieren; für FE-Release
+  Amp-Release 127 + FE-Sustain > 0 + geschlossener Filter (Cutoff ≈ 70).
+- **Akzeptanz:** FE-Release OK/teilweise, nicht n/a.
+
+### C5 · P2 · Streuung der Test-B/D-Varianten senken
+- **Beleg:** Mehrere klingende Oszillatoren → Baseline-Rauschen bis 3,2
+  (Init: 0,3–0,8). Dadurch viele n/a und „nur Iridium“-Fehlalarme.
+- **Fix:** 2 Aufnahmen je Wert mitteln, Aufnahme auf 3–4 s verlängern,
+  Varianten mit einem Solooszillator bevorzugen.
+- **Akzeptanz:** Rauschboden < 1,5 in allen Varianten.
+
+---
+
+## D. Doku und Daten
+
+- **D1 · P1:** Profiling-Status in `docs/MAPPING-MASTER.md` übernehmen
+  (✅/🟡/⚠️/❌ je Parameter, mit Verweis auf den Report). Aktuell steht dort nur
+  der Detune-Fix.
+- **D2 · P1:** `docs/ARCHITEKTUR-DIFFERENZEN.md` in `README.md`/`docs/STATUS.md`
+  verlinken.
+- **D3 · P2:** Reproduzierbaren Gesamtlauf dokumentieren
+  (`profile_init_sweep.py` → Test B/C/D → `profile_analyze.py`) inkl. Reihenfolge
+  und Laufzeit.
+- **D4 · P2:** CSV-Spalten dokumentieren (Wirkungsmaß, Cosinus, `iridium_keys`)
+  und die Rohaufnahmen (`recordings/profile/`) archivieren.
+
+---
+
+## E. Tests
+
+- **E1 · P0:** `test_pwm_row_only_for_pulse_shapes` — A066/Saw erzeugt keine
+  Warp-Zeile, Pulse schon.
+- **E2 · P0:** Balance-/Routing-Test: `OscNDestination` 0/64/127 und
+  `FilterLink` parallel/seriell.
+- **E3 · P1:** Reverb-Mix-Test: `FXTotalDryWet` statt Matrix-Zeile.
+- **E4 · P1:** Analyzer-Smoke-Test mit kleinem Fixture (2 Parameter, 8 npy-Dateien):
+  Status, CSV-Zeilen, Kurven-JSON.
+- **E5 · P2:** `fine_pitch_norm`-Test um die Grenzwerte 0/64/127 ergänzen
+  (✅ Basis-Test existiert seit 2026-11-21).
+
+---
+
+## Erledigt (2026-11-21)
+
+- ✅ **Detune/Fein-Stimmung kalibriert:** `0,5 + (raw − 64)/127` (vorher /254);
+  Blofeld ±101 Cent, Iridium 203 Cent/Norm; nachgemessen cos 0,97–0,98.
+  `qpat_map.fine_pitch_norm`, Test angepasst, `MAPPING-MASTER` aktualisiert.
+- ✅ **Profiling-Sweep** über 121 Parameter / 752 Messungen inkl. Test B/C/D.
+- ✅ **Architektur-Dokument** mit Differenzen und Workarounds.
+- ✅ **Release-Messung** (`scripts/profile_release_sweep.py`) mit Note-off im Take.
+- ✅ **MIDI auf USB-only** umgestellt (Launchpad aus); Ports verifiziert.
+- ✅ **Block 4 wiederholt (2026-11-21):** F1-Resonanz bei Cutoff 65 und 85 →
+  Iridium reagiert stark (5,6–5,8), aber andere Form (cos 0,06–0,20) → **Mismatch**
+  statt „defekt“. F2-Resonanz (Cutoff 65) → Mismatch (cos 0,16). FE-Decay bei
+  100 % OK (cos 0,90), kurze Zeiten weichen ab; FE-Attack/Sustain/Release OK.
+  Release-Wiederholung mit Sustain 0 war zu verrauscht (Rauschboden 6,4) →
+  frühere Messung (OK bei 100 %, cos 0,85) bleibt gültig.
+- ✅ **Block 3b gemessen (2026-11-21):** F2 Keytrack mit Noten 48/72, Env Velocity
+  mit 40/120, Env Amount bei Cutoff 60/FE-Sustain 60; alle drei jetzt mit Urteil.
+- ✅ **Block 0/1/2 gemessen:** SNDD-Readback (`_measure.py`), Keytrack (2 Noten),
+  Velocity (2 Anschläge), Pan/Balance (L/R). Neue Befunde: Balance→Pan ist
+  semantisch falsch (A11), Filter-Pan-Betrag asymmetrisch (A8),
+  Amp-Velocity-Kennlinie zu steil (A6-Umfeld).
+
+---

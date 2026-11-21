@@ -1,0 +1,266 @@
+{
+  "erzeugt": "2026-11-21",
+  "quelle": "docs/PROFILING-INIT-2026-11-21.md",
+  "kurven": [
+    {
+      "parameter": "Osc 1/2/3 Detune",
+      "sdata": [
+        3,
+        19,
+        35
+      ],
+      "formel": "iridium_norm = 0.5 + (raw - 64) / 127",
+      "verifiziert": {
+        "blofeld_cent": [
+          -101,
+          -50,
+          0,
+          100
+        ],
+        "iridium_cent": [
+          -101,
+          -51,
+          0,
+          101
+        ],
+        "cosinus": [
+          0.98,
+          null,
+          null,
+          0.97
+        ]
+      },
+      "vorher": "0.5 + (raw - 64) / 254 (nur halbe Verstimmung)"
+    }
+  ],
+  "kandidaten": [
+    {
+      "parameter": "Osc 1 PWM Amount",
+      "status": "Mismatch",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "nur Iridium reagiert"
+    },
+    {
+      "parameter": "Osc 3 Semitone",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Osc Pitch Amount",
+      "status": "Mismatch",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "nur Iridium reagiert"
+    },
+    {
+      "parameter": "Allocation/Unisono",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.93,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Unisono Detune",
+      "status": "defekt",
+      "staerke_iridium_zu_blofeld": 1.08,
+      "hinweis": "keine ausreichende Iridium-Wirkung"
+    },
+    {
+      "parameter": "Mixer Osc 1 Balance",
+      "status": "Mismatch",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "nur Iridium reagiert"
+    },
+    {
+      "parameter": "Mixer Noise Level",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.72,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Mixer Noise Balance",
+      "status": "Mismatch",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "nur Iridium reagiert"
+    },
+    {
+      "parameter": "Mixer Noise Colour",
+      "status": "defekt",
+      "staerke_iridium_zu_blofeld": 0.55,
+      "hinweis": "keine ausreichende Iridium-Wirkung"
+    },
+    {
+      "parameter": "Filter 1 Cutoff",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.92,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 1 Resonance",
+      "status": "Mismatch",
+      "staerke_iridium_zu_blofeld": 0.66,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 1 Drive",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.99,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 1 Keytrack",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 1 Env Velocity",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 1 Mod Amount",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.7,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 1 Pan Amount",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 2 Type",
+      "status": "defekt",
+      "staerke_iridium_zu_blofeld": 1.0,
+      "hinweis": "keine ausreichende Iridium-Wirkung"
+    },
+    {
+      "parameter": "Filter 2 Cutoff",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.58,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 2 Resonance",
+      "status": "Mismatch",
+      "staerke_iridium_zu_blofeld": 0.52,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 2 Drive",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.8,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 2 Keytrack",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 2 Env Amount",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Filter 2 Env Velocity",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Amplifier Volume",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 1.15,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Amplifier Velocity",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Amplifier Mod Amount",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.6,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Effect 1 Mix",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.99,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Effect 1 Parameter 1",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.97,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Effect 1 Parameter 2",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 1.05,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Effect 1 Parameter 5",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.97,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Effect 2 Mix",
+      "status": "defekt",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "keine ausreichende Iridium-Wirkung"
+    },
+    {
+      "parameter": "LFO 1 Speed",
+      "status": "defekt",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "keine ausreichende Iridium-Wirkung"
+    },
+    {
+      "parameter": "LFO 1 Delay",
+      "status": "defekt",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "keine ausreichende Iridium-Wirkung"
+    },
+    {
+      "parameter": "LFO 1 Fade",
+      "status": "defekt",
+      "staerke_iridium_zu_blofeld": null,
+      "hinweis": "keine ausreichende Iridium-Wirkung"
+    },
+    {
+      "parameter": "Filter Envelope Decay",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.75,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Amplifier Envelope Attack",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 1.19,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Amplifier Envelope Sustain",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.89,
+      "hinweis": "weiter beobachten"
+    },
+    {
+      "parameter": "Modulation 1 Amount",
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.54,
+      "hinweis": "weiter beobachten"
+    }
+  ]
+}
