@@ -2,6 +2,7 @@
 
 import io
 import json
+import os
 import sys
 import zipfile
 from pathlib import Path
@@ -10,6 +11,10 @@ import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "webapp"))
+
+# Never start the cleanup daemon in tests: several tests create apps and the
+# threads would outlive the temporary data directories.
+os.environ["BLORIDIUM_CLEANUP_THREAD"] = "0"
 
 import convert  # noqa: E402
 import matching  # noqa: E402
@@ -215,17 +220,20 @@ def test_flask_routes(core, sample_sdata, tmp_path, monkeypatch):
             token = line.split("/download/")[1].split('"')[0]
             break
     assert token
+    # The standalone report route was removed; report.json is inside the ZIP.
+    assert client.get(f"/report/{token}").status_code == 404
     r = client.get(f"/download/{token}")
     assert r.status_code == 200
     with zipfile.ZipFile(io.BytesIO(r.data)) as zf:
         assert any(n.endswith(".qpat") for n in zf.namelist())
-    r = client.get(f"/report/{token}")
-    assert r.status_code == 200
-    rep = json.loads(r.data)
+        rep = json.loads(zf.read("report.json"))
     assert rep["num_sounds"] == 1 and 0 <= rep["sounds"][0]["score"] <= 100
     assert rep["conversion_version"] == f"v{V}"
     assert rep["similarity_version"] == f"v{V}"
     assert rep["matcher"].startswith("deterministic-placeholder")
+    # One-time download: the artifacts are gone afterwards.
+    assert not (tmp_path / token).exists()
+    assert client.get(f"/download/{token}").status_code == 404
 
     assert client.get("/download/../etc/passwd").status_code == 404
     assert client.get("/download/" + "0" * 32).status_code == 404
@@ -264,6 +272,71 @@ def test_cleanup_is_throttled(tmp_path, monkeypatch):
     for _ in range(3):
         assert client.get("/health").status_code == 200
     assert len(calls) == 1  # once per interval, not once per request
+
+
+def test_download_is_one_time(core, sample_sdata, tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)
+    app = create_app()
+    app.data_dir = tmp_path
+    client = app.test_client()
+    syx = _sndd_bytes(0, 42, sample_sdata)
+    r = client.post("/upload", data={"file": (io.BytesIO(syx), "a.syx")},
+                    content_type="multipart/form-data")
+    token = r.data.decode().split("/download/")[1].split('"')[0]
+    assert (tmp_path / token).exists()
+
+    assert client.get(f"/report/{token}").status_code == 404
+    first = client.get(f"/download/{token}")
+    assert first.status_code == 200
+    assert not (tmp_path / token).exists()
+    assert client.get(f"/download/{token}").status_code == 404
+
+
+def test_cleanup_removes_stale_sending_dir(tmp_path, monkeypatch):
+    import time
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    app = create_app()
+    stale = tmp_path / (".x" * 16 + ".sending")
+    stale.mkdir()
+    past = time.time() - (app.ttl_hours + 1) * 3600
+    os.utime(stale, (past, past))
+    app.cleanup()
+    assert not stale.exists()
+
+
+def test_cleanup_thread_can_be_disabled(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_CLEANUP_THREAD", "0")
+    assert create_app().cleanup_thread is None
+
+
+def test_only_one_download_wins(core, sample_sdata, tmp_path, monkeypatch):
+    import threading
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)
+    app = create_app()
+    app.data_dir = tmp_path
+    client = app.test_client()
+    syx = _sndd_bytes(0, 42, sample_sdata)
+    r = client.post("/upload", data={"file": (io.BytesIO(syx), "a.syx")},
+                    content_type="multipart/form-data")
+    token = r.data.decode().split("/download/")[1].split('"')[0]
+
+    results = []
+    barrier = threading.Barrier(2)
+
+    def fetch():
+        c = app.test_client()
+        barrier.wait()
+        results.append(c.get(f"/download/{token}").status_code)
+
+    ts = [threading.Thread(target=fetch) for _ in range(2)]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join()
+    assert sorted(results) == [200, 404]
 
 
 def test_versions_are_unified():

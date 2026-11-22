@@ -16,11 +16,13 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import threading
 import time
+import uuid
 from html import escape
 from pathlib import Path
 
-from flask import Flask, abort, request, send_file
+from flask import Flask, abort, after_this_request, request, send_file
 
 import convert
 import matching
@@ -99,17 +101,40 @@ def _score_note() -> str:
             '(no trained model found; set BLORIDIUM_MODEL to enable the RF prognosis)')
 
 
+def start_cleanup_thread(app) -> threading.Thread | None:
+    """Delete expired artifacts even when no requests arrive.
+
+    The remaining TTL is short (1 h), so a request-triggered cleanup alone
+    would not keep the privacy promise after a quiet period.
+    """
+    if os.environ.get("BLORIDIUM_CLEANUP_THREAD", "1") == "0":
+        return None
+    interval = float(os.environ.get("CLEANUP_INTERVAL_S", "30"))
+
+    def loop():
+        while True:
+            time.sleep(interval)
+            try:
+                app.cleanup()
+            except Exception:
+                app.logger.exception("artifact cleanup failed")
+
+    t = threading.Thread(target=loop, name="bloridium-cleanup", daemon=True)
+    t.start()
+    return t
+
+
 def create_app() -> Flask:
     app = Flask(__name__)
     app.config["MAX_CONTENT_LENGTH"] = int(os.environ.get("MAX_UPLOAD_MB", "8")) * 1024 * 1024
     app.data_dir = Path(os.environ.get("DATA_DIR") or (Path(__file__).parent / "data"))
     app.data_dir.mkdir(parents=True, exist_ok=True)
-    app.ttl_hours = float(os.environ.get("DATA_TTL_HOURS", "24"))
+    app.ttl_hours = float(os.environ.get("DATA_TTL_HOURS", "1"))
 
     def page(body: str) -> str:
         return PAGE.format(conv=convert.CONVERSION_VERSION, body=body)
 
-    app.cleanup_interval_s = float(os.environ.get("CLEANUP_INTERVAL_S", "300"))
+    app.cleanup_interval_s = float(os.environ.get("CLEANUP_INTERVAL_S", "30"))
     app._last_cleanup = 0.0
 
     def cleanup():
@@ -136,6 +161,7 @@ def create_app() -> Flask:
             app.cleanup()
 
     app.cleanup = cleanup
+    app.cleanup_thread = start_cleanup_thread(app)
 
     @app.errorhandler(413)
     def too_large(e):
@@ -169,19 +195,33 @@ def create_app() -> Flask:
     def download(token):
         if not TOKEN_RE.fullmatch(token):
             abort(404)
-        p = app.data_dir / token / "result.zip"
-        if not p.exists():
+        tdir = app.data_dir / token
+        if not (tdir / "result.zip").exists():
             abort(404)
-        return send_file(p, as_attachment=True, download_name=_zip_name(app.data_dir / token))
+        # Claim the token atomically: the second concurrent request gets 404.
+        # The unique suffix avoids colliding with a stale directory from a
+        # crashed earlier download.
+        sending = app.data_dir / f".{token}.{uuid.uuid4().hex}.sending"
+        try:
+            os.rename(tdir, sending)
+        except OSError:
+            abort(404)
+        try:
+            # send_file opens the file now; unlinking it before the response
+            # has been transmitted is safe on Unix (deployment) because the
+            # open descriptor keeps the data readable.
+            resp = send_file(sending / "result.zip", as_attachment=True,
+                             download_name=_zip_name(sending))
+        except Exception:
+            shutil.rmtree(sending, ignore_errors=True)
+            raise
 
-    @app.get("/report/<token>")
-    def report_json(token):
-        if not TOKEN_RE.fullmatch(token):
-            abort(404)
-        p = app.data_dir / token / "report.json"
-        if not p.exists():
-            abort(404)
-        return send_file(p, mimetype="application/json")
+        @after_this_request
+        def _delete_after_download(response):
+            shutil.rmtree(sending, ignore_errors=True)
+            return response
+
+        return resp
 
     return app
 
@@ -219,8 +259,9 @@ def _results_html(report: dict) -> str:
   {report['skipped_messages']} non-sound messages skipped &ndash;
   avg predicted score <b>{report['avg_score']:.1f}</b>
   (similarity {escape(report.get('similarity_version', ''))}, {matcher}{model})</p>
-<p><a href="/download/{report['token']}"><button>Download ZIP ({escape(report['zip_name'])})</button></a>
-   <a href="/report/{report['token']}">report.json</a></p>
+<p><a href="/download/{report['token']}"><button>Download ZIP ({escape(report['zip_name'])})</button></a></p>
+<p class="note">One-time download: the ZIP is deleted from the server after it
+has been sent, and at the latest after one hour. report.json is inside the ZIP.</p>
 <table><tr><th>Loc</th><th>Name</th><th>Category</th><th>Score</th><th></th>
 <th>not in MIDI map</th></tr>
 {''.join(rows)}
