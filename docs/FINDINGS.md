@@ -149,3 +149,23 @@ evidence, not as current instructions.
   zu kurzem Iridium-Decay; A072 zusätzlich mit Attack 0,72.
 - **Offen:** Hüllkurven-Zeitabbildung kalibrieren (Decay/Attack), Messprotokoll
   für Sustain-0-Patches (ab Note-On aufnehmen), Ausreißer A015/A061 prüfen.
+
+## 2026-11-22 — Hüllkurven: Form passt mit RC, Zeiten sind der größere Fehler
+
+- **Kurvenform (synthetisch, sauberer Test-Patch, normierte Hüllkurve):**
+  - Decay: Blofeld-Form ≈ **RC** (RMS-Diff 0,034 gegen 0,122 Lin / 0,209 Exp).
+  - Attack: **RC** am nächsten (0,07 gegen 0,105 Lin, 0,63 Exp).
+  - Release: bei gleichem Norm-Wert passte Lin formal besser (0,114), aber die
+    Dauer war nicht angeglichen → nicht belastbar.
+- **Echte Sounds (A/B Lin vs. RC, alle Amp/Filter-Kurven):**
+  A003 +1,3 · A016 **−4,8** · A053 −0,4 · A057 +3,8 · A070 +1,4 → Mean **+0,3**,
+  also score-neutral. Die Form allein reicht nicht; die **Zeitabbildung** ist
+  der Hebel.
+- **Zeiten:** Blofeld Attack raw 64 ≈ 0,19 s, raw 96 ≈ 1,4 s. Iridium Attack
+  norm 0,5 ≈ 1,18 s (RC, -10-dB-Schwelle) — der aktuelle lineare Normwert ist
+  damit rund **6× zu langsam**. Das erklärt die stummen percussiven Patches
+  (A014/A026/A052/A070), deren Klang vor dem Messfenster tot ist.
+- **Messhürde:** Der synthetische Sweep ist mit der lazy QUIR-Shell unzuverlässig
+  (nicht-monotone Zeiten, Kommandos teils nicht rechtzeitig angewendet). Für eine
+  belastbare Kalibrierung muss nach jedem `set-param` ein Readback verifiziert
+  werden; Skripte: `scripts/calib_envelope.py`, `scripts/calib_envelope2.py`.
