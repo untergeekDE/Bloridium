@@ -12,8 +12,8 @@ Two matchers:
 - **deterministic-placeholder** (fallback when no model is found): pure
   function of the parsed parameters; same dump -> same score.
 
-The web app also writes the feature vector (parsed params, unmapped, mapped)
-per sound into report.json – that is the training data for re-training the RF.
+The web app does not persist or train on uploaded data; report.json only
+contains the result data needed for the download.
 """
 
 from __future__ import annotations

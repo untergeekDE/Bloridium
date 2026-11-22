@@ -91,7 +91,7 @@ def test_process_upload_zip(core, sample_sdata, tmp_path):
         rep = json.loads(zf.read("report.json"))
         assert rep["num_sounds"] == 3
         assert rep["conversion_version"] == f"v{V}" and rep["similarity_version"] == f"v{V}"
-        assert all("features" in s and "params" in s["features"] for s in rep["sounds"])
+        assert all("features" not in s for s in rep["sounds"])
         assert all("score" in s and "penalties" in s for s in rep["sounds"])
         man = zf.read("MANIFEST.md").decode()
         assert "deterministic-placeholder" in man
@@ -99,6 +99,7 @@ def test_process_upload_zip(core, sample_sdata, tmp_path):
     # report.json on disk identical to the ZIP content
     on_disk = json.loads((tmp_path / report["token"] / "report.json").read_text())
     assert on_disk["token"] == report["token"]
+    assert all("features" not in s for s in on_disk["sounds"])
 
 
 def test_process_upload_deterministic(sample_sdata, tmp_path):

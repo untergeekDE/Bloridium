@@ -76,7 +76,9 @@ from the image (OCI format) – if you want it in the image, build with
    prognosis ± std, or placeholder), count of parameters **not in the MIDI map**
    (hover the number for the list; the old separate "mapped" column was removed
    2026-11-21 — the count alone was confusing)
-4. **ZIP download**: one `<LOC>_<Name>.qpat` per sound + `MANIFEST.md` + `report.json`
+4. **One-time ZIP download**: one `<LOC>_<Name>.qpat` per sound + `MANIFEST.md`
+   + `report.json` (inside the ZIP). The files are deleted from the server after
+   the download, at the latest after one hour.
    - On the Iridium: USB stick/SD -> `Load > Actions > Import` (Favorites Bank 6,
      then `CC0=6` + PC; mido PC = MIDI number - 2)
 
@@ -105,9 +107,10 @@ the UI title "Bloridium Tool v…", and `conversion_version` / `similarity_versi
 
 Model path: `BLORIDIUM_MODEL` (default: auto-detect – `models/prognose_rf.pkl` in
 the repo, `/app/models/prognose_rf.pkl` in the container – baked in, overridable by a mount).
-Per sound, the feature vector (parsed parameters, unmapped list, mapped count)
-also lands
-in `report.json` in the ZIP – that is the training data for re-training.
+
+Uploads are **not stored and not used for training**. The RF model was trained
+on the operator's own A/B measurements, not on user uploads. `report.json`
+contains only the per-sound result data needed for the download.
 
 ## Local development (without container)
 
@@ -132,7 +135,9 @@ python3 -m pytest tests/test_webapp.py -q
 | Variable | Default | Meaning |
 |---|---|---|
 | `DATA_DIR` | `./data` or `/data` in the container | Artifacts (ZIP/report) per upload token |
-| `DATA_TTL_HOURS` | `24` | Retention of the artifacts |
+| `DATA_TTL_HOURS` | `1` | Maximum retention if a download never happens |
+| `CLEANUP_INTERVAL_S` | `30` | Cleanup sweep interval (background thread + request throttle) |
+| `BLORIDIUM_CLEANUP_THREAD` | `1` | Set to `0` to disable the background cleanup thread (tests) |
 | `MAX_UPLOAD_MB` | `8` | Upload limit |
 | `PORT` | `8000` | local dev server only |
 | `BLORIDIUM_CORE_DIR` | `/app/core` in the container | pure-python bloridium modules (incl. `prognose.py`) |

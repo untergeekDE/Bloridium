@@ -190,7 +190,7 @@ def process_upload(filename: str, data: bytes, data_dir, model_path=None) -> dic
     model_path: RF model for the score prognosis (None -> auto-detect via
     matching.resolve_model_path; missing model -> deterministic placeholder).
 
-    Returns: report dict (incl. token, zip_name, sounds with score + features).
+    Returns: report dict (incl. token, zip_name, sounds with score).
     Raises UploadError on invalid/empty upload.
     """
     if not data:
@@ -247,8 +247,6 @@ def process_upload(filename: str, data: bytes, data_dir, model_path=None) -> dic
                 "ignored": conv["ignored"],
                 "score": est["score"], "std": est.get("std"), "matcher": est["matcher"],
                 "score_parts": est.get("parts"), "penalties": est.get("penalties"),
-                # Feature vector for (re-)training the RF prognosis:
-                "features": {"params": parsed["params"]},
             })
         zf.writestr("MANIFEST.md", "\n".join(manifest_lines) + "\n")
         report = {
