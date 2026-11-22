@@ -10,7 +10,7 @@ am Gerät nachgemessen bzw. an der Messmethodik repariert werden muss.
 **Runner:** `scripts/profile_todo_measure.py <group>` misst die offenen Gruppen
 getrennt (`pulse_amt`, `fx1types`, `reverb`, `unison_detune`, `unison_count`).
 `... report` schreibt die Zusammenfassung nach
-`docs/TODO-MEASURE-2026-11-21.md`. Der Runner setzt für FX1-Messungen
+`docs/research/TODO-MEASURE-2026-11-21.md`. Der Runner setzt für FX1-Messungen
 `FX2Type = Off` und für Reverb `FX1Type = Off` — damit ist die alte
 Reverb-Kontamination des FX-Sweeps beseitigt.
 
@@ -162,7 +162,7 @@ der Reverb-Dry/Wet-Regler), nicht mehr die alte Matrix-Zeile.
   Blofeld-Delay braucht seine Zeit-/Feed-Parameter. Offener Punkt für die
   Fix-Session, nicht Teil der A3-Abnahme.
 - Der alte Gesamtlauf `recordings/profile_testb_fx.jsonl` (FX1 + FX2 gleichzeitig)
-  ist in `docs/PROFILING-INIT-2026-11-21.md` noch enthalten; für FX-Fragen gilt
+  ist in `docs/research/PROFILING-INIT-2026-11-21.md` noch enthalten; für FX-Fragen gilt
   die getrennte Messung in diesem Dokument.
 
 ## 4. A4 — Unisono Count/Detune
@@ -259,7 +259,7 @@ grob, sondern in der Richtung falsch.
 
 ## 6. Block 5 — Glide/Legato
 
-**Status: gemessen (2026-11-21), Details in `docs/GLIDE-2026-11-21.md`.**
+**Status: gemessen (2026-11-21), Details in `docs/research/GLIDE-2026-11-21.md`.**
 
 Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken.
 
@@ -317,7 +317,7 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
 - Runner: `scripts/measure_rf100.py` (dry-run ohne `--run`, `--verify-sd`
   read-only). Log-Ziel: `recordings/sim_log_v3.jsonl`.
 - Trainingsvorbereitung: `scripts/reconvert_rf.py` + `prognose train`; siehe
-  `docs/MEASURE-RF100-V3.md`.
+  `docs/research/MEASURE-RF100-V3.md`.
 
 **Zu tun:**
 
@@ -337,8 +337,10 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
   73/99 besser, Bestwert 96,3; 3 stumm (A050 ×2, A097 note72).
 - [x] Entropy: H(y)=2,93 bits. Retrain: MAE 9,32, R² −0,013 / R²_cv 0,075 →
   **nicht geshippt**, `models/prognose_rf.pkl` bleibt v2.
-- [ ] A12 (DigiFormerAmount) mit Slot-Load neu messen — der frühere Sweep
-      nutzte den Pfad-Load.
+- [x] A12 (DigiFormerAmount) mit Slot-Load gemessen (2026-11-22): globaler
+      Skalar 0,65 bringt im Mittel +0,7 (11 besser / 10 schlechter) → keine
+      pauschale Korrektur. Offen bleibt eine Hz-Kalibrierung pro Former-Modell
+      (`TODO_FIX.md`).
 - [ ] Schwache v3-Fälle prüfen (A057 29, A020 32, A051 38, A024 39): Iridium
       dunkler + Sub-Oktav-Überschuss; Verdacht Cutoff/FX, nicht Oktavlage.
 

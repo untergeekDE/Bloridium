@@ -1,9 +1,9 @@
 # TODO_FIX — Konverter- und Mess-Backlog aus dem Init-Profiling
 
-**Stand:** 2026-11-21 · **Quellen:** `docs/PROFILING-INIT-2026-11-21.md`,
-`docs/ARCHITEKTUR-DIFFERENZEN.md`, `docs/profiling_init_2026-11-21.csv`
+**Stand:** 2026-11-21 · **Quellen:** `docs/research/PROFILING-INIT-2026-11-21.md`,
+`docs/research/ARCHITEKTUR-DIFFERENZEN.md`, `docs/research/profiling_init_2026-11-21.csv`
 
-Diese Liste ist der *messbasierte* Backlog (121 Parameter, 752 Einzelmessungen).
+Diese Liste ist der *messbasierte* Backlog (121 Parameter, 846 Einzelmessungen).
 Die allgemeine Code-Review-Liste ist `FIXES_HISTORY.md`.
 
 Legende: **P0** = belegter Fehler, hoher Klangimpact · **P1** = wichtig, aber
@@ -29,7 +29,7 @@ Nächste Messblöcke (Reihenfolge):
 
 0. ✅ **Verifikation A1/A3/A4** (2026-11-21 erledigt): PWM-Pulse, getrennter
    Reverb-Mix und Unisono-Spektralbreite gemessen — Details in
-   `docs/TODO-MEASURE-2026-11-21.md`. Die A2/F2-Neumessung bleibt offen
+   `docs/research/TODO-MEASURE-2026-11-21.md`. Die A2/F2-Neumessung bleibt offen
    (`TODO_MEASURE.md`, Abschnitt 2).
    **Neue Fix-Befunde aus A1 (für diese Session):** (a) die Prüfung
    `PWM Amount != 0` ist falsch — 0 ist die maximale negative Modulation,
@@ -37,7 +37,7 @@ Nächste Messblöcke (Reihenfolge):
    Blofeld-Pulsbreitenmodulation, u. a. wegen der unkalibrierten LFO-Speed-Kurve
    (A7).
 1. ✅ **5 · Glide/Legato** (2026-11-21 erledigt) — Mono-Setup + YIN-Tracker;
-   Details in `docs/GLIDE-2026-11-21.md`. Portamento OK, aber
+   Details in `docs/research/GLIDE-2026-11-21.md`. Portamento OK, aber
    **Glide-Rate-Kurve weicht ab** (Blofeld raw 70/85 = 1013/2117 ms vs.
    Iridium 315/384 ms) und **Glide-Modus/Mono sind nicht gemappt**
    (Glissando/fingered bleiben auf dem Iridium Onset). Neue Fix-Punkte:
@@ -82,7 +82,7 @@ bei Keytrack, Anschlagspaare bei Velocity.
 - **Fix:** Blofeld-Fade → `LfoNAttack` (Fade-in) bzw. `LfoNDecay` (Fade-out);
   Free-Speed-Hz-Kurve mit 6–8 Stützstellen kalibrieren (langsame LFOs zuerst).
 - **Akzeptanz:** Fade-Sweep OK/teilweise; Speed-Sweep über 4 Werte cos ≥ 0,8.
-- **Stand (2026-11-22, `docs/LFO-2026-11-21.md`):** Fade-Mapping ist im Code,
+- **Stand (2026-11-22, `docs/research/LFO-2026-11-21.md`):** Fade-Mapping ist im Code,
   aber am Gerät **nicht wirksam**. Der Blofeld-Wert ist eine **Rate** (größer =
   schneller), positiv Fade-in / negativ Fade-out nach Delay — die lineare
   `(raw−64)/63`-Zeitabbildung ist in der Richtung falsch. Der Iridium-
@@ -109,27 +109,29 @@ bei Keytrack, Anschlagspaare bei Velocity.
   über die erste Stufe annähern.
 - **Akzeptanz:** Entscheidung dokumentiert, Test-Sound mit ADS1DS2R konvertiert.
 
-### A12 · P1 · Serieller F2 im DigiFormer: Amount (Cutoff) zu hoch
-- **Beleg (2026-11-22, A005 HooverBass, Blofeld F2 = HP 12dB raw 48 →
-  `DigiFormerType=Nave HP12`, `DigiFormerAmount=0.393`):** am Gerät geprüft
-  (Slot 204) und gemessen. Erster Sweep note 60/72: Amount 0,393 → 46/40;
-  0,25 → 52/55; 0,15 → 51/53; 0,08 → 58/50; **Bypass → 26/26**. Der HP wird
-  also gebraucht, ist aber zu weit offen (Bass fehlt).
-  **Achtung:** dieser Sweep nutzte `load-patch <PFAD>` (still ein No-op) — die
-  Zuordnung „gemessenes Patch = A005“ ist nicht belegt; Messung mit
-  Slot-Load + Readback wiederholen. Der User-Befund am Gerät (Slot 204) bleibt
-  gültig.
-- **Nebenbefund:** Osc1 = aus ist **korrekt** (Blofeld Mixer Osc1 Level = 0);
-  der fehlende Bass bei A005 ist zusätzlich der bekannte Oktavfall (Bänder eine
-  Oktave unter dem Grundton fehlen um 30–50 dB).
+### A12 · P1 · Serieller F2 im DigiFormer: Amount-Kennlinie (kein globaler Skalar)
+- **Beleg (2026-11-22, gültig gemessen mit Slot-Load + Readback):**
+  - A/B über **alle 30 seriellen F2-Sounds**, `DigiFormerAmount = 0,65 ×
+    aktuell`: **mean Δ +0,7**, 11 besser / 10 schlechter (±2).
+    Große Gewinne: A044 +29,6, A001 +19,0, A049 +12,3, A018 +12,0;
+    große Verluste: A083 −21,1, A006 −17,2, A023 −10,8, A025 −9,8.
+  - A005 (HP 12dB, amount 0,393) mit tiefen Noten: aktuell 85/71/64
+    (Noten 36/48/60), k=0,65 → 83/72/70, k=0,35 → 88/73/67. Kein klarer
+    Gewinn durch weniger HP; der Bass fehlt nicht wegen des HP.
+- **Fazit:** Ein globaler Skalar ist **nicht** gerechtfertigt. Die
+  DigiFormer-Amount-Kennlinie muss pro Former-Modell (LP24/LP12/HP12/Comb)
+  gegen Hz kalibriert werden — die Wiederverwendung der Filter-Cutoff-Norm ist
+  eine Näherung, aber nicht monoton falsch.
+- **Nebenbefund:** Osc1 = aus ist korrekt (Blofeld Mixer Osc1 Level = 0); der
+  fehlende Bass bei A005 ist der Oktav-/Sub-Oktav-Fall (Bänder eine Oktave
+  unter dem Grundton um 30–50 dB daneben).
 - **Stelle:** `qpat_map.py`, serieller F2-Zweig (`DigiFormerAmount =
   blofeld_cutoff_norm(raw)`).
-- **Fix:** DigiFormerAmount-Kennlinie separat kalibrieren (Amount-Sweep am
-  Iridium, HP- und LP-Former) und invertieren; nicht die Filter-Cutoff-Norm
-  wiederverwenden.
-- **Akzeptanz:** A005 (und 2–3 weitere serielle F2-Sounds) erreichen mit dem
-  kalibrierten Amount höhere Scores als mit dem aktuellen Wert; Test in
+- **Fix (offen):** Amount-Sweep pro Former-Typ mit Hz-Bestimmung (Cutoff aus
+  dem Spektrum schätzen), dann inverse Kennlinie; Test in
   `tests/test_qpat_map.py`.
+- **Akzeptanz:** mittlerer Score über die 30 seriellen F2-Sounds steigt klar
+  (> +3) und kein Sound verliert > 5 Punkte.
 
 ---
 
@@ -156,7 +158,7 @@ Profiling-Report, kein `unmapped`-Eintrag mehr.
 2. **A6, A7, A9** — Kennlinien/Kalibrierung.
 3. **A5, A10**.
 4. **B1, B3–B8** und **D/E** parallel.
-5. ✅ Verifikation A1/A3/A4 (2026-11-21; siehe `docs/TODO-MEASURE-2026-11-21.md`);
+5. ✅ Verifikation A1/A3/A4 (2026-11-21; siehe `docs/research/TODO-MEASURE-2026-11-21.md`);
    offen bleiben A2/F2 und A7 (LFO-Speed-Kurve).
 
 # Sonstige Fixes
