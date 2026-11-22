@@ -31,7 +31,9 @@ systemctl --user enable --now bloridium-web.service
 ```
 
 Reverse proxy (needs sudo, DNS A record first): see the header of
-`webapp/deploy/bloridium.conf` (a2ensite + `certbot --apache`).
+`webapp/deploy/bloridium.conf` (`a2enmod rewrite`, a2ensite +
+`certbot --apache`). `mod_rewrite` is required for the truncated IP addresses
+in the access/error logs.
 
 **A') systemd Quadlet (Podman >= 4.4):** `webapp/bloridium-web.container`
 into `~/.config/containers/systemd/`, then
@@ -111,6 +113,23 @@ the repo, `/app/models/prognose_rf.pkl` in the container – baked in, overridab
 Uploads are **not stored and not used for training**. The RF model was trained
 on the operator's own A/B measurements, not on user uploads. `report.json`
 contains only the per-sound result data needed for the download.
+
+## Privacy, retention, logging
+
+The public instance serves `/privacy`. The short version:
+
+- The uploaded file is processed in memory and never written to disk.
+- The generated ZIP/`report.json` is kept only for the one-time download and
+  deleted immediately afterwards; if it is never downloaded, the background
+  cleanup deletes it after `DATA_TTL_HOURS=1`.
+- Uploads are not used for training.
+- There are no cookies, analytics, or third-party assets.
+
+The Apache vhost (`deploy/bloridium.conf`) truncates the client address in
+**both** the access and error logs (`192.0.2.xxx`, `2001:db8::xxxx`) using
+`mod_rewrite`; `sudo a2enmod rewrite` is required. Log retention is controlled
+by Apache logrotate and journald, not by the app. The Flask app itself logs no
+request data.
 
 ## Local development (without container)
 

@@ -17,7 +17,7 @@ PublishPort=127.0.0.1:8000:8000
 Volume=%h/bloridium-web-data:/data
 Volume=%h/bloridium-models:/app/models:ro   # RF prognosis model (copy models/ there: cp -r models ~/bloridium-models)
 Environment=DATA_DIR=/data
-Environment=DATA_TTL_HOURS=24
+Environment=DATA_TTL_HOURS=1
 Environment=BLORIDIUM_MODEL=/app/models/prognose_rf.pkl
 # Podman ignoriert HEALTHCHECK aus dem OCI-Image -> Healthcheck hier als HealthCmd
 HealthCmd=curl -fsS http://127.0.0.1:8000/health || exit 1

@@ -14,6 +14,6 @@ services:
       - ../models:/app/models:ro      # optional: override the baked-in RF model
     environment:
       DATA_DIR: /data
-      DATA_TTL_HOURS: "24"            # delete artifacts after 24 h
+      DATA_TTL_HOURS: "1"             # delete undownloaded artifacts after 1 h
       BLORIDIUM_MODEL: /app/models/prognose_rf.pkl
     restart: unless-stopped

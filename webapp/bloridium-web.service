@@ -23,7 +23,7 @@ ExecStart=/usr/bin/podman run \
   -p 127.0.0.1:8000:8000 \
   -v %h/bloridium-web-data:/data \
   -e DATA_DIR=/data \
-  -e DATA_TTL_HOURS=24 \
+  -e DATA_TTL_HOURS=1 \
   --health-cmd "curl -fsS http://127.0.0.1:8000/health || exit 1" \
   --health-interval 30s \
   localhost/bloridium-web:latest
