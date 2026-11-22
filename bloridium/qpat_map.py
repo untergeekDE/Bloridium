@@ -798,20 +798,27 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         setp(f"Lfo{n}Delay", norm(p.get(f"LFO {n} Delay", 0)))
         # Blofeld Fade is bipolar -64..+63 (raw 64 = 0): positive fades the LFO
         # in, negative fades it out. The Iridium has separate LfoNAttack/Decay.
-        # Scaling is linear/approximate; the exact fade time still needs a
-        # hardware calibration (A7).
+        # CRITICAL (measured 2026-11-22 on E090 @ slot 289): LfoNDecay = 0 kills
+        # the LFO output completely - a mod matrix "LFO2 -> Pitch" row produced a
+        # flat pitch (flux 0.37) with 0.0 and a real vibrato (flux 1.01) with 1.0.
+        # 1.0 is also the value in every factory/template qpat. So Decay is a
+        # level/fade-out amount where 1.0 = no fade-out; the old mapping wrote 0.0
+        # for the neutral fade and silenced EVERY converted LFO.
         fade = p.get(f"LFO {n} Fade", 64)
         if not isinstance(fade, (int, float)):
             fade = 64
         if fade > 64:
             setp(f"Lfo{n}Attack", (fade - 64) / 63.0, f"Fade +{fade - 64} -> fade-in")
-            setp(f"Lfo{n}Decay", 0.0, "no fade-out")
+            setp(f"Lfo{n}Decay", 1.0, "no fade-out")
         elif fade < 64:
+            # Fade-out: decoding the Iridium Decay scale is still open (A7).
+            # Never write 0.0 - that silences the LFO; keep it fully open instead.
             setp(f"Lfo{n}Attack", 0.0, "no fade-in")
-            setp(f"Lfo{n}Decay", (64 - fade) / 64.0, f"Fade -{64 - fade} -> fade-out")
+            setp(f"Lfo{n}Decay", 1.0, f"Fade -{64 - fade} not modelled (Decay 1.0)")
+            unmapped.append(f"LFO {n} Fade -{64 - fade} (fade-out not modelled)")
         else:
             setp(f"Lfo{n}Attack", 0.0, "no fade")
-            setp(f"Lfo{n}Decay", 0.0, "no fade")
+            setp(f"Lfo{n}Decay", 1.0, "no fade")
         # Keytrack has no direct Iridium LFO pendant (matrix Keytrack -> LFO Speed
         # would be the approximation, B7).
         unmapped.append(f"LFO {n} Keytrack")

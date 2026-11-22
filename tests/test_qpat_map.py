@@ -670,19 +670,19 @@ def test_lfo_fade_maps_to_attack_decay():
     parsed = _parsed_with({"LFO 1 Fade": 127})
     ov, un = qpat_map.blofeld_to_qpat_params(parsed)
     assert ov["Lfo1Attack"][0] == pytest.approx(1.0)
-    assert ov["Lfo1Decay"][0] == pytest.approx(0.0)
+    assert ov["Lfo1Decay"][0] == pytest.approx(1.0)   # 0.0 silenced the LFO
     assert not any("LFO 1 Fade" in u for u in un)
 
     parsed = _parsed_with({"LFO 2 Fade": 0})       # -64 = maximum fade-out
     ov, un = qpat_map.blofeld_to_qpat_params(parsed)
     assert ov["Lfo2Attack"][0] == pytest.approx(0.0)
-    assert ov["Lfo2Decay"][0] == pytest.approx(1.0)
-    assert not any("LFO 2 Fade" in u for u in un)
+    assert ov["Lfo2Decay"][0] == pytest.approx(1.0)   # fade-out scale still open
+    assert any("LFO 2 Fade" in u and "not modelled" in u for u in un)
 
     parsed = _parsed_with({"LFO 3 Fade": 64})      # neutral
     ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
     assert ov["Lfo3Attack"][0] == pytest.approx(0.0)
-    assert ov["Lfo3Decay"][0] == pytest.approx(0.0)
+    assert ov["Lfo3Decay"][0] == pytest.approx(1.0)   # neutral fade -> 1.0
     # Keytrack still has no LFO pendant and stays in the report
     parsed = _parsed_with({"LFO 1 Keytrack": 20})
     _ov, un = qpat_map.blofeld_to_qpat_params(parsed)

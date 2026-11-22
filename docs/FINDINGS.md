@@ -354,3 +354,21 @@ Dieselben Patches mehrfach gemessen (gleiches Protokoll, Note 60):
   Offener Punkt: sauberes Test-Patch, nur Cutoff + Amount sweepen.
 - Gleicher Verdacht besteht für `FilterNVeloAmount` und `AmpVeloAmount`
   (weiterhin `norm(raw)`) — bewusst noch nicht geändert.
+
+### LFOs waren komplett stumm (0.6.6, 2026-11-23)
+
+- Symptom: auf E090 ("Soft Pulses", Slot 289) hatte **keine** Modmatrix-Zeile
+  mit einem LFO eine Wirkung - auch `LFO2 -> Pitch` bei 1,81 Hz und 52 %
+  Amount nicht; auf einem Init-Sound funktionierte es.
+- Ursache: der Konverter schrieb bei neutralem Blofeld-`Fade` (raw 64)
+  `LfoNAttack = 0` **und** `LfoNDecay = 0`. `Decay = 0` schaltet den LFO-Ausgang
+  ab. Alle Factory-/Template-qpats stehen auf `LfoNDecay = 1.0`.
+- Messung am Gerät (Edit-Buffer, Note 60, Pitch-Peak 95-185 Hz + Spektralflux):
+  - `Lfo2Decay 0.0`: Pitch flach (0,0 +/-0,1 Halbton), Flux 0,37
+  - `Lfo2Decay 1.0`: echtes Vibrato (+/-4 Halbtöne), Flux 1,01
+  - zurück auf 0.0: wieder flach
+- Die Osc-Parameter selbst sind **alle** im zulässigen Bereich (CoarsePitch 31
+  = +7, PitchBendRange 36 = +12, Semitone 12 = +0, Vol 0-1) - kein
+  Firmware-/Ghidra-Fall.
+- Fade-out (negativer Blofeld-Fade) ist jetzt als Approximation markiert statt
+  den LFO zu killen; die Iridium-Decay-Skala bleibt offen (A7).

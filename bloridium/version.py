@@ -5,5 +5,5 @@ Used by pyproject.toml (dynamic version), the CLI (--version), the web app
 imports so the web app can read it without loading the package.
 """
 
-__version__ = "0.6.5"  # 2026-11-22: bipolar filter envelope amount
+__version__ = "0.6.6"  # 2026-11-23: LFO Decay 1.0 (0.0 silenced every LFO)
 # Converter code unchanged since 0.5.3 (A1/A2/A3/A4/A7a), before that 0.5.1/0.5.2

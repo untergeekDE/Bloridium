@@ -7,6 +7,18 @@ Test baseline on Linux without private data: 200 passed / 46 failed / 17 errors.
 All remaining failures come from the missing `dumps/` and `recordings/` data. The full
 suite is run on the measurement machine (item 11).
 
+## Release 0.6.6 (2026-11-23)
+
+- **All converted LFOs were silent:** the fade mapping wrote `LfoNAttack = 0`
+  and `LfoNDecay = 0` for a neutral Blofeld LFO Fade. Measured on E090
+  ("Soft Pulses", slot 289) with a clean `LFO2 -> Pitch` row at 1.81 Hz:
+  `Lfo2Decay 0.0` -> flat pitch (spectral flux 0.37), `1.0` -> real vibrato
+  (flux 1.01). Every factory/template qpat has `LfoNDecay = 1.0`.
+  Fix: neutral/positive fade -> Decay 1.0 (no fade-out); a negative Blofeld
+  fade (fade-out) is no longer modelled and is reported as unmapped instead of
+  writing 0.0 (which silenced the LFO).
+- `scripts/diag_lfo.py`: pitch-trajectory A/B for an LFO -> Pitch row.
+
 ## Release 0.6.5 (2026-11-22)
 
 - **Filter envelope amount is bipolar:** `Filter1EnvAmount`/`Filter2EnvAmount`
