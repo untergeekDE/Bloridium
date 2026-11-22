@@ -1,4 +1,8 @@
-# Iridium Favorites mapping (PC control) — definitive, measured 2026-11-09
+# Iridium Favorites mapping (PC control) — measured 2026-11-09
+
+> Slot and Favorites contents change between sessions. The authoritative slot list for
+> scripts is `DEFAULT_MAP` in `scripts/sim_sweep_pcs.py`; use this page for the PC-number
+> convention and the traps.
 
 ## Principle
 
@@ -35,9 +39,10 @@ Mirrored in code: `DEFAULT_MAP` + `CALIB_MAP` in `scripts/sim_sweep_pcs.py`
 ## Important traps
 
 - **rdb .mimap loaded** (`docs/midi-maps/iridium_rdb.mimap`): CC0 = Filter1 Cutoff,
-  CC7 = Filter1 Amount, CC32 = OSC1 Fine Pitch. **Set/bank is NO LONGER selectable via MIDI**
-  (CC0/CC32 are parameters!) — switch the Favorites set only on the device.
-  CC7=0 therefore no longer silences; never touch CC7 on the Iridium (except during the sweep).
+  CC7 = Filter1 Amount, CC32 = OSC1 Fine Pitch. **With this map loaded, set/bank is NO LONGER
+  selectable via MIDI** (CC0/CC32 are parameters!) — switch the Favorites set only on the device.
+  In that state CC7=0 no longer silences; never touch CC7 on the Iridium (except during the sweep).
+  Without a custom map, CC7 is the main Output Level and CC7 = 0 is silent.
 - On the **Blofeld**, CC0/CC32 remain bank select → the scripts send CC0=0 (Bank A) before
   every PC, otherwise the PC lands in the active bank (B008 trap).
 - Slot 0206 = v15init (Cutoff 0.10 ≈ 18 Hz) — practically silent at higher notes;

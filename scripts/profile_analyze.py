@@ -2,7 +2,7 @@
 """Analyse the Init profiling sweep -> Markdown report + CSV.
 
 Reads recordings/profile_sweep.jsonl and recordings/profile/*.npy.
-Writes docs/PROFILING-INIT-2026-11-21.md and docs/profiling_init_2026-11-21.csv.
+Writes docs/research/PROFILING-INIT-2026-11-21.md and docs/research/profiling_init_2026-11-21.csv.
 """
 from __future__ import annotations
 
@@ -47,9 +47,9 @@ LOGS = {
     "fe4b": REPO / "recordings/profile_testb_fe4b.jsonl",
 }
 NPY = REPO / "recordings/profile"
-OUT_MD = REPO / "docs/PROFILING-INIT-2026-11-21.md"
-OUT_CSV = REPO / "docs/profiling_init_2026-11-21.csv"
-OUT_CURVES = REPO / "docs/profiling_curves_2026-11-21.json"
+OUT_MD = REPO / "docs/research/PROFILING-INIT-2026-11-21.md"
+OUT_CSV = REPO / "docs/research/profiling_init_2026-11-21.csv"
+OUT_CURVES = REPO / "docs/research/profiling_curves_2026-11-21.json"
 SR = audio.SAMPLERATE
 
 BLOCKS = [
@@ -660,7 +660,7 @@ def main() -> int:
           "Filter-Env Sustain/Release sind OK (Release 100 % cos 0,85); Decay ist "
           "bei 100 % OK (cos 0,90), kurze Zeiten bleiben unter der Schwelle; "
           "Attack weicht ab (nur Iridium reagiert). "
-          "Details: `docs/ARCHITEKTUR-DIFFERENZEN.md`.")
+          "Details: `docs/research/ARCHITEKTUR-DIFFERENZEN.md`.")
     if any(t.get("variant") in ("keytrack", "velocity", "pan", "pan_noise") for t in table):
         A("- **Test E (andere Anregung):** Keytrack ist mit zwei Noten messbar "
           "(Filter 1: cos 0,86), Filter-Env-Velocity und Filter-Pan nur teilweise "
@@ -787,12 +787,12 @@ def main() -> int:
     A("- Messprotokoll: `recordings/profile_sweep.jsonl` (Init), "
       "`recordings/profile_testb_clean.jsonl` / `_fx.jsonl` (Test B), "
       "`recordings/profile_testb_release.jsonl` (Test C).")
-    A("- Kurven/Kandidaten (maschinenlesbar): `docs/profiling_curves_2026-11-21.json`.")
-    A("- Architektur-Differenzen und Workarounds: `docs/ARCHITEKTUR-DIFFERENZEN.md`.")
+    A("- Kurven/Kandidaten (maschinenlesbar): `docs/research/profiling_curves_2026-11-21.json`.")
+    A("- Architektur-Differenzen und Workarounds: `docs/research/ARCHITEKTUR-DIFFERENZEN.md`.")
     A("")
     OUT_CURVES.write_text(json.dumps({
         "erzeugt": "2026-11-21",
-        "quelle": "docs/PROFILING-INIT-2026-11-21.md",
+        "quelle": "docs/research/PROFILING-INIT-2026-11-21.md",
         "kurven": [{
             "parameter": "Osc 1/2/3 Detune",
             "sdata": [3, 19, 35],

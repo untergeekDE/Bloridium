@@ -10,7 +10,7 @@ The output folder is meant to be copied 1:1 to the Iridium SD card, e.g.:
     python3 scripts/reconvert_rf.py --out transfer/rf100_v3 --sd-dir rf300
     cp -R transfer/rf100_v3 /Volumes/<SD>/rf300
 
-No spaces in qpat names (qpat.sd_filename), so QUIR `load-patch 2:rf300/...`
+No spaces in qpat names (qpat.sd_filename), so device-side load paths (`2:rf300/...`)
 paths always work. `transfer/` is gitignored; the manifest is the hand-off.
 
 Usage:

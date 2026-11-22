@@ -326,7 +326,7 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
       Iridium, Slots 200–299.)
 - [x] `measure_rf100.py --verify-sd` → 100/100 (2026-11-22; prüft Name **und**
       Byte-Größe, weil v2/v3 dieselben Dateinamen haben).
-      **Hinweis:** `ls` blockiert den QUIR-Readout für einige Zeit → Verify in
+      **Hinweis:** `ls` blockiert den Device-Readout für einige Zeit → Verify in
       eigener Sitzung, Messlauf mit `--skip-verify`.
 - [x] `measure_rf100.py --run --skip-verify` (100 Locs × Notes 72/60) —
   **erster Lauf 2026-11-22 ungültig:** `load-patch <PFAD>` ist ein stiller

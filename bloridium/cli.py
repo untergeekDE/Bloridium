@@ -1,6 +1,6 @@
 """Bloridium CLI - terminal tool phase 1 (classic subcommands).
 
-Subcommands (design: docs/superpowers/specs/2026-11-08-bloridium-cli-design.md):
+Subcommands (design: docs/research/superpowers/specs/2026-11-08-bloridium-cli-design.md):
   discover | status | bank read/import/list/show | convert | ab | qpat info | edit
 Hardware (MIDI ports, audio device, channels) is configured via the user-editable
 YAML file bloridium.yaml - run `bloridium discover --write` once to fill it from
@@ -1021,7 +1021,7 @@ def cmd_explore(args) -> int:
                 if stats["n"] == 0:
                     print("  no NRPN received - no MIDI message on the port at all.")
                     print("  check: Global > MIDI = on? Send NRPN = on? maybe plug Iridium USB in briefly")
-                    print("  and set --port \"Iridium Keyboard (MIDI 2.0) MIDI 2.0\" (DIN check: docs/HANDOVER-2026-11-12.md).")
+                    print("  and set --port \"Iridium Keyboard (MIDI 2.0) MIDI 2.0\" (see docs/FINDINGS.md).")
                 elif stats["nrpn_other_ch"] is not None:
                     print(f"  NRPN arrived on ch{stats['nrpn_other_ch'] + 1} - try --channel {stats['nrpn_other_ch']}?")
                 else:

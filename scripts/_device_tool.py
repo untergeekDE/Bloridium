@@ -1,7 +1,7 @@
-"""Internal helper: textual shell access to the Iridium (undocumented, private).
+"""Internal helper for private device-side access to the Iridium.
 
-NOT part of the public workflow docs. Used by the profiling sweep only.
-The command channel is deliberately kept out of every generated report.
+Not part of the public workflow; used by the measurement scripts only.
+Keep this interface out of every generated report.
 """
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ import mido
 
 PORT = "Iridium Keyboard (MIDI 2.0) MIDI 2.0"
 VENDOR, MODEL, DEV = 0x3E, 0x28, 0x00
+CMD_PREFIX = bytes((0x51, 0x55, 0x49, 0x52))
 
 
 class Iridium:
@@ -24,7 +25,7 @@ class Iridium:
 
     # ---- low level ------------------------------------------------------
     def _send(self, cmd: int, payload: bytes = b"") -> None:
-        self.out.send(mido.Message("sysex", data=[VENDOR, MODEL, DEV, *b"QUIR", cmd, *payload]))
+        self.out.send(mido.Message("sysex", data=[VENDOR, MODEL, DEV, *CMD_PREFIX, cmd, *payload]))
 
     def _read(self, timeout: float = 0.12) -> bytes:
         buf = bytearray()
@@ -34,7 +35,7 @@ class Iridium:
                 if m.type != "sysex":
                     continue
                 d = bytes(m.data)
-                if (len(d) >= 9 and d[:7] == bytes([VENDOR, MODEL, DEV]) + b"QUIR"
+                if (len(d) >= 9 and d[:7] == bytes([VENDOR, MODEL, DEV]) + CMD_PREFIX
                         and d[7] == 0x56):
                     buf += d[8:]
             time.sleep(0.005)

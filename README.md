@@ -8,6 +8,8 @@ An exact transfer is impossible, although those two synths are related and have 
 
 To close the gap, Bloridium provides tools to **measure and track the differences** between the original and the converted sound (A/B recordings over a Focusrite Scarlett 18i8, similarity score 0–100 from log-spectrogram + envelope comparison) and to **optimise parameters** until the Iridium patch matches the Blofeld as closely as possible.
 
+Read the full blog post on [untergeek.de](https://www.untergeek.de/2026/11/bloridium-porting-blofeld-sounds-to-the-iridium/).
+
 ### What you can do with it
 
 - Read sounds from a Blofeld: single sounds or whole banks. The dumps are kept in a SQLite database.
@@ -18,6 +20,9 @@ To close the gap, Bloridium provides tools to **measure and track the difference
 - Mathematical comparison of the spectra and the envelopes for a coarse similarity score
 - AI-based comparison via embeddings, and via a local decision model running on ollama
 - Prognostics: Based on the comparison, a very crude Random Forest model has been trained to predict how close a converted file is to the original
+
+### Try online
+
 - Web app for conversion: find a demo on [bloridium.frankruft.de](https://bloridium.frankruft.de)
   
 ### Limitations
@@ -48,10 +53,13 @@ The code has been produced, and optimised, with the [Opencode agent](https://ope
 
 The test hardware used: 
 
-- Macbook Air
-- both synths connected directly via USB (**MIGHT CAUSE DIGITAL NOISE BY GROUND LOOP**)
-- Focusrite Scarlett 18i8 Audio interface
-- Blofeld on inputs 3/4 (MIDI channel 5), Iridium on inputs 5/6 (MIDI channels 6–9, Parts 1–4).
+- MacBook Air
+- Focusrite Scarlett 18i8 audio interface
+- Blofeld on inputs 3/4 (MIDI channel 5), Iridium on inputs 5/6 (MIDI channels 6–9, Parts 1–4)
+- Blofeld via USB. The Iridium can also use USB, but direct USB can create a ground loop
+  (audible noise on inputs 5/6). For critical A/B recordings use the Launchpad Pro DIN chain
+  and unplug the Iridium USB; the shipped `bloridium.yaml` uses USB for convenience, so switch
+  both Iridium ports to the DIN port for measurements.
 
 Important note: 
 
@@ -81,9 +89,15 @@ and check with `bloridium status [--audio]`, which also shows which config file 
 
 ### Sound control on the Iridium
 
-As infuriating as it may be: **right now, there is no official way to take full remote control of a sound on the Iridium.** The Iridium has no documented SysEx layer, so patches can only arrive as `.qpat` files (USB stick / SD card). It sends NRPN but does not interpret incoming NRPN.
+**Patch transfer is file-based.** The Iridium has no documented SysEx application layer:
+`.qpat` files arrive on a USB stick / SD card (`Load > Actions > Import`) and are read
+back via `Export`. For live control from a computer use **MIDI CC** (requires a `.mimap`
+or MIDI Learn; the published list has 115 assignments, CC 2–116), **program change**
+(Favorites only) and **notes**. Incoming **NRPN is ignored** — the panel only sends NRPN.
 
-**The only way to control Iridium parameters from a computer is via MIDI CC.** This limits computer/MIDI control to the 116 MIDI CC commands that are free. To use them, you must upload a MIDI map to the Iridium, defining the controls and the parameters they speak to.  
+> **CC7 trap:** by default CC7 is the main/Output Level, so CC7 = 0 makes the Iridium
+> silent. A loaded `.mimap` can reassign CC7 (the `rdb` map maps it to Filter1 Amount);
+> check the active map before sending CC7. `bloridium cc --raw 7 0` refuses without `--force`.
 
 ## Installation
 
@@ -119,22 +133,33 @@ bloridium bank read A            # read Bank A live via SysEx -> dumps/banks/A/ 
 bloridium bank import dumps      # OFFLINE: import existing dumps into the bank
 bloridium bank list              # list sounds (--grep, --json)
 bloridium bank show A043         # parameters of a sound
-bloridium convert A043           # A043 -> transfer/<name>_A043.qpat (+ DB entry)
+bloridium convert A043           # A043 -> transfer/A043_SH_Power.qpat (+ DB entry)
 # on the Iridium: USB stick/SD -> Load > Actions > Import -> load
-bloridium ab --sound A043 --label shpower --note 36   # A/B measurement + DB run
+bloridium ab --sound A043 --label shpower --note 72   # A/B measurement + DB run
 bloridium ab --list --sound A043                      # runs per sound
 bloridium ab --diff 1 2                               # compare two runs
-bloridium qpat info transfer/SH\ Power_A043.qpat --register
-bloridium edit transfer/SH\ Power_A043.qpat --list --grep osc1
-bloridium edit transfer/SH\ Power_A043.qpat --set Osc1Type=1.0   # in-place, keeps .bak
+bloridium qpat info transfer/A043_SH_Power.qpat --register
+bloridium edit transfer/A043_SH_Power.qpat --list --grep osc1
+bloridium edit transfer/A043_SH_Power.qpat --set Osc1Type=1.0   # in-place, keeps .bak
 ```
 
 Parameters & safety:
 
 - The tool **never changes device settings**; All Notes Off (CC123) is sent on all channels before measurements.
-- **Warning: CC7 = 0 is silent on the Iridium** (Output Level).
+- **Warning: CC7 = 0 is silent on the Iridium** by default (Output Level). A loaded `.mimap` may reassign CC7.
 - Global DB option: `--db PATH` or `$BLORIDIUM_DB` (default `<repo>/bloridium.db`). Exit codes: 0 ok, 1 error, 2 hardware unreachable (with port list).
 - Similarity score (`bloridium/sim.py`, `score_version` 2 since v0.4.0): 70 % spectral similarity (`1 − spec_mad_db/20 dB`, the mean level-aligned deviation of the log-spectrogram bands) + 30 % envelope DTW → score 0–100, plus per-band dB deltas. The v1 cosine score saturated (see `docs/FINDINGS.md`); log rows without `score_version` are v1 and are skipped by `prognose train`. Offline via `scripts/sim_compare.py --npy A.npy B.npy`, live via `--live` or `scripts/sim_live.py --param "Filter1 Cutoff" --value 90 --ref ref.npy`; every run is logged to `recordings/sim_log.jsonl`.
+
+## Documentation
+
+- [`docs/CLI.md`](docs/CLI.md) — full command reference
+- [`docs/CONFIG.md`](docs/CONFIG.md) — `bloridium.yaml`, discovery, troubleshooting
+- [`docs/MAPPING-MASTER.md`](docs/MAPPING-MASTER.md) — Blofeld parameter → qpat mapping status
+- [`docs/ARCHITECTURE-DIFFERENCES.md`](docs/ARCHITECTURE-DIFFERENCES.md) — what cannot map 1:1
+- [`docs/FINDINGS.md`](docs/FINDINGS.md) — rig, SysEx/CC facts, qpat, score caveats
+- [`docs/IRIDIUM-FAVORITES-MAP.md`](docs/IRIDIUM-FAVORITES-MAP.md) — PC/Favorites mapping
+- [`docs/research/`](docs/research/) — dated measurements, design notes and superseded docs
+  (profiling, calibration, RF runs, historical handovers). Evidence, not instructions.
 
 ## License
 

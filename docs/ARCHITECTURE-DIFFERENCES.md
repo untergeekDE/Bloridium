@@ -1,10 +1,10 @@
 # Architectural Differences Blofeld ↔ Iridium — and What They Mean for the Conversion
 
-*English translation of [`ARCHITEKTUR-DIFFERENZEN.md`](ARCHITEKTUR-DIFFERENZEN.md). Technical identifiers, parameter names and file paths are kept unchanged.* 2026-11-21 (translation: 2026-11-22)
+*Canonical English version. The German original is archived at [`docs/research/ARCHITEKTUR-DIFFERENZEN.md`](research/ARCHITEKTUR-DIFFERENZEN.md). Technical identifiers, parameter names and file paths are kept unchanged.* 2026-11-21 (translation: 2026-11-22)
 
 **Basis:** Blofeld operation manual, Iridium OS 4 parameter dump
 (`dumps/00000-.qpat`), converter (`bloridium/qpat_map.py`) and the profiling sweep
-(`docs/PROFILING-INIT-2026-11-21.md`, 752 individual measurements).
+(`docs/research/PROFILING-INIT-2026-11-21.md`, 846 individual measurements).
 
 The two synths are not siblings in a different enclosure. The Blofeld is a
 classic subtractive synth with two multimode filters and its own noise mixer;
@@ -168,7 +168,7 @@ with fade and keytrack.
 
 - **Workaround:** Blofeld fade → `LfoNAttack`/`LfoNDecay`; keytrack →
   matrix `Keytrack → LFO Speed`; clocked/sync → `LfoNSync` + `SyncRatio`.
-- **Measurement (2026-11-22, `docs/LFO-2026-11-21.md`):**
+- **Measurement (2026-11-22, `docs/research/LFO-2026-11-21.md`):**
   - **Free speed:** Blofeld raw 20/40/60/80 = 0.45/2.63/10.43/30.65 Hz;
     Iridium 0.11/1.09/5.66/16.32 Hz. The linear `norm(raw)` mapping is
     2–4× too slow at medium/high values → an Hz curve is needed.

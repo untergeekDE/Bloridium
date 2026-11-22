@@ -1,19 +1,18 @@
-# Iridium OS 4.1.0b2 – Runtime-Enum-Listen (live via QUIR `param-info`, 2026-11-18)
+# Iridium OS 4.1.0b2 – Runtime enum lists (2026-11-18)
 
-Results only (raw QUIR recordings stay in `../bloridium-codesearch/recordings/quir_param_info_*.txt`).
-Device connected via USB + Launchpad; QUIR answered on the Launchpad-DIN path, dev 0x00
-(the `MIDI 2.0` USB endpoint was silent this session). Device export-patches -> **qpat version 14**.
+Values captured with private device-side tooling that is **not part of this project**.
+Results only; the capture logs are not shipped. Device export patches are **qpat version 14**.
 
 ## Key finding (controlled load test 2026-11-18): qpat FILE enum == RUNTIME enum (identity)
 
-A v14 qpat written by us with MatrixDst=109 was loaded via `load-patch` and read back as
+A v14 qpat written by us with MatrixDst=109 was loaded on the device and read back as
 runtime **109** (identity); device saves (v11) are identity too (17->17, 33->33).
 => On OS 4.1.0b2 the loader interprets qpat enum values with the CURRENT runtime layout.
 The old displays in `dumps/export-001` (v14 files from an older OS build, e.g. 95='DF Amount',
 16='After Touch') are STALE artifacts - do not use them. The converter therefore uses the
-RUNTIME values below (`param-info`), and so does the set-pid/QUIR path.
+RUNTIME values below, and so does the private device-side path.
 
-## Runtime enum lists (param-info, OS 4.1.0b2)
+## Runtime enum lists (OS 4.1.0b2)
 
 ### MatrixSrc1 (pid 2478) — runtime
 0 Off · 1 Amp Env · 2 Filter1 Env · 3 Filter2 Env · 4 Free Env1 · 5 Free Env2 · 6 Free Env3 ·
@@ -68,4 +67,4 @@ RUNTIME values below (`param-info`), and so does the set-pid/QUIR path.
 ## Still open (live audio sweeps)
 amt_bipolar divisor (MatrixAmount scale), FinePitch cent-per-norm, LFO free-speed Hz,
 WT bridge by CLAP, MIDI-CI over MIDI-2.0-UMP with "CI Support" on — see
-`docs/superpowers/plans/2026-11-18-converter-rebuild-polyat.md`.
+`docs/research/superpowers/plans/2026-11-18-converter-rebuild-polyat.md`.

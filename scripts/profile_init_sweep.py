@@ -28,7 +28,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 import mido
 
 from bloridium import audio, blofeld_dump as bd, midi, qpat, qpat_map, sim
-from _quir import Iridium, init_overrides
+from _device_tool import Iridium, init_overrides
 import _measure as _M
 
 OUT = REPO / "recordings" / "profile"

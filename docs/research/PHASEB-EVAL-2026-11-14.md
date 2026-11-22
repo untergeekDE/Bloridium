@@ -1,7 +1,7 @@
 # Phase-B eval 2026-11-14 (CLAP embedding + LLM verdict vs Phase A)
 
-Spec: `docs/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md`
-Plan: `docs/superpowers/plans/2026-11-14-phaseb-sim-embed.md` (Task 10)
+Spec: `docs/research/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md`
+Plan: `docs/research/superpowers/plans/2026-11-14-phaseb-sim-embed.md` (Task 10)
 
 ## Setup
 

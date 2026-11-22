@@ -3,7 +3,7 @@
 
 Flow:
   1. read Blofeld SNDD (location, e.g. A043) and parse it
-  2. map parameters to Iridium CCs per docs/MAPPING.md (bloridium/mapping.py)
+  2. map parameters to Iridium CCs per docs/research/MAPPING-CC-DRAFT.md (bloridium/mapping.py)
   3. send CCs to the Iridium (part channels, default 6-9)
   4. simultaneously play a note on both synths (Blofeld ch5, Iridium ch6),
      record all 20 Scarlett channels, compare In3/4 (Blofeld) vs In5/6 (Iridium)

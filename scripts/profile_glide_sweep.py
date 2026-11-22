@@ -16,7 +16,7 @@ Setup notes:
 Run:  python3 scripts/profile_glide_sweep.py            # measure
       python3 scripts/profile_glide_sweep.py report     # Markdown summary
 Writes recordings/glide_sweep.jsonl, recordings/glide/*.npy and
-docs/GLIDE-2026-11-21.md.
+docs/research/GLIDE-2026-11-21.md.
 """
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "scripts"))
 
 from bloridium import audio, blofeld_dump as bd, midi, qpat  # noqa: E402
-from _quir import Iridium  # noqa: E402
+from _device_tool import Iridium  # noqa: E402
 import _measure as M  # noqa: E402
 import profile_init_sweep as P  # noqa: E402
 from profile_todo_measure import (  # noqa: E402
@@ -464,7 +464,7 @@ def write_report() -> None:
               "  der Iridium (Onset) gleitet trotzdem → Mismatch. Ursache: Der",
               "  Iridium hat keine Mono-Allocation und keinen fingered-Modus.",
               ""]
-    out = REPO / "docs/GLIDE-2026-11-21.md"
+    out = REPO / "docs/research/GLIDE-2026-11-21.md"
     out.write_text("\n".join(lines) + "\n")
     print(f"wrote {out.relative_to(REPO)}")
 

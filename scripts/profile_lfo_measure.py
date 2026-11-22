@@ -7,7 +7,7 @@ The Blofeld's init modulation rows are cleared so only the volume tremolo
 remains.
 
 Run:  python3 scripts/profile_lfo_measure.py [speed|fade|all|report]
-Writes recordings/lfo_measure.jsonl and docs/LFO-2026-11-21.md.
+Writes recordings/lfo_measure.jsonl and docs/research/LFO-2026-11-21.md.
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "scripts"))
 
 from bloridium import audio, midi, qpat  # noqa: E402
-from _quir import Iridium  # noqa: E402
+from _device_tool import Iridium  # noqa: E402
 import _measure as M  # noqa: E402
 import profile_init_sweep as P  # noqa: E402
 from profile_todo_measure import (  # noqa: E402
@@ -269,7 +269,7 @@ def write_report() -> None:
                   "konstant) — auch bei `Lfo1Attack=1.0` in allen `Lfo1Global`-Modi.",
                   "Die lineare `(raw−64)/63`-Abbildung ist damit nicht nur zu grob,",
                   "sondern in der Richtung falsch.", ""]
-    out = REPO / "docs/LFO-2026-11-21.md"
+    out = REPO / "docs/research/LFO-2026-11-21.md"
     out.write_text("\n".join(lines) + "\n")
     print(f"wrote {out.relative_to(REPO)}")
 

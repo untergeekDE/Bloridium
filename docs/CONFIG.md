@@ -17,7 +17,9 @@ Precedence (first hit wins):
 
 ## 2. File format — annotated example
 
-This is the shipped `bloridium.yaml` (current test setup). Every key is optional;
+An annotated example (reference measurement rig via the Launchpad DIN chain). The shipped
+`bloridium.yaml` currently uses the USB ports for both synths — switch the Iridium ports to
+`Launchpad Pro MK3 LPProMK3 DIN` for low-noise A/B recordings. Every key is optional;
 missing keys fall back to the built-in defaults.
 
 ```yaml
@@ -150,6 +152,7 @@ All library entry points accept `config_path=...` to override the lookup
   `fallback_out_ports` in `bloridium.yaml` (or pass `--config`), re-run.
 - `status --audio` reports `NO SOUND`: wrong `audio.channels` for your cabling, or the synth
   plays on another MIDI channel (`midi.<synth>.channel`); on the Iridium also check the
-  device's `Global > MIDI = on`. CC7 = 0 is silent (Output Level).
+  device's `Global > MIDI = on`. By default CC7 = 0 is silent (Output Level); a loaded
+  `.mimap` may reassign CC7.
 - `invalid YAML in bloridium.yaml: ...`: the file is malformed — the error names the file;
   `python3 -c "import yaml; yaml.safe_load(open('bloridium.yaml'))"` shows the exact line.

@@ -24,7 +24,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 import mido  # noqa: E402
 
 from bloridium import audio, blofeld_dump as bd, midi, qpat_map, sim  # noqa: E402
-from _quir import Iridium  # noqa: E402
+from _device_tool import Iridium  # noqa: E402
 import profile_init_sweep as P  # noqa: E402
 import _measure as _M  # noqa: E402
 

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10; numpy; scikit-learn 1.5.1 + joblib 1.3.2 (installiert, nicht in pyproject-Kerndeps); pytest>=8.
 
-**Spec:** `docs/superpowers/specs/2026-11-18-prognose-rf-design.md`
+**Spec:** `docs/research/superpowers/specs/2026-11-18-prognose-rf-design.md`
 
 ## Global Constraints
 
@@ -71,5 +71,5 @@
 ### Task 3: Suite + Doku + Push
 
 - [ ] **Step 1:** `python3 -m pytest tests/ -q` → alle PASS.
-- [ ] **Step 2:** Doku: `docs/STATUS.md` (prognose-Modul + CLI + Datenvertrag für die datenliefernde Session: sim_log.jsonl-Schema + dumps/); Spec/Plan committen.
+- [ ] **Step 2:** Doku: `docs/research/STATUS.md` (prognose-Modul + CLI + Datenvertrag für die datenliefernde Session: sim_log.jsonl-Schema + dumps/); Spec/Plan committen.
 - [ ] **Step 3:** Commit + `git push origin main`.

@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10, numpy, pytest; MIDI/audio only in the scripts (monkeypatched in tests); mido/rtmidi as existing.
 
-**Spec:** `docs/superpowers/specs/2026-11-09-similarity-tool-design.md` (approved 2026-11-09)
+**Spec:** `docs/research/superpowers/specs/2026-11-09-similarity-tool-design.md` (approved 2026-11-09)
 
 ## Global Constraints
 - Phase A: **numpy only**, no ML models/new deps (embeddings are Phase B per the spec).

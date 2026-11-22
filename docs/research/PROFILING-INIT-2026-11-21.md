@@ -165,7 +165,7 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 - **21** Parameter übertragen die Wirkung sauber, **12** weichen deutlich ab, **26** teilweise. **62** sind im Init-Sound grundsätzlich nicht beurteilbar, weil ihr Ziel dort aus ist.
 - **Feinstimmung (Detune):** Der Iridium reagiert mit 203 Cent pro Norm-Einheit, der Blofeld mit rund 1,6 Cent pro Rohschritt. Die bisherige Map (Divisor 254) erzeugte nur die Hälfte der Verstimmung; richtig ist `Iridium = 0,5 + (Rohwert − 64) / 127`. Der Konverter wurde entsprechend korrigiert.
 - **Grobstimmung (Oktave/Halbton), Wellenform und Filter-Cutoff/-Typ** folgen der Vorlage gut. Der Oszillator-Pegel passt; die Verstärker-Lautstärke ist am Iridium etwas stärker (rund 1,8×) und sollte leicht komprimiert werden.
-- **Test D (Ziel eingeschaltet):** Osc 2/3 inkl. Pitch, Shape und Pegel folgen jetzt sauber (cos 0,94–1,00). Filter-Hüllkurve (Amount/Attack/Sustain) und FX-Mix sind brauchbar; der Noise-Pegel folgt in der Tendenz. Architekturbedingt offen bleiben PWM (Warp statt Pulsbreite), Noise-Farbe (nur Pink/White), LFO Fade und Unisono-Detune. **Filter 2:** nach der Routing-Korrektur folgen Cutoff (cos 0,88–0,96), Env Amount (0,92–1,0) und Env Velocity (0,75–0,81); Keytrack ist teilweise (0,89), Typ bleibt offen. **Resonanz (Wiederholung 65/85):** der Iridium reagiert deutlich, aber mit anderer Form (F1 cos 0,06–0,20, F2 cos 0,16) → Mismatch, nicht defekt. Filter-Env Sustain/Release sind OK (Release 100 % cos 0,85); Decay ist bei 100 % OK (cos 0,90), kurze Zeiten bleiben unter der Schwelle; Attack weicht ab (nur Iridium reagiert). Details: `docs/ARCHITEKTUR-DIFFERENZEN.md`.
+- **Test D (Ziel eingeschaltet):** Osc 2/3 inkl. Pitch, Shape und Pegel folgen jetzt sauber (cos 0,94–1,00). Filter-Hüllkurve (Amount/Attack/Sustain) und FX-Mix sind brauchbar; der Noise-Pegel folgt in der Tendenz. Architekturbedingt offen bleiben PWM (Warp statt Pulsbreite), Noise-Farbe (nur Pink/White), LFO Fade und Unisono-Detune. **Filter 2:** nach der Routing-Korrektur folgen Cutoff (cos 0,88–0,96), Env Amount (0,92–1,0) und Env Velocity (0,75–0,81); Keytrack ist teilweise (0,89), Typ bleibt offen. **Resonanz (Wiederholung 65/85):** der Iridium reagiert deutlich, aber mit anderer Form (F1 cos 0,06–0,20, F2 cos 0,16) → Mismatch, nicht defekt. Filter-Env Sustain/Release sind OK (Release 100 % cos 0,85); Decay ist bei 100 % OK (cos 0,90), kurze Zeiten bleiben unter der Schwelle; Attack weicht ab (nur Iridium reagiert). Details: `docs/research/ARCHITEKTUR-DIFFERENZEN.md`.
 - **Test E (andere Anregung):** Keytrack ist mit zwei Noten messbar (Filter 1: cos 0,86), Filter-Env-Velocity und Filter-Pan nur teilweise (Pan reagiert am Iridium erst bei 100 %, nicht bei 0 %). **Balance ist keine Panorama-Funktion:** der Blofeld bleibt im L/R-Bild unverändert, der Iridium wanderte — die Map „Balance → Pan“ war semantisch falsch und ist inzwischen auf Filteranteil/Pan-Betrag korrigiert.
 - **Nur auf dem Iridium hörbar:** Mixer Noise Balance, Mixer Osc 1 Balance, Osc 1 PWM Amount, Osc Pitch Amount. Hier schreibt der Konverter aktive Modulations-/Effektzeilen, obwohl der Blofeld im Init neutral bleibt — der Iridium klingt dadurch anders, ohne dass es eine Vorlage dafür gibt.
 
@@ -285,7 +285,7 @@ Für die übrigen Parameter reichen vier Stützstellen nicht für eine belastbar
 | Amplifier Envelope Sustain | teilweise | 0,89 | Wirkung passt, Abweichung liegt in der Form |
 | Modulation 1 Amount | teilweise | 0,54 | Iridium nur 0,5× so stark → Wert spreizen |
 
-Die maschinenlesbare Fassung der Messwerte steht in `docs/profiling_init_2026-11-21.csv` (eine Zeile je Parameter und Wert).
+Die maschinenlesbare Fassung der Messwerte steht in `docs/research/profiling_init_2026-11-21.csv` (eine Zeile je Parameter und Wert).
 
 ## 6. Empfehlungen
 
@@ -297,8 +297,8 @@ Die maschinenlesbare Fassung der Messwerte steht in `docs/profiling_init_2026-11
 
 ## 7. Anhang
 
-- Einzelmessungen: `docs/profiling_init_2026-11-21.csv` (846 Zeilen, alle Werte und Iridium-Zielparameter).
+- Einzelmessungen: `docs/research/profiling_init_2026-11-21.csv` (846 Zeilen, alle Werte und Iridium-Zielparameter).
 - Aufnahmen: `recordings/profile/` (je Parameter/Wert/Gerät eine `.npy`).
 - Messprotokoll: `recordings/profile_sweep.jsonl` (Init), `recordings/profile_testb_clean.jsonl` / `_fx.jsonl` (Test B), `recordings/profile_testb_release.jsonl` (Test C).
-- Kurven/Kandidaten (maschinenlesbar): `docs/profiling_curves_2026-11-21.json`.
-- Architektur-Differenzen und Workarounds: `docs/ARCHITEKTUR-DIFFERENZEN.md`.
+- Kurven/Kandidaten (maschinenlesbar): `docs/research/profiling_curves_2026-11-21.json`.
+- Architektur-Differenzen und Workarounds: `docs/research/ARCHITEKTUR-DIFFERENZEN.md`.

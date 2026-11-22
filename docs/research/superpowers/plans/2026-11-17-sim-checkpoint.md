@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10, macOS; numpy-only core; mido/python-rtmidi (existing); pytest>=8; tests offline via monkeypatch (no live MIDI, no models).
 
-**Spec:** `docs/superpowers/specs/2026-11-17-sim-checkpoint-design.md` (approved 2026-11-17: notes 36/48/60/72, path A)
+**Spec:** `docs/research/superpowers/specs/2026-11-17-sim-checkpoint-design.md` (approved 2026-11-17: notes 36/48/60/72, path A)
 
 ## Global Constraints
 
@@ -62,8 +62,8 @@
 ### Task 3: Docs
 
 **Files:**
-- Modify: `docs/STATUS.md` (section 4 Scripts: entry for `sim_checkpoint.py` with a call example)
+- Modify: `docs/research/STATUS.md` (section 4 Scripts: entry for `sim_checkpoint.py` with a call example)
 
-- [ ] **Step 1:** extend `docs/STATUS.md` with a bullet: `sim_checkpoint.py [--only A001] [--notes 36,48,60,72] [--wheel 0,50,100] [--dur 2.0] [--full-all] [--no-wait]` – checkpoint of all 9 presets in manual-panel mode (panel prompt per preset: Set 6 PC per DEFAULT_MAP), 12 measurements/preset, JSONL + WAVs like `sim_manual_compare.py`, summary pivot at the end.
+- [ ] **Step 1:** extend `docs/research/STATUS.md` with a bullet: `sim_checkpoint.py [--only A001] [--notes 36,48,60,72] [--wheel 0,50,100] [--dur 2.0] [--full-all] [--no-wait]` – checkpoint of all 9 presets in manual-panel mode (panel prompt per preset: Set 6 PC per DEFAULT_MAP), 12 measurements/preset, JSONL + WAVs like `sim_manual_compare.py`, summary pivot at the end.
 - [ ] **Step 2:** `python3 -m pytest tests/ -q` stays green (docs only, quick re-insurance).
-- [ ] **Step 3:** Commit: `git add docs/STATUS.md docs/superpowers/specs/2026-11-17-sim-checkpoint-design.md docs/superpowers/plans/2026-11-17-sim-checkpoint.md && git commit -m "docs: spec+plan sim_checkpoint + STATUS entry"`.
+- [ ] **Step 3:** Commit: `git add docs/research/STATUS.md docs/research/superpowers/specs/2026-11-17-sim-checkpoint-design.md docs/research/superpowers/plans/2026-11-17-sim-checkpoint.md && git commit -m "docs: spec+plan sim_checkpoint + STATUS entry"`.

@@ -64,7 +64,7 @@ Der Runner:
 - prüft nach jedem Load drei Parameter per `get-param` gegen das qpat
   (`Osc1FinePitch`, `Filter1CutOff`, `Filter1EnvAmount`); Abweichung > 0,002
   bricht ab — damit kann kein stiller Fehlload mehr durchrutschen,
-- prüft nach jedem Laden, dass die QUIR-Shell noch antwortet (sonst Abbruch),
+- prüft nach jedem Laden, dass die device shell noch antwortet (sonst Abbruch),
 - wählt am Blofeld Bank A + PC,
 - spielt beide Synths gleichzeitig (Part 1, ch6) und scorst mit v2,
 - bricht nur ab, wenn der Iridium-Kanal wirklich tot ist (echte Stille oder
@@ -72,7 +72,7 @@ Der Runner:
 - resumiert standardmäßig über `(loc, note)` bereits gescorte Zeilen
   (`--no-resume` für einen kompletten Neulauf).
 
-**Shell-Eigenheiten (live):** `ls` blockiert den QUIR-Readout für einige
+**Shell-Eigenheiten (live):** `ls` blockiert den device readout für einige
 Zeit; deshalb prüft `--verify-sd` in einer eigenen Sitzung und der Messlauf
 läuft mit `--skip-verify` weiter. Der Readout liefert max. 256 B pro `U`-Poll
 und die Shell antwortet verzögert, daher nutzt der Runner einen `temp`-Sentinel

@@ -4,7 +4,7 @@
 - **Projekt:** Bloridium (Iridium Keyboard OS 4 / SOM2, Mac, USB-MIDI — Gerät antwortet auf keinerlei SysEx)
 - **Kernbehauptung:** Waldorf hat für Quantum/Iridium **keinen SysEx-Layer** geplant/implementiert. Patch-/Sample-Transfer läuft dateibasiert (SD/USB, `.qpat`/`.map`). Belegt durch direkte Aussage des Waldorf-CEO rolfw (Gearspace, 11.02.2019) sowie Foren-Konsens (2023/2026).
 - **Evidenzlevel-Legende:** **(a)** = Primärquelle direkt gesehen (Handbuch/PDF/Changelog/eigene Datei) · **(b)** = Sekundärquelle Forum/Such-Snippet · **(c)** = Schlussfolgerung/Vermutung
-- **Methodischer Hinweis:** gearspace.com blockiert direktes Scraping (403). Alle Gearspace-Zitate stammen aus Suchmaschinen-Snippets (Tavily), die den vollständigen Post-Text lieferten. **web.archive.org enthält keine Snapshots der betroffenen Seiten** (CDX-API geprüft, siehe `raw/wayback_cdx_results.txt`). Roh-Snippets liegen unter `docs/sources/raw/`.
+- **Methodischer Hinweis:** gearspace.com blockiert direktes Scraping (403). Alle Gearspace-Zitate stammen aus Suchmaschinen-Snippets (Tavily), die den vollständigen Post-Text lieferten. **web.archive.org enthält keine Snapshots der betroffenen Seiten** (CDX-API geprüft, siehe `raw/wayback_cdx_results.txt`). Roh-Snippets liegen unter `docs/research/sources/raw/`.
 
 ---
 
@@ -21,7 +21,7 @@
 | Kontext (Frage) | **prophei, #8,764, 11.02.2019:** „Rolf, What is the sampler format of the Quantum? … It would be incredible to be able to organize the samples externally, and then just load everything in. Also, was my email regarding the sequencer behavior we discussed clear enough? R" — rolfw beantwortet u. a. das externe Organisieren von Samples |
 | Wayback-Snapshot | **nein** — CDX-API: kein Snapshot von page-293 oder Post #8,765 (nur 2 irrelevante 301-Redirects von 2019er post-URLs) |
 | Evidenzlevel | **(b)** — Wortlaut über Suchmaschinen-Snippet (vollständiger Post-Text), nicht direkt per HTTP gesehen (403). Aussage ist aber durch Folgepost #9,936 (prophei: „understood rolfw this way, yes") doppelt bestätigt |
-| Ablage | Snippet: `docs/sources/raw/rolfw_quantum_p293_snippet.txt` |
+| Ablage | Snippet: `docs/research/sources/raw/rolfw_quantum_p293_snippet.txt` |
 
 **Korroborierende rolfw-Aussagen:**
 - Quantum page-332, **#9,936** (prophei, 1. Jul 2019): „I am not an expert in this field, but understood rolfw this way, yes." (zur USB-Disk-Mode-Frage) — **(b)**
@@ -39,7 +39,7 @@
 | URL | https://gearspace.com/threads/waldorf-iridium.1314350/page-161 |
 | Wayback-Snapshot | **nein** für Seite 161; nur Thread-Hauptseite (Seite 1) gesichert (2021–2023) |
 | Evidenzlevel | **(b)** |
-| Ablage | `docs/sources/raw/paul_xyz_iridium_p161_snippet.txt` |
+| Ablage | `docs/research/sources/raw/paul_xyz_iridium_p161_snippet.txt` |
 
 ## Quelle 3 — Korrektur: „fully defined Sysex documentation" bezog sich auf Korg 01/W, nicht Iridium
 
@@ -62,7 +62,7 @@
 | URL | https://gearspace.com/threads/waldorf-quantum.1147680/page-520 |
 | Wayback-Snapshot | **nein** (kein Snapshot von page-520/521) |
 | Evidenzlevel | **(b)** |
-| Ablage | `docs/sources/raw/quantum_p520_snippet.txt` |
+| Ablage | `docs/research/sources/raw/quantum_p520_snippet.txt` |
 | Zusatz | Paul_xyz, page-505, **#15,149** (8. Feb 2024): „Is there documentation on best practices of a map file for the Quantum/Iridium?" → „**not seen any official documentation for that.**" — **(b)** |
 
 ## Quelle 5 — feijai (Editor-Entwickler): Waldorf liefert SysEx-Specs nur für Nicht-Quantum/Iridium

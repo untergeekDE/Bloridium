@@ -303,7 +303,7 @@ def test_glide_rate_calibrated_not_linear():
 
 
 def test_glide_rate_matches_measured_curve():
-    # Block 5 (docs/GLIDE-2026-11-21.md): equal-time mapping for the measured
+    # Block 5 (docs/research/GLIDE-2026-11-21.md): equal-time mapping for the measured
     # Blofeld/Iridium anchors. Blofeld raw 64 = 592 ms, 70 = 1013 ms, 85 = 2117 ms.
     assert qpat_map.blofeld_glide_seconds(64) == pytest.approx(0.592, abs=0.002)
     assert qpat_map.blofeld_glide_seconds(70) == pytest.approx(1.013, abs=0.003)
@@ -373,7 +373,7 @@ def test_converted_file_is_version_14(parsed, tmp_path):
     assert q["params"]["MatrixDst1"]["value"] == 1.0
 
 
-# --- P0 2026-11-15 (docs/ANALYSIS-2026-11-15-conversion-fixes.md) ---
+# --- P0 2026-11-15 (docs/research/ANALYSIS-2026-11-15-conversion-fixes.md) ---
 
 DUMPS_9 = {
     "A001": "dumps/blofeld_sndd_A001_20261108_233049.bin",

@@ -125,7 +125,7 @@ suite is run on the measurement machine (item 11).
       comments.
 
 17. 🟡 **Stale docs.**
-    - ✅ `docs/STATUS.md` has a "partly outdated" banner, and the absolute path is removed.
+    - ✅ `docs/research/STATUS.md` has a "partly outdated" banner, and the absolute path is removed.
     - ⬜ Consolidate the HANDOVER files, STATUS, MAPPING and MAPPING-MASTER.
     - ⬜ Move the `scripts/spike_*` and `step2_probe_*` into `scripts/archive/`.
 18. ⬜ **`cli.py` is 1,000+ lines.** Split it into `cli/` per command group.
@@ -141,8 +141,7 @@ suite is run on the measurement machine (item 11).
     - ✅ **Done 2026-11-21:** shipped in the repo as `skills/bloridium/SKILL.md`
       (+ `skills/README.md` with per-runtime install instructions; `README.md` already
       points to the `skills/` folder). Covers exactly the documented interfaces listed
-      below and nothing else; guard: `git grep -E "QUIR|quir_|midi-sysex|codesearch|
-      load-patch|set-pid|dump-params|find-pid" skills/` must stay empty.
+      below and nothing else; guard: no private protocol, tool or command names in `skills/`.
     - **Goal:** ship a skill in the repo (`.claude/skills/bloridium/SKILL.md`, optionally
       mirrored for other agent runtimes) that exposes every function based on documented
       MIDI control.
@@ -174,9 +173,9 @@ suite is run on the measurement machine (item 11).
       the Iridium over undocumented SysEx **stays private**: no code, no skill, no
       commands, no names in tracked files.
 21. ⬜ **Private tooling is already referenced in public tracked files.** The plan
-    `docs/superpowers/plans/2026-11-18-english-comments-and-docs.md` set the rule that no
+    `docs/research/superpowers/plans/2026-11-18-english-comments-and-docs.md` set the rule that no
     tracked file may name it, but references remain in HEAD and in the git history:
-    - skill name: `docs/superpowers/plans/2026-11-18-converter-rebuild-polyat.md` and the
+    - skill name: `docs/research/superpowers/plans/2026-11-18-converter-rebuild-polyat.md` and the
       rule plan itself
     - tool names, layer name and sister-repo paths:
       - `docs/HANDOVER-2026-11-17.md`, `docs/HANDOVER-2026-11-18.md`,
@@ -184,7 +183,7 @@ suite is run on the measurement machine (item 11).
       - `docs/MAPPING-MASTER.md`
       - the runtime-enum reference file of 2026-11-18 in `docs/refs/` (also its file name)
       - `bloridium/qpat_map.py` (comments)
-      - `docs/superpowers/plans/2026-11-18-converter-rebuild-polyat.md`
+      - `docs/research/superpowers/plans/2026-11-18-converter-rebuild-polyat.md`
     - ✅ The `.gitignore` comment that named the sister repo is neutralised.
     - ⬜ Decide how far to clean up. Options:
       1. Neutralise the wording in HEAD, e.g. "device-side verification (private tooling)",
@@ -300,7 +299,7 @@ suite is run on the measurement machine (item 11).
   raw > 64 → `LfoNAttack=(raw−64)/63` (Fade-in), raw < 64 →
   `LfoNDecay=(64−raw)/64` (Fade-out), raw 64 → beide 0.
 - **Test:** `test_lfo_fade_maps_to_attack_decay`.
-- **Nachmessung (2026-11-22, `docs/LFO-2026-11-21.md`):** Free-Speed ist
+- **Nachmessung (2026-11-22, `docs/research/LFO-2026-11-21.md`):** Free-Speed ist
   unkalibriert — Iridium 2–4× zu langsam (raw 40: 2,63/1,09 Hz; raw 80:
   30,65/16,32 Hz). Der Blofeld-Fade ist eine **Rate** (größer = schneller),
   keine Zeit; die lineare `(raw−64)/63`-Abbildung ist in der Richtung falsch.
@@ -310,7 +309,7 @@ suite is run on the measurement machine (item 11).
   (Richtung invertieren, Zeitbereich prüfen).
 
 ### B2 / Block 5 · ✅ umgesetzt (2026-11-21) · Glide Mode + Rate-Kalibrierung
-- **Beleg (Messung, `docs/GLIDE-2026-11-21.md`):** Glide on/off OK; Portamento
+- **Beleg (Messung, `docs/research/GLIDE-2026-11-21.md`):** Glide on/off OK; Portamento
   Rate 50 OK (155/144 ms); ab raw 70 war der konvertierte Iridium-Glide zu kurz
   (raw 70: 1013/315 ms, raw 85: 2117/384 ms). Glide Mode wurde nicht übertragen;
   Glissando/fingered G erzeugen auf dem Blofeld Halbtonschritte, der Iridium
@@ -403,7 +402,7 @@ suite is run on the measurement machine (item 11).
 - **D1 · P1:** Profiling-Status in `docs/MAPPING-MASTER.md` übernehmen
   (✅/🟡/⚠️/❌ je Parameter, mit Verweis auf den Report). Aktuell steht dort nur
   der Detune-Fix.
-- **D2 · P1:** `docs/ARCHITEKTUR-DIFFERENZEN.md` in `README.md`/`docs/STATUS.md`
+- **D2 · P1:** `docs/research/ARCHITEKTUR-DIFFERENZEN.md` in `README.md`/`docs/research/STATUS.md`
   verlinken.
 - **D3 · P2:** Reproduzierbaren Gesamtlauf dokumentieren
   (`profile_init_sweep.py` → Test B/C/D → `profile_analyze.py`) inkl. Reihenfolge

@@ -104,13 +104,13 @@ def load(path) -> dict:
 
 
 def sd_filename(loc: str, name: str) -> str:
-    """SD-sicherer qpat-Dateiname `<LOC>_<Name>.qpat` — keine Leerzeichen, nur
-    [A-Za-z0-9-_.], damit QUIR-Shell-Pfade (`load-patch 2:<dir>/<file>`) nie brechen.
+    """SD-safe qpat filename `<LOC>_<Name>.qpat` — no spaces, only
+    [A-Za-z0-9-_.], because device-side load paths are not quoted.
 
-    Leerzeichen -> '_', Sonderzeichen gestrichen, fuehrende/abschliessende '.'/'_'
-    entfernt; leer -> loc als Fallback ('JMX jun.' -> 'A001_JMX_jun.qpat').
-    (2026-11-20: Conversion schreibt Dateien direkt mit diesem Namen, plain cp
-    auf die SD reicht; identisch zum bisherigen quir_rf_dataset.sd_name.)"""
+    Spaces -> '_', special characters removed, leading/trailing '.'/'_' stripped;
+    empty -> loc as fallback ('JMX jun.' -> 'A001_JMX_jun.qpat').
+    (2026-11-20: conversion writes files directly with this name, so a plain cp
+    to the SD card is enough.)"""
     base = (name or "").strip().replace(" ", "_")
     base = "".join(c for c in base if c.isalnum() or c in "-_")
     base = base.strip("._") or loc

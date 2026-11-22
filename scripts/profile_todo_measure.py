@@ -31,7 +31,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 import mido  # noqa: E402
 
 from bloridium import audio, blofeld_dump as bd, midi, qpat, qpat_map  # noqa: E402
-from _quir import Iridium  # noqa: E402
+from _device_tool import Iridium  # noqa: E402
 import _measure as _M  # noqa: E402
 import profile_init_sweep as P  # noqa: E402
 
@@ -546,7 +546,7 @@ def write_report() -> None:
                          f"{r.get('delta_b', 0):+.2f} | {r.get('delta_i', 0):+.2f} | {r['status']} |")
         lines.append("")
 
-    out = REPO / "docs/TODO-MEASURE-2026-11-21.md"
+    out = REPO / "docs/research/TODO-MEASURE-2026-11-21.md"
     out.write_text("\n".join(lines) + "\n")
     print(f"wrote {out.relative_to(REPO)}")
 

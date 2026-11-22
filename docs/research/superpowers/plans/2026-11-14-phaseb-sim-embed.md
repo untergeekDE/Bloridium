@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10.13, macOS; numpy-only in the core; stdlib `wave` (no soundfile); PIL 10.2 (spectrogram PNG); requests/httpx for the ollama API; pytest>=8; models: `gorse-io/larger_clap_music_and_speech-GGUF` Q8_0 (Apache-2.0) in `models/`, ollama `lfm3-omni:2b`.
 
-**Spec:** `docs/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md` (approved 2026-11-14; builder-check ses_e25f5d23… is incorporated)
+**Spec:** `docs/research/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md` (approved 2026-11-14; builder-check ses_e25f5d23… is incorporated)
 
 ## Global Constraints
 
@@ -34,7 +34,7 @@
 ### Task 1: Spike — verify runtime capabilities (before any code)
 
 **Files:**
-- Modify: `docs/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md` (append the section "Spike results 2026-11-14")
+- Modify: `docs/research/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md` (append the section "Spike results 2026-11-14")
 - Create: `models/` (gitignored, local)
 
 - [ ] **Step 1:** download the CLAP GGUF: `python3 -m huggingface_hub.commands.hf_cli download gorse-io/larger_clap_music_and_speech-GGUF larger_clap_music_and_speech-q8_0.gguf --local-dir models/` (or `hf download …`); expected: ~208 MB file in `models/`.
@@ -147,11 +147,11 @@
 ### Task 10: Run the eval + doc template (needs Tasks 1-5, real models)
 
 **Files:**
-- Create: `docs/PHASEB-EVAL-2026-11-14.md`
+- Create: `docs/research/PHASEB-EVAL-2026-11-14.md`
 - Create: `recordings/phaseb_eval_<ts>.json` (output of the script)
 
 - [ ] **Step 1:** `python3 scripts/fetch_models.py` (get the models), then `python3 scripts/sim_eval_offline.py` → table + JSON.
-- [ ] **Step 2:** create `docs/PHASEB-EVAL-2026-11-14.md`: table (pair, Phase A, embed_score, combined), spike mode (audio/spec), models/paths, **empty rating table** (pair × 0-100 listening impression) for the user + post-hoc caveat + room for Spearman (`--ratings`).
+- [ ] **Step 2:** create `docs/research/PHASEB-EVAL-2026-11-14.md`: table (pair, Phase A, embed_score, combined), spike mode (audio/spec), models/paths, **empty rating table** (pair × 0-100 listening impression) for the user + post-hoc caveat + room for Spearman (`--ratings`).
 - [ ] **Step 3:** commit (docs + eval JSON; no models).
 
 ---

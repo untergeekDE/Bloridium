@@ -22,7 +22,7 @@ All 9 generated qpats are **qpat v14** (`workflow.py:138`: "target device OS4 ex
 | A073 Chord Hose | 85 | Different effects, Blofeld more cutting | 96.63 | 88.82 | -27.0 / -53.9 | serial |
 
 Sources: `recordings/phaseb_ratings_raw.json`, `recordings/sim_log.jsonl` (ts 20261114_175046-180616,
-`norm_pegel=true`), `docs/PHASEB-EVAL-2026-11-14.md`, `transfer/upload/MANIFEST.md`.
+`norm_pegel=true`), `docs/research/PHASEB-EVAL-2026-11-14.md`, `transfer/upload/MANIFEST.md`.
 Additional evidence: d1-omni:2b profile `darker` 9/9 (2b) resp. 7/9 (600m), `octave_lower` only A008 borderline
 (p=0.50) — matches "filter closed / filtered" on all, octave suspicion A008 only weak.
 

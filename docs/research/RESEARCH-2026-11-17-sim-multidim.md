@@ -15,7 +15,7 @@ in our own repo – as the basis for the tool's design.
   ollama LLM judge (lfm3-omni:2b) and d1-omni:2b profile (noul flags) as explanation layer.
   `norm_pegel=True` (peak 0.5 before embed/LLM) is essential (otherwise embed collapses on
   quiet Iridium takes: A001 29 instead of 75.6).
-- **Eval against user ratings** (n=9 presets, post-hoc 0-100, `docs/PHASEB-EVAL-2026-11-14.md`):
+- **Eval against user ratings** (n=9 presets, post-hoc 0-100, `docs/research/PHASEB-EVAL-2026-11-14.md`):
   Spearman ρ Phase A **+0.27**, embed **+0.50**, combined **+0.52**. LLM scores degenerate
   (lfm3 constant 85; d1-omni as score ρ +0.07/+0.13), d1 flags usable as profile
   (`darker` 9/9 matches the user comments).
@@ -116,7 +116,7 @@ DAGA 2025 (Czedik-Eysenberg & Reuter, "Evaluating Timbre-Related Audio Descripto
   score no**.
 - Literature confirms: "Don't CLAP" (see above) and FIGMA (ACL 2026): CLAP & Co. are
   unreliable for fine musical attributes (key, chords, fine timbre bindings).
-- **Finding confirmed 2026-11-17 (user recall vs `docs/PHASEB-EVAL-2026-11-14.md`):
+- **Finding confirmed 2026-11-17 (user recall vs `docs/research/PHASEB-EVAL-2026-11-14.md`):
   d1-omni:2b vs lfm3-omni:2b on the same 9 WAV pairs — as a score both weak
   (d1:600m collapses 88-96, ρ +0.07; d1:2b 59-67, ρ +0.13; lfm3 audio constant 85,
   ρ +0.35 degenerate without variance; lfm3 spec hallucinates, ρ −0.39). As
@@ -241,6 +241,6 @@ the slightly higher rank correlation. Caveats: n=9 noisy; MERT here only mean-po
 - M2D-CLAP, IEEE SPL 2025: general vs music CLAP on music tasks.
 - clap.cpp (gorse-io, status 2026-11): GGUF support CLAP/CLaMP3/MERT/MuQ/MuQ-MuLan,
   10-s window with repeat-pad, 48 kHz.
-- Repo-internal: `docs/PHASEB-EVAL-2026-11-14.md`, `docs/HANDOVER-2026-11-15.md`,
-  `docs/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md`, `bloridium/sim.py`,
+- Repo-internal: `docs/research/PHASEB-EVAL-2026-11-14.md`, `docs/HANDOVER-2026-11-15.md`,
+  `docs/research/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md`, `bloridium/sim.py`,
   `bloridium/sim_embed.py`.

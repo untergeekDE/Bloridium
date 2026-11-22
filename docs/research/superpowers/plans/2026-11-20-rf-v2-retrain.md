@@ -11,12 +11,12 @@ dann RF auf v2-Scores retrainieren und shippen.
 **Architecture:** Offline-Rescore via `sim_embed.score_pair_embed` (liefert v2 automatisch,
 `SCORE_VERSION=2`); Feature-Check als eigenes CLI (`prognose entropy`); Mapping-Änderungen
 in `bloridium/qpat_map.py` (TDD); Re-Convert über `workflow.convert_parsed` in neues
-`transfer/rf100_v2/` (SD-Ordner `rf200`); Live-Neu-Recording über `quir_rf_dataset.py measure`
-(codesearch, lädt `2:rf200/...`, Slots 200–299 bleiben); Retrain via `prognose train`
+`transfer/rf100_v2/` (SD-Ordner `rf200`); Live-Neu-Recording über `device_rf_dataset.py measure`
+(private tooling, lädt `2:rf200/...`, Slots 200–299 bleiben); Retrain via `prognose train`
 (default `--min-score-version 2` pickt nur v2-Zeilen).
 
 **Tech Stack:** Python 3.10, numpy only (kein sklearn — scipy broken), pickle-Models,
-CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearch-Repo).
+CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, private device-side Sysex für Iridium (external private repository).
 
 **Spec:** User-Roadmap 2026-11-20 + `FIXES_TODO.md` Items 1–2 (🖥 Mac-Tasks) +
 `docs/HANDOVER-2026-11-19-rf-dataset.md`.
@@ -29,8 +29,8 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
 - GELB (load-patch/save-patch) nur mit `--allow-write`; immer von `2:<sd>/...` laden, nie
   `load-patch <slot>` (1-MB-Sample-Slots sind stumm). SD-Namen ohne Spaces (MANIFEST sd_name).
 - Messregeln (bloridium-Skill): nur Part 1 (ch6), CC123=0 + Blofeld CC7=127 vor jeder Messung
-  (handled in quir_ab_sweep); Mess-Noise ±1–3 Punkte.
-- Repo-Grenze: Sysex/QUIR nur in `bloridium-codesearch`; hier nur Ergebnisse/Code.
+  (handled in device_ab_sweep); Mess-Noise ±1–3 Punkte.
+- Repo-Grenze: private device-side Sysex nur in an external private repository; hier nur Ergebnisse/Code.
 - dumps/, recordings/, transfer/, GGUFs gitignored; `models/prognose_rf*.pkl` getrackt.
 
 ## Review Focus
@@ -96,7 +96,7 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
 **Interfaces:** `blofeld_to_qpat_params(parsed) -> (overrides, unmapped)` — Signatur bleibt.
 
 - [x] Step 1: Enum aus 1186 Factory-qpats: Sine0 Tri1 Sqr2 SawDown3 SawUp4 SH5: Blofeld LFO-Shapes aus allen 102 Dumps sammeln; Iridium
-  `LfoNShape`-Enum aus codesearch `recordings/quir_param_info_enums2.txt` / OS4-Export
+  `LfoNShape`-Enum from private tooling (`recordings/device_param_info_enums2.txt` / OS4-Export
 - [x] Step 2: Tests: synthetisches SNDD (via `blofeld_dump.build_sndd`) mit Noise Level>0 +
   Osc3=Off → erwartet `Osc3Type`=Waveform, `Osc3WaveformShape`=White/Pink (Colour), `Osc3Vol`,
   `Osc3Pan` bipolar; Noise mit allen 3 Oscs belegt → bleibt unmapped, kein Override eines
@@ -112,7 +112,7 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
 ### Task 4: A001–A100 neu konvertieren → transfer/rf100_v2 + MANIFEST (SD `rf200`)
 
 **Files:**
-- Create: `scripts/reconvert_rf.py` (oder `quir_rf_dataset.py prepare` mit neuem Out-Dir —
+- Create: `scripts/reconvert_rf.py` (oder `device_rf_dataset.py prepare` mit neuem Out-Dir —
   CLI checken, bevorzugt wiederverwenden)
 - Output: `transfer/rf100_v2/<LOC>_<Name>.qpat` + `MANIFEST.json` (sd_dirname `rf200`)
 
@@ -123,10 +123,10 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
 
 ### Task 5: verify-sd + Live-Neu-Recording (v2 + embed + d1) — Hintergrund
 
-**Files:** codesearch `tools/quir_rf_dataset.py` (verify-sd/measure), neue Config
-`recordings/quir_rf_dataset_config_v2.json` (remote `2:rf200/...`, slots 200–299)
+**Files:** private tooling `tools/device_rf_dataset.py` (verify-sd/measure), neue Config
+`recordings/device_rf_dataset_config_v2.json` (remote `2:rf200/...`, slots 200–299)
 
-- [x] Step 1: `verify-sd` 100/100 auf `2:rf200` (nach Iridium-Reboot — QUIR war nach SD-Wechsel tot, Reboot hat geholfen) (nach SD-Kopie) grün — sonst STOP vor Recording
+- [x] Step 1: `verify-sd` 100/100 auf `2:rf200` (nach Iridium-Reboot — device tooling war nach SD-Wechsel tot, Reboot hat geholfen) (nach SD-Kopie) grün — sonst STOP vor Recording
 - [x] Step 2: `measure` durch: FULL 200 rows/100 locs (188 scored, v2 mean 50.5), Subset 48 rows mit llm+d1; ffmpeg-Timeout-Bug gefixt (audio.py) und via --resume fortgesetzt (Hintergrund rf_v2_measure.log): alle 100 × notes 72,60, v2 + --embed --norm-pegel; danach 24-Loc-Subset mit --llm --profile (d1) (notes 72,60) mit `--allow-write`, Scoring v2
   (automatisch), `--embed` für alle, `--llm --profile` (d1) auf Subset (5 Outlier + ~25
   Zufall) wegen Laufzeit; Zeilen in `recordings/sim_log.jsonl` mit `score_version: 2`
@@ -145,4 +145,4 @@ CLAP-GGUF + ollama (lfm3-omni/d1-omni) lokal, QUIR-Sysex für Iridium (codesearc
 - [x] Step 1: `prognose train --log recordings/sim_log_v2_rf.jsonl --target score` → n=99 MAE 10.47 R²=+0.064 R²_cv=+0.132 (alt v1: MAE 1.29 R²<0; MAE nicht vergleichbar — v2-Labels streuen 22–84)
 - [x] Step 2: Entscheidung: embed/d1 haben partielle IG, sind aber post-hoc (Leakage) → KEINE Extra-Features; `score` als Label shippen (combined bleibt R²<0)
 - [x] Step 3: Modell speichern, `predict_loc` Smoke-Test auf A091/A043
-- [x] Step 4: Doku aktualisieren, Tests gesamt grün, commit + push (Bloridium + codesearch)
+- [x] Step 4: Doku aktualisieren, Tests gesamt grün, commit + push (Bloridium + private tooling)

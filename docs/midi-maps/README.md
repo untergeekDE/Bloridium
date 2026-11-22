@@ -8,7 +8,7 @@
 | `iridium_rdb.mimap` | Ready-made .mimap from @rdb (squarp.community/t/waldorf-iridium/9276, 2023-03-24): CC0, CC2-CC116 -> pid, "most useful" selection (max. 119 entries) |
 | `iridium_hapax_L1.def.txt` | Matching Squarp Hapax instrument definition (layer 1, ch1); `[CC]` section resolves CC -> parameter name. Layer 2 = TRACKNAME "Iridium L2", OUTCHAN 2 |
 | `iridium_pid_map.csv` | Combined: `cc, pid_rdb_2023, parameter_name, pid_werks_2017_midimap0, cc_midi_guide_csv` (116 rows) |
-| `iridium_midi_guide.csv` | Official CC list (116 CCs, nrpn columns empty) |
+| `iridium_midi_guide.csv` | Official CC list: 116 rows, **115 CCs (CC 2–116)**; Filter1 Cutoff has no CC, NRPN columns empty |
 
 ## Findings
 
@@ -31,4 +31,6 @@ Copy the .mimap to an SD/USB stick -> on the device `Global > MIDI > Mappings > 
 
 Incoming NRPN are **ignored** by the Iridium (OS3 manual: "Iridium doesn't react
 on incoming NRPN MIDI data") — NRPN only outgoing (panel -> automation). Control paths:
-CC (via .mimap/MIDI Learn), PC (only Favorites), qpat import (stick).
+CC (via .mimap/MIDI Learn), PC (only Favorites), qpat import (stick). Some archived
+measurements used private device-side tooling that is not part of this project; it is not
+a public interface.

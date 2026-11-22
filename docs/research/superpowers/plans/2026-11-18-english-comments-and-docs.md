@@ -12,20 +12,20 @@
 
 ## Global Constraints
 
-- **NEVER mention the undocumented Iridium-control skill in any tracked file.** Do not write `midi-sysex-quir`, `QUIR`, any agent-skill directory path (neither a home-directory skill folder nor a repo-local skill folder), or any reference to an agent "skill" for talking to the Iridium into any file that is tracked by git (or that will be tracked). The skill directory itself must stay untracked and git-ignored (verify `.gitignore` covers it; never `git add` it). When commenting code that sends vendor-specific SysEx to the Iridium, describe it neutrally ("vendor-specific/device-specific SysEx", "undocumented vendor-SysEx method"), without naming any skill or protocol name. Existing mention in `CLAUDE.md` (lines ~46, ~54) must be removed.
+- **NEVER mention the undocumented Iridium-control skill in any tracked file.** Do not write the private protocol or skill name, any agent-skill directory path (neither a home-directory skill folder nor a repo-local skill folder), or any reference to an agent "skill" for talking to the Iridium into any file that is tracked by git (or that will be tracked). The skill directory itself must stay untracked and git-ignored (verify `.gitignore` covers it; never `git add` it). When commenting code that sends vendor-specific SysEx to the Iridium, describe it neutrally ("vendor-specific/device-specific SysEx", "undocumented vendor-SysEx method"), without naming any skill or protocol name. Existing mention in `CLAUDE.md` (lines ~46, ~54) must be removed.
 - Repository language is English: translate German comments, docstrings, `help=` texts, print/error strings and Markdown prose to English. Keep technical terms (Blofeld, Iridium, SysEx, SNDD, .qpat, CC7, NRPN, DTW, CLAP...) as-is. Keep sound names ("SH Power") and CSV/param keys untouched.
 - Do NOT change any code behavior: no logic, signatures, byte layouts, or defaults. Translating a user-facing string is allowed; removing/renaming keys is not.
-- Do NOT touch: `dumps/`, `recordings/`, `transfer/`, `models/`, `docs/manuals/`, `docs/manual-text/`, `docs/sources/`, `docs/refs/`, CSV/mimap data files under `docs/midi-maps/` (data, not prose), the git-ignored repo-local agent-skill directory, binaries, `bloridium.db`.
+- Do NOT touch: `dumps/`, `recordings/`, `transfer/`, `models/`, `docs/manuals/`, `docs/manual-text/`, `docs/research/sources/`, `docs/refs/`, CSV/mimap data files under `docs/midi-maps/` (data, not prose), the git-ignored repo-local agent-skill directory, binaries, `bloridium.db`.
 - Do NOT rename files. Do NOT commit; leave changes in the working tree.
-- Preserve existing uncommitted changes (CLAUDE.md/README.md already partially translated, the old root handoff doc deleted — current status in docs/STATUS.md / docs/HANDOVER-2026-11-17.md, docs/HANDOVER-2026-11-17.md present) — build on them, don't revert.
+- Preserve existing uncommitted changes (CLAUDE.md/README.md already partially translated, the old root handoff doc deleted — current status in docs/research/STATUS.md / docs/HANDOVER-2026-11-17.md, docs/HANDOVER-2026-11-17.md present) — build on them, don't revert.
 - Add short clarifying English comments where code is non-obvious (especially `bloridium/qpat_map.py` mapping decisions, `bloridium/sim.py` scoring weights, `bloridium/workflow.py` pipeline). Comment *why*, not *what*.
 - After editing, run `python3 -m py_compile` on every changed `.py` file.
 
 ## Review Focus
 
 - Tests asserting German strings from `bloridium/` must be updated in the tests wave (wave 2) and the full suite must pass (baseline: 262 passed, 1 skipped).
-- No tracked file may contain the forbidden skill name after the cleanup (`git grep -i 'midi-sysex-quir'` must be empty).
-- Docs must not reference the deleted root handoff file (already clean; current handoff/status docs are docs/HANDOVER-2026-11-17.md and docs/STATUS.md) and should cross-link consistently (README ↔ docs/STATUS.md ↔ docs/FINDINGS.md).
+- No tracked file may contain the forbidden skill name after the cleanup (`git grep -i 'the private Iridium-control skill'` must be empty).
+- Docs must not reference the deleted root handoff file (already clean; current handoff/status docs are docs/HANDOVER-2026-11-17.md and docs/research/STATUS.md) and should cross-link consistently (README ↔ docs/research/STATUS.md ↔ docs/FINDINGS.md).
 
 ---
 
@@ -46,11 +46,11 @@
 
 ### Task 3: Documentation — translate & fix
 
-**Files:** Modify: `README.md`, `CLAUDE.md`, `sound_task.md`, `webapp/README.md`, all `docs/*.md` and `docs/midi-maps/README.md` and `docs/superpowers/**/*.md` (except `docs/manuals|manual-text|sources|refs/`), including untracked `docs/HANDOVER-2026-11-17.md` and `docs/superpowers/specs/2026-11-18-sim-specpng-design.md` if present.
+**Files:** Modify: `README.md`, `CLAUDE.md`, `sound_task.md`, `webapp/README.md`, all `docs/*.md` and `docs/midi-maps/README.md` and `docs/research/superpowers/**/*.md` (except `docs/manuals|manual-text|sources|refs/`), including untracked `docs/HANDOVER-2026-11-17.md` and `docs/research/superpowers/specs/2026-11-18-sim-specpng-design.md` if present.
 
-- [x] Translate all German prose to English. In `docs/superpowers/plans|specs`, keep the quoted superpowers boilerplate ("REQUIRED SUB-SKILL: ...") verbatim.
+- [x] Translate all German prose to English. In `docs/research/superpowers/plans|specs`, keep the quoted superpowers boilerplate ("REQUIRED SUB-SKILL: ...") verbatim.
 - [x] `CLAUDE.md`: skill-name mentions removed (per later user clarification, mentions would have been acceptable — the hard rule is only that the skill itself stays untracked: the `.gitignore` rule `.opencode/skills/` covers it and `git ls-files .opencode` is empty). No skill-path literals anywhere in tracked files.
-- [x] Fixed stale/broken documentation: no references to the deleted root handoff file (current status/handoff: docs/STATUS.md, docs/HANDOVER-2026-11-17.md), wrong file paths, outdated claims contradicted by `docs/STATUS.md`/`docs/FINDINGS.md`; historical HANDOVER/SPEC/PLAN content translated, not rewritten.
+- [x] Fixed stale/broken documentation: no references to the deleted root handoff file (current status/handoff: docs/research/STATUS.md, docs/HANDOVER-2026-11-17.md), wrong file paths, outdated claims contradicted by `docs/research/STATUS.md`/`docs/FINDINGS.md`; historical HANDOVER/SPEC/PLAN content translated, not rewritten.
 - [x] `README.md` and `CLAUDE.md` consistent with each other (hardware, channels, install, workflow).
 
 ### Task 4: tests + full verification
@@ -60,5 +60,5 @@
 - [x] Translated German comments in tests to English; renamed German test names to English.
 - [x] Updated assertions that matched translated German strings from Task 1/2 to the new English strings (ccmap/cli/explore/sim/sim_embed/fetch_models).
 - [x] `python3 -m pytest tests -q` → **301 passed, 1 skipped** (262 baseline + 29 new config/discover/wiring tests + renames).
-- [x] `git grep -n -i -E 'midi-sysex-quir|QUIR|\.opencode/skills|\.agents/skills'` on tracked files → only the `.gitignore` rule itself.
+- [x] `git grep -n -i -E 'the private Iridium-control skill|device tooling|\.opencode/skills|\.agents/skills'` on tracked files → only the `.gitignore` rule itself.
 - [x] Repo-wide umlaut scan over tracked text files (excl. allowed third-party dirs) → empty.

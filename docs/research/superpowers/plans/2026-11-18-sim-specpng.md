@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.10; numpy + PIL (already a soft dep via `render_spec_png`); pytest>=8.
 
-**Spec:** `docs/superpowers/specs/2026-11-18-sim-specpng-design.md`
+**Spec:** `docs/research/superpowers/specs/2026-11-18-sim-specpng-design.md`
 
 ## Global Constraints
 
@@ -69,5 +69,5 @@
 ### Task 3: Suite + docs
 
 - [ ] **Step 1:** `python3 -m pytest tests/ -q` → all PASS.
-- [ ] **Step 2:** extend `docs/STATUS.md` (sim_checkpoint: spec PNGs in `recordings/spec/`, linked in the log; sim_compare: `--spec-png-dir`).
-- [ ] **Step 3:** Commit: `git add docs/STATUS.md docs/superpowers/specs/2026-11-18-sim-specpng-design.md docs/superpowers/plans/2026-11-18-sim-specpng.md && git commit -m "docs: spec+plan sim-specpng + STATUS entry"`.
+- [ ] **Step 2:** extend `docs/research/STATUS.md` (sim_checkpoint: spec PNGs in `recordings/spec/`, linked in the log; sim_compare: `--spec-png-dir`).
+- [ ] **Step 3:** Commit: `git add docs/research/STATUS.md docs/research/superpowers/specs/2026-11-18-sim-specpng-design.md docs/research/superpowers/plans/2026-11-18-sim-specpng.md && git commit -m "docs: spec+plan sim-specpng + STATUS entry"`.

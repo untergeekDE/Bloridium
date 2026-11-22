@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python ≥ 3.10, macOS (CoreMIDI/AVFoundation), mido + python-rtmidi + numpy, stdlib (argparse, sqlite3, json) – **no new runtime deps**; pytest as dev extra. CLI texts in German (like the repo docs at the time).
 
-**Spec:** `docs/superpowers/specs/2026-11-08-bloridium-cli-design.md` (approved 2026-11-08; contains all builder-check decisions and user decisions).
+**Spec:** `docs/research/superpowers/specs/2026-11-08-bloridium-cli-design.md` (approved 2026-11-08; contains all builder-check decisions and user decisions).
 
 ## Global Constraints
 

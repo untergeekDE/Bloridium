@@ -1,7 +1,7 @@
 # Squarp Hapax Instrument Definition "Blofeld L1" (Layer 1, MIDI ch 5 = Global Channel)
 # Waldorf Blofeld (FW 1.24, Single Mode). Erstellt 2026-11-10.
 # CC-Nummern + Namen: docs/midi-maps/blofeld_midi_guide.csv (offizielle Waldorf-CC-Liste).
-# Reihenfolge/Nutzung: docs/BLOFELD-KEYMAP-A001-A128.md (128 Werks-Sounds A001-A128,
+# Reihenfolge/Nutzung: docs/research/BLOFELD-KEYMAP-A001-A128.md (128 Werks-Sounds A001-A128,
 # Nutzungs-% als Kommentar). Iridium-only-Parameter (Compressor, Digi Former, Komplex,
 # PT-Osc, WT-Stepped, eigene FX-CC-Bloecke ...) sind nicht auf dem Blofeld -> weggelassen.
 # Mod-Matrix/Modifier/FX-Parameter/Arp-Pattern/Unisono haben keine CCs -> nur per SysEx (SNDP).

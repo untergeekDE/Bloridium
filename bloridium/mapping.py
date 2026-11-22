@@ -1,4 +1,4 @@
-"""Mapping Blofeld SNDD parameters -> Iridium CC (see docs/MAPPING.md).
+"""Mapping Blofeld SNDD parameters -> Iridium CC (see docs/research/MAPPING-CC-DRAFT.md).
 
 Sources: Blofeld_sysex_v1_04.pdf (SDATA) + docs/midi-maps/iridium_midi_guide.csv.
 

@@ -39,7 +39,7 @@ plays notes and sets the wheel.
 - Non-goals:
   - No Iridium PC sending (broken, workaround panel).
   - No new multi-dimension fields (sim_dims from
-    `docs/RESEARCH-2026-11-17-sim-multidim.md` is its own next step) — the
+    `docs/research/RESEARCH-2026-11-17-sim-multidim.md` is its own next step) — the
     checkpoint stays comparable with earlier runs (Phase A + embed + combined).
   - No change to `sim_manual_compare.py`/`sim_sweep_pcs.py` (they are only imported).
 - Anti-goals:

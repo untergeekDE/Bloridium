@@ -47,11 +47,10 @@ Format `F0 3E 13 <dev> <cmd> [data] F7`; requests carry no checksum.
 - **No documented SysEx application layer** and no USB-drive mode. Patches arrive as
   `.qpat` files on SD/USB (`Load > Actions > Import`) and are read back via
   `Export`. Incoming **NRPN is ignored**; the panel only sends NRPN.
-- OS 4.1.0b2 also answers an **undocumented vendor channel (“QUIR”, `F0 3E 28 00 51 55 49 52 …`)**
-  over USB and DIN. Bloridium uses it **internally** for the profiling/RF runners
-  (parameter readback, `load-patch <slot>`); it is firmware-specific and not part of the
-  normal convert/transfer workflow. Never rely on it for other devices or OS versions.
-- Computer control without QUIR: **MIDI CC** (the published list has 115 assignments,
+- OS 4.1.0b2 also accepts private device-side tooling that is **not part of this project**.
+  Some archived measurement runs were taken with it; it is firmware-specific and not part of
+  the normal convert/transfer workflow.
+- Computer control in this project: **MIDI CC** (the published list has 115 assignments,
   CC 2–116; direct control needs a `.mimap` or MIDI Learn), **program change** (only
   selects within the active Favorites set) and **notes**.
 - **CC7 is main/Output Level by default (CC7 = 0 → silent).** A loaded `.mimap` can
@@ -69,9 +68,9 @@ Format `F0 3E 13 <dev> <cmd> [data] F7`; requests carry no checksum.
   follow as tab-separated data.
 - OS 4 expects **version 14** files; the template ships as v8 and is rewritten on export.
 - Runtime enums (OS 4.1.0b2) equal qpat enum values; old displayed strings in some
-  exports are stale. See `docs/refs/quir_runtime_enums_2026-11-18.md`.
+  exports are stale. See `docs/refs/runtime_enums_2026-11-18.md`.
 - File names must be SD-safe (`bloridium.qpat.sd_filename`: no spaces, only
-  `[A-Za-z0-9-_.]`), because QUIR shell paths have no quoting.
+  `[A-Za-z0-9-_.]`), because device-side load paths have no quoting.
 
 ## Similarity score and prognosis
 

@@ -2,7 +2,7 @@
 
 **Stand:** 2026-11-21 · **Grundlage:** Blofeld-Bedienhandbuch, Iridium-OS-4-Parameterdump
 (`dumps/00000-.qpat`), Konverter (`bloridium/qpat_map.py`) und der Profiling-Sweep
-(`docs/PROFILING-INIT-2026-11-21.md`, 752 Einzelmessungen).
+(`docs/research/PROFILING-INIT-2026-11-21.md`, 752 Einzelmessungen).
 
 Die beiden Synths sind keine Geschwister mit anderem Gehäuse. Der Blofeld ist ein
 klassischer Subtractive-Synth mit zwei Multimode-Filtern und einem eigenen Noise-Mixer;
@@ -166,7 +166,7 @@ mit Fade und Keytrack.
 
 - **Workaround:** Blofeld-Fade → `LfoNAttack`/`LfoNDecay`; Keytrack →
   Matrix `Keytrack → LFO Speed`; Clocked/Sync → `LfoNSync` + `SyncRatio`.
-- **Messung (2026-11-22, `docs/LFO-2026-11-21.md`):**
+- **Messung (2026-11-22, `docs/research/LFO-2026-11-21.md`):**
   - **Free-Speed:** Blofeld raw 20/40/60/80 = 0,45/2,63/10,43/30,65 Hz;
     Iridium 0,11/1,09/5,66/16,32 Hz. Der lineare `norm(raw)`-Mapping ist bei
     mittleren/hohen Werten 2–4× zu langsam → Hz-Kurve nötig.

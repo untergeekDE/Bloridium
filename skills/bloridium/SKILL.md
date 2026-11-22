@@ -48,21 +48,23 @@ Run all commands from the repo root.
 - Reference rig: Blofeld on audio inputs 3/4 (MIDI ch 5), Iridium on inputs 5/6
   (Parts 1–4 = MIDI ch 6–9), 48 kHz, audio interface e.g. Focusrite Scarlett 18i8.
 
-## Documented interfaces only (hard boundary)
+## Interfaces and limits
 
 - **Blofeld — SysEx per the official spec** (`docs/manuals/Blofeld_sysex_v1_04.txt`):
   `SNDR` sound request → `SNDD` dump (`F0 3E 13 DEV 10 BB NN <383 B SDATA> CHK F7`),
   `SNDP` single parameter change (`F0 3E 13 DEV 20 LL HH PP XX F7`, parameter index
   0..382), plus the Universal Device Inquiry.
-- **Iridium — there is no documented SysEx.** Patches reach the device only as
+- **Iridium — no documented SysEx application layer.** Patches reach the device only as
   **`.qpat` files** on a USB stick / SD card (on the device: `Load > Actions >
-  Import`). Control from a computer is possible only via **MIDI CC** (requires a MIDI
+  Import`). Control from a computer is possible via **MIDI CC** (requires a MIDI
   map uploaded to the device — e.g. `docs/midi-maps/iridium_rdb.mimap` via
   `Global > MIDI > Mappings > Load`, or MIDI Learn on the panel), **program change**
   (selects within the Favorites bank only) and **notes**. Incoming NRPN is *ignored*
   by the Iridium; the panel only *sends* NRPN (see `docs/midi-maps/README.md`).
-- Do not attempt any undocumented/vendor SysEx on the Iridium, and never change device
-  settings (Global menu, MIDI configuration, …) on either unit without asking first.
+- **OS 4.1.0b2 accepts private device-side tooling that is not part of this project.**
+  Some archived measurements were taken with it; it is not a public interface and not part
+  of the normal workflow. Never change device settings (Global menu, MIDI configuration, …)
+  on either unit without asking first.
 
 ## Workflow: convert → upload → select → measure → tweak
 
@@ -79,7 +81,8 @@ Run all commands from the repo root.
        blo.send_sysex(build_sndp(param_index=105, value=64))  # index 0..382, spec 3.1
    ```
 2. **Convert** to the Iridium format: `bloridium convert A043 [--dump FILE.bin]
-   [--out DIR] [--template FILE.qpat]` → `transfer/<Name>_<LOC>.qpat` + DB entry;
+   [--out DIR] [--template FILE.qpat]` → `transfer/<LOC>_<Name>.qpat` (e.g.
+   `A043_SH_Power.qpat`) + DB entry;
    prints the import instructions for the device. `--dump` works fully offline.
    Converted file names are SD-safe by construction (`bloridium.qpat.sd_filename`:
    no spaces, only `[A-Za-z0-9-_.]`) — copy them to the stick **unchanged**
@@ -110,7 +113,7 @@ Run all commands from the repo root.
    use MIDI Learn on the device. To find out which CC drives which parameter:
    `bloridium explore` (read-only — it captures the panel's outgoing NRPN and books it
    into `docs/midi-maps/iridium_os4_cc_list.csv`; `--list` shows the status of all
-   116 CCs without MIDI).
+   115 CCs without MIDI).
 6. **Edit `.qpat` files offline**: `bloridium qpat info FILE.qpat [--register]`,
    `bloridium edit FILE.qpat --list [--grep osc1]`, `--show KEY`,
    `--set KEY=0.5 [--display "..."] [--save OUT.qpat]`, `--diff OTHER.qpat`.
@@ -146,8 +149,8 @@ Run all commands from the repo root.
 - **Ask before changing any setting on either device.**
 - Before every measurement: All Notes Off (CC123 = 0) on all 16 channels of both
   synths (the measurement commands do this themselves).
-- **CC7 = Output Level on the Iridium (0 = silent!)** — `bloridium cc --raw 7 0` is
-  refused without `--force`.
+- **CC7 = Output Level on the Iridium by default (0 = silent!)** — `bloridium cc --raw
+  7 0` is refused without `--force`. A loaded `.mimap` can reassign CC7; check the map.
 - Trigger only **Part 1** of the Iridium (ch 6), monophonic like the Blofeld; never
   sound several parts at once (several notes at once distort the score).
 - Note 72 (C5) is the best comparison octave (scores ~95+); low notes show envelope
@@ -160,8 +163,9 @@ Run all commands from the repo root.
 
 - `README.md` (install + workflow), `docs/CLI.md` (full command reference),
   `docs/CONFIG.md` (`bloridium.yaml`), `docs/IRIDIUM-FAVORITES-MAP.md` (PC/Favorites),
-  `docs/midi-maps/README.md` (CC lists, `.mimap` loading, NRPN), `docs/FINDINGS.md`,
-  `docs/STATUS.md`
+  `docs/MAPPING-MASTER.md` (mapping status),
+  `docs/midi-maps/README.md` (CC lists, `.mimap` loading, NRPN), `docs/FINDINGS.md`.
+  Dated measurements and historical plans are archived in `docs/research/`.
 - Manuals: `docs/manuals/Blofeld_sysex_v1_04.txt` (Blofeld SysEx spec),
   `docs/manual-text/iridium_os4_som2.txt` (Iridium OS4 manual text)
 - Sample-pack conversion: `scripts/build_cp70_iridium.py <zip>` (path also via

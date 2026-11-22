@@ -15,9 +15,9 @@ from __future__ import annotations
 import math
 import re
 
-# Enum tables (display -> value) = RUNTIME values of OS 4.1.0b2, live-verified via QUIR
-# `param-info` on 2026-11-18 (docs/refs/quir_runtime_enums_2026-11-18.md). KEY FINDING
-# 2026-11-18 (controlled load test, v14 file written by us, loaded via load-patch):
+# Enum tables (display -> value) = RUNTIME values of OS 4.1.0b2, live-verified
+# on 2026-11-18 (docs/refs/runtime_enums_2026-11-18.md). KEY FINDING
+# 2026-11-18 (controlled load test, v14 file written by us, loaded on the device):
 # the loader interprets qpat enum values with the CURRENT runtime layout
 # (file value == runtime value, e.g. file dst 109 -> runtime 109; device saves of
 # v11 patches are identity too: 17->17). The old displays in dumps/export-001
@@ -113,7 +113,7 @@ FILTER_LINK = {"Single": 0.0, "Boost": 1.0, "Independent": 6.0, "Linked": 7.0}
 # whenever filter 2 must not be heard.
 FILTER2_STATE = {"Active": 0.0, "Bypass": 1.0, "Off": 2.0}
 # MATRIX_SRC/DST = OS 4.1.0b2 runtime enum (param-info 2478/2480, 2026-11-18; qpat file
-# values are read 1:1 - see docs/refs/quir_runtime_enums_2026-11-18.md).
+# values are read 1:1 - see docs/refs/runtime_enums_2026-11-18.md).
 # After Touch = 17 (Poly AT decision 2026-11-18: AfterTouchDoPoly=1.0).
 MATRIX_SRC = {"Off": 0.0, "Amp Env": 1.0, "Filter1 Env": 2.0, "Filter2 Env": 3.0,
               "Free Env1": 4.0, "Free Env2": 5.0, "Free Env3": 6.0,
@@ -334,7 +334,7 @@ def amt_bipolar(raw: int) -> float:
 
 
 # MatrixAmount -> Pitch-Verschiebung in Halbtönen, gemessen am Iridium 2026-11-21
-# (tools/quir_matrix_pitch_calib.py in bloridium-codesearch: init-patch, nur Osc1
+# (private device-side calibration script, not part of this project: init patch, only Osc1
 # Sine, Matrix Row 1 = Constant -> Osc1 Pitch, note 60, FFT-Grundton):
 #   amount 0.5 = 0 semi (neutral), 1.0 = +24.0 semi, 0.0 = -13.8 semi (unten
 #   abgeflacht), dazwischen nichtlinear (exponentiell).
@@ -386,7 +386,7 @@ def unison_count(raw: int) -> float:
 def fine_pitch_norm(raw: int) -> float:
     """Blofeld osc detune (bipolar, center 64 = 0) -> Iridium OscNFinePitch norm 0..1.
 
-    Live calibration 2026-11-21 (Init sweep, docs/PROFILING-INIT-2026-11-21.md):
+    Live calibration 2026-11-21 (Init sweep, docs/research/PROFILING-INIT-2026-11-21.md):
     Blofeld raw 0/127 = -101/+100 cent, Iridium norm 0/1 = -101/+101 cent
     (measured +203 cent per norm unit). The matching curve is therefore
     norm = 0.5 + (raw-64)/127; the earlier divisor 254 produced only half the
@@ -889,7 +889,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                 else:
                     unmapped.append(f"Filter {n} {kind} Source {src!r}")
     # Octave excess beyond CoarsePitch (enum max +24 semi): Constant -> OscN Pitch.
-    # Amount scale LIVE-kalibriert (2026-11-21, quir_matrix_pitch_calib.py: INIT,
+    # Amount scale live-calibrated (2026-11-21, private device-side tooling: INIT,
     # nur Osc1 Sine, Row Constant->Osc1 Pitch, note 60): 0.5 = 0 semi, 1.0 = +24 semi,
     # dazwischen nichtlinear -> inverse Interpolation der Kalibrierungstabelle.
     # NOTE: the runtime has only 40 matrix rows (MatrixSrc41 does not resolve),

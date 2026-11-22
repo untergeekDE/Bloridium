@@ -4,7 +4,7 @@
 
 def test_sd_filename_sanitizes_like_manifest():
     from bloridium import qpat
-    # identisch zum bisherigen quir_rf_dataset.sd_name (rf100-Namen bleiben kompatibel)
+    # same convention as the previous RF dataset naming (rf100 names stay compatible)
     assert qpat.sd_filename("A001", "JMX jun.") == "A001_JMX_jun.qpat"
     assert qpat.sd_filename("A093", "Dirty Bass     T") == "A093_Dirty_Bass_____T.qpat"
     assert qpat.sd_filename("A096", "Q-rious?     WMF") == "A096_Q-rious_____WMF.qpat"
@@ -12,7 +12,7 @@ def test_sd_filename_sanitizes_like_manifest():
     # leer/only-special -> loc-Fallback
     assert qpat.sd_filename("A050", "...") == "A050_A050.qpat"
     assert qpat.sd_filename("A050", "") == "A050_A050.qpat"
-    # nie Leerzeichen, nie Sonderzeichen, immer .qpat — QUIR-shell-sicher
+    # never spaces, never special characters, always .qpat — safe for device-side paths
     for name in ("JMX jun.", "  spaced  out  ", "ümlaut ß", "a/b\\c:d", "..dots.."):
         fn = qpat.sd_filename("A007", name)
         assert " " not in fn and fn.endswith(".qpat") and fn.startswith("A007_")

@@ -5,7 +5,7 @@ The core stays numpy-only; models run externally:
 - OllamaBackend - ollama omni audio model -> JSON verdict {score, summary, differences}
 score_pair_embed() combines phase A (sim.features/sim.compare) with embedding (+LLM).
 
-Spec: docs/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md
+Spec: docs/research/superpowers/specs/2026-11-14-phaseb-sim-embed-design.md
 """
 
 from __future__ import annotations

@@ -40,7 +40,7 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "scripts"))
 
 from bloridium import audio, midi, qpat, sim  # noqa: E402
-from _quir import Iridium  # noqa: E402
+from _device_tool import Iridium  # noqa: E402
 import _measure as M  # noqa: E402
 
 DEFAULT_MANIFEST = REPO / "transfer" / "rf100_v3" / "MANIFEST.json"
@@ -173,7 +173,7 @@ def find_pid(irr: Iridium, name: str) -> int:
     out = collect(irr, f"find-pid {name}", max_s=12.0)
     m = re.search(r"has pid\s+(-?\d+)", out)
     if not m or int(m.group(1)) < 0:
-        raise SystemExit(f"cannot resolve QUIR pid for {name!r}: {out!r}")
+        raise SystemExit(f"cannot resolve device pid for {name!r}: {out!r}")
     return int(m.group(1))
 
 
@@ -280,7 +280,7 @@ def main(argv=None) -> int:
         print("\ndry run only; add --run to measure (and --verify-sd for the SD check)")
         return 0
 
-    # `ls` stalls the QUIR readout for a while, so verify in a throw-away
+    # `ls` stalls the device readout for a while, so verify in a throw-away
     # session (or skip it once it has passed) and measure in a fresh one.
     if not args.skip_verify:
         irr = Iridium()

@@ -54,7 +54,7 @@ are queryable.
 - No binary data exclusively in the DB – .bin/.qpat/.npy stay in
   `dumps/`, `transfer/`, `recordings/`.
 
-## Constraints (empirically verified, see docs/FINDINGS.md, docs/STATUS.md)
+## Constraints (empirically verified, see docs/FINDINGS.md, docs/research/STATUS.md)
 
 - **Blofeld** (FW 1.24): USB port `Blofeld`, MIDI channel 5 (1-based), SINGLE
   MODE. SysEx fully supported: SNDR `F0 3E 13 00 00 BB NN F7` → SNDD

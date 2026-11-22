@@ -8,7 +8,7 @@
 
 **Tech Stack:** Python 3.12, Flask 3, gunicorn, pytest; Apache 2.4 with `mod_rewrite`/`mod_log_config`; Podman/systemd deployment files.
 
-**Spec:** `docs/superpowers/specs/2026-11-22-webapp-privacy-retention-design.md`
+**Spec:** `docs/research/superpowers/specs/2026-11-22-webapp-privacy-retention-design.md`
 
 ## Global Constraints
 

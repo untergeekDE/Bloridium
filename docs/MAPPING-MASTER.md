@@ -1,23 +1,25 @@
 # Master table: Blofeld parameters -> Iridium qpat (mapping status)
 
 Created: 2026-11-09. Based on: `bloridium/blofeld_dump.py` (SDATA table, spec 3.1) + `bloridium/qpat_map.py`.
-Reference sound: A043 "SH Power" (129 mapped / 75 unmapped of 290 set params after the 2026-11-18 rebuild).
+Reference sound: A043 "SH Power" (176 qpat overrides / 60 unmapped Blofeld parameters of 290, 2026-11-22).
 
 **2026-11-18 rebuild (live-verified decisions + enum scans; device exports qpat v14):**
 - Aftertouch: **Poly AT** — `AfterTouchDoPoly=1.0` (user, live). Matrix src "After Touch"=**17.0**.
   Enum values = OS 4.1.0b2 **runtime** values (param-info, 2026-11-18); qpat file values are read
-  1:1 (controlled load test) — see `docs/refs/quir_runtime_enums_2026-11-18.md`.
+  1:1 (controlled load test) — see `docs/refs/runtime_enums_2026-11-18.md`.
 - `Osc 2 Sync to O3` -> `Osc2WaveformSync=1.0`; serial F2 mods -> DF Amount(95)/DF Color(96);
   FX mix key by mapped type + FX params (spec 5.2-5.9); detune centered at 0.5;
   Amp Mod / Osc Pitch Mod -> matrix slots; new v14 dsts: AmpEnv Attack=109, LFO1-3 Speed=145-147.
-- Still open (live clarification, see `docs/superpowers/plans/2026-11-18-converter-rebuild-polyat.md`):
-  amt_bipolar divisor, LFO free-speed Hz, AE Decay/Sustain/Release + FE Release
-  + F1/F2 Drive/Pan dsts (need `param-info 2480`), WT bridge by CLAP, qpat version v14 vs v15 on device.
-- 2026-11-21 Init-Profiling (`docs/PROFILING-INIT-2026-11-21.md`): **FinePitch calibrated** ->
+- Still open (live clarification, see `docs/research/superpowers/plans/2026-11-18-converter-rebuild-polyat.md`):
+  amt_bipolar divisor, LFO free-speed Hz (measured mismatch, `docs/research/LFO-2026-11-21.md`),
+  AE Decay/Sustain/Release + FE Release and F1/F2 Drive/Pan destinations.
+  qpat version is settled: files are written as **v14** for OS 4.
+- 2026-11-21 Init-Profiling (`docs/research/PROFILING-INIT-2026-11-21.md`): **FinePitch calibrated** ->
   `0.5 + (raw-64)/127` (Blofeld +/-101 cent, Iridium 203 cent per norm unit). Detune is now direct.
 
 **PC/Favorites mapping on the Iridium (which sound on which MIDI PC): see `docs/IRIDIUM-FAVORITES-MAP.md`**
-(mido PC = display "MIDI" - 2; MIDI 100-106 = calib test sounds, 107-115 = the 9 converted sounds).
+(mido PC = display "MIDI" - 2; the example set is from 2026-11-09 — current slot lists live
+in `DEFAULT_MAP` in `scripts/sim_sweep_pcs.py`).
 
 Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known deviation · ❌ unmapped
 

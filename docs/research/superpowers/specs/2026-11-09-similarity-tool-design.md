@@ -47,7 +47,7 @@ Four goals (given by the human):
     features (log-mel/MFCC/chroma/centroid) = more robust score + interpretable deltas.
   Trade-off: model download, score harder to interpret than pure band deltas.
 - C: pure qpat parameter comparison (no audio) — as a quick pre-check
-  added (cf. `docs/DONSOLARIS-COMPARE.md`), not as a replacement.
+  added (cf. `docs/research/DONSOLARIS-COMPARE.md`), not as a replacement.
 
 ## Design (Phase A)
 New module `bloridium/sim.py`:

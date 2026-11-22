@@ -148,7 +148,7 @@ Procedure (Q1 decided, post-hoc): `sim_eval_offline.py` evaluates all 4 .npy pai
 (`ab_*_blofeld.npy` vs `ab_*_iridium.npy`, incl. `check_*`) with Phase A + embedding
 (+ combined), writes `recordings/phaseb_eval_<ts>.json` and prints the table.
 After that the user enters a 0-100 rating of the listening impression ("how similar does the pair sound?")
-per pair in `docs/PHASEB-EVAL-2026-11-14.md`; the script can
+per pair in `docs/research/PHASEB-EVAL-2026-11-14.md`; the script can
 recompute the Spearman rank correlation of the three metrics against these
 ratings with `--ratings` (n=4 → rank correlation; the post-hoc caveat is documented).
 The decision "combined as the new default score" is made on the basis of this evaluation.
@@ -159,7 +159,7 @@ The decision "combined as the new default score" is made on the basis of this ev
   pre-registered JSON. Procedure: `sim_eval_offline.py` computes Phase A + embed + combined
   for the 4 pairs and writes the table + `recordings/phaseb_eval_<ts>.json`; the
   user then rates each pair **0-100** (listening impression "how similar?") and enters
-  the ratings in `docs/PHASEB-EVAL-2026-11-14.md`. The eval script can add the Spearman rank correlation
+  the ratings in `docs/research/PHASEB-EVAL-2026-11-14.md`. The eval script can add the Spearman rank correlation
   against these ratings afterwards (`--ratings` reads the eval doc/JSON). The post-hoc caveat (scores can
   color the judgment) is noted in the eval doc.
 - **Q2 scope — DECIDED (user 2026-11-14): full integration also in `ab`.**
@@ -216,7 +216,7 @@ then TDD implementation (test_sim_embed.py first).
   (Iridium env 4.6e-2); the 3 `ab_A043_*` Iridium takes are ~1e-5 = silent
   (cf. sim_log "silent recording"). Fresh live pair added 2026-11-14
   (`ab_A043_20261114_153000`, A043 vs PC114 @ C5): Phase A 93.08 / embed 56.61 / llm 85
-  ("rough, grainy") — see `docs/PHASEB-EVAL-2026-11-14.md`.
+  ("rough, grainy") — see `docs/research/PHASEB-EVAL-2026-11-14.md`.
 - **saina-helm-3-0.8b (decision model) not usable** via ollama 0.40.16: chat/generate →
   400; `/v1/systemone` → llama-server "wrong number of tensors; expected 326, got 320".
   The LLM verdict stays lfm3-omni:2b (chat + audio). `/v1/systemone` + spectrogram PNGs noted
