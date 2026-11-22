@@ -328,10 +328,14 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
       Byte-Größe, weil v2/v3 dieselben Dateinamen haben).
       **Hinweis:** `ls` blockiert den QUIR-Readout für einige Zeit → Verify in
       eigener Sitzung, Messlauf mit `--skip-verify`.
-- [~] `measure_rf100.py --run --skip-verify` (100 Locs × Notes 72/60),
-      Log `recordings/sim_log_v3.jsonl` — läuft (2026-11-22).
-- [ ] Entropy-Check und Retrain (`models/prognose_rf_v3.pkl`), nur bei R² > 0
-      shippen.
+- [x] `measure_rf100.py --run --skip-verify` (100 Locs × Notes 72/60),
+      Log `recordings/sim_log_v3.jsonl` — **fertig 2026-11-22**: 200 Zeilen,
+      197 gescort, mean 56,6 (v2 50,5), 3 stumm (A050 ×2, A097 note72).
+- [x] Entropy-Check und Retrain — H(y)=3,03 bits; Modell
+      `models/prognose_rf_v3.pkl` (n=99, MAE 8,37, R² 0,212 / R²_cv 0,218),
+      als Default `models/prognose_rf.pkl` übernommen, v2 als
+      `models/prognose_rf_v2.pkl` behalten.
+- [ ] Regressionen A009 (65→39), A001 (80→66), A095 (40→28) eingrenzen.
 
 **Hinweis:** `measure_rf100.py --verify-sd` prüft jetzt auch ohne `--run`
 (read-only); vorher kehrte das Skript vor der Prüfung zurück.

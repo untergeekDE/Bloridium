@@ -414,3 +414,33 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
 - Messlauf v3: `measure_rf100.py --verify-sd` → 100/100 (Name + Byte-Größe);
   `ls` blockiert den QUIR-Readout, daher Verify in eigener Sitzung und
   `--run --skip-verify` für den Lauf.
+
+## 2026-11-22 — RF100 v3: Messung, Entropy-Check, Retrain (Modell shipped)
+
+- **Messung:** 200 Zeilen (100 Locs × Notes 72/60), **197 gescort**, 3 stumm
+  (A050 note 72+60, A097 note 72 — Blofeld-Kanal stumm, Iridium spielte).
+  Skript `scripts/measure_rf100.py`, qpats von SD `2:rf300`, Log
+  `recordings/sim_log_v3.jsonl`.
+- **Score v3: mean 56,6, median 57,6, Range 25,1–85,2** (v2: mean 50,5).
+  Pro Note: 60 → 57,5, 72 → 55,7. Auf den 99 gemeinsamen Locs **+5,5 im
+  Mittel, 72 besser, 17 schlechter** (Schwelle ±2).
+  - Größte Gewinne: A016 43→81, A026 27→57, A011 38→65, A019 48→70,
+    A013 38→59, A058 35→53.
+  - Regressionen: A009 65→39, A001 80→66, A095 40→28, A024 81→71,
+    A081 73→65.
+  - Beste v3: A016 81, A029 75, A021 74, A062 74, A020 74, A060 74.
+  - Schwächste: A095 28, A046 31, A040 34, A025 34, A012 35, A042 35.
+- **Entropy** (`prognose entropy`, n=99): H(y)=3,03 bits. `spec_mad_db`
+  erklärt das Label selbst (IG 2,09, pearson −0,992 — zirkulär); partielle IG
+  gegeben `spec_mad_db`: `env_dtw` 0,425, `spec_dtw` 0,218.
+  embed/llm/profile sind im v3-Log nicht enthalten (n=0).
+- **Retrain** (`--target score`, `--min-score-version 2`): n=99,
+  **MAE 8,37, RMSE 10,89, R² 0,212 / R²_cv 0,218**
+  (v2: 10,47 / 12,51 / 0,064 / 0,132). Top-Features: Filter Envelope Attack,
+  Filter 1 Env Amount, Amplifier Envelope Attack, Osc 1 Octave,
+  Filter 1 Cutoff.
+- **Modell:** `models/prognose_rf_v3.pkl`; bisheriges Modell als
+  `models/prognose_rf_v2.pkl` behalten, `models/prognose_rf.pkl` = v3
+  (Default). Stichprobe: `prognose predict A001` → 63,4 ± 5,3 (Ist 65,6).
+- **Offen:** Regressionen A009/A001/A095 eingrenzen (v3-Änderungen A2/A3/A4
+  gezielt A/B), A12 DigiFormer-Amount kalibrieren, A050/A097-Stille klären.
