@@ -42,24 +42,34 @@ Iridium-Shell hat kein Quoting; die Namen sind bereits ohne Leerzeichen.
 Vor dem Lauf: Iridium SD als Laufwerk `2:` gemountet, beide Synths über USB.
 
 ```bash
-# nur lesen: sind alle 100 qpats auf der Karte?
+# nur lesen: sind alle 100 qpats auf der Karte (Name + Byte-Größe)?
 python3 scripts/measure_rf100.py --verify-sd
 
 # ohne --run passiert nichts am Gerät (nur Plan-Ausgabe)
 python3 scripts/measure_rf100.py
 
 # echter Lauf, Notes 72 und 60, schreibt recordings/sim_log_v3.jsonl
-python3 scripts/measure_rf100.py --run
+# (--skip-verify, wenn --verify-sd direkt davor 100/100 geliefert hat)
+python3 scripts/measure_rf100.py --run --skip-verify
 ```
 
 Der Runner:
+- prüft `ls 2:rf300` gegen **Name und Byte-Größe** der lokalen qpats (Größen
+  unterscheiden v2/v3, die Namen nicht),
 - lädt jedes qpat per `load-patch 2:rf300/<file>` (nie von den stillen
   Speicher-Slots),
+- prüft nach jedem Laden, dass die QUIR-Shell noch antwortet (sonst Abbruch),
 - wählt am Blofeld Bank A + PC,
 - spielt beide Synths gleichzeitig (Part 1, ch6) und scorst mit v2,
+- bricht ab, wenn der Iridium-Kanal stumm ist (Kabel/Global-MIDI statt Patch),
 - resumiert standardmäßig über `(loc, note)` bereits gescorte Zeilen
-  (`--no-resume` für einen kompletten Neulauf),
-- bricht ab, wenn `verify-sd` fehlschlägt.
+  (`--no-resume` für einen kompletten Neulauf).
+
+**Shell-Eigenheiten (live):** `ls` blockiert den QUIR-Readout für einige
+Zeit; deshalb prüft `--verify-sd` in einer eigenen Sitzung und der Messlauf
+läuft mit `--skip-verify` weiter. Der Readout liefert max. 256 B pro `U`-Poll
+und die Shell antwortet verzögert, daher nutzt der Runner einen `temp`-Sentinel
+statt eines einzelnen `cmd()`.
 
 Empfohlene Hygiene: Iridium-USB-Audio-Rauschen prüfen, FX-Zustand pro Patch
 nicht manuell ändern, `CC7=127` nur am Blofeld (am Iridium ist CC7 ein
@@ -84,9 +94,9 @@ Bewertung wie beim v2-Lauf:
 
 ## 5. Offene Punkte
 
-- [ ] SD-Karte kopieren (`transfer/rf100_v3` → `rf300/`).
-- [ ] `--verify-sd` muss 100/100 liefern.
-- [ ] Messlauf `--run` (200 Zeilen: 100 Locs × Notes 72/60).
+- [x] SD-Karte kopieren (`transfer/rf100_v3` → `rf300/`; Slots 200–299).
+- [x] `--verify-sd` → 100/100 (Name + Byte-Größe, 2026-11-22).
+- [ ] Messlauf `--run --skip-verify` (200 Zeilen: 100 Locs × Notes 72/60).
 - [ ] Entropy-Check auf dem neuen Log.
 - [ ] Retrain + Modellvergleich; nur bei positivem R² ersetzen.
 - [ ] `sim_log_v3.jsonl` und Modell-Metriken in `docs/FINDINGS.md` dokumentieren.
