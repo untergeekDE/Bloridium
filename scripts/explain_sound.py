@@ -160,7 +160,8 @@ def approximations(parsed: dict) -> list[dict]:
     if route == 1 and f2_type != 0:
         former = {"HP 12dB": "Nave HP12", "HP 24dB": "Nave HP12",
                   "LP 24dB": "Nave LP24", "LP 12dB": "Nave LP12",
-                  "PPG LP": "PPG LP24"}.get(bd.FILTER_TYPES[f2_type], "model")
+                  "PPG LP": "PPG LP24", "Comb+": "Comb+",
+                  "Comb-": "Comb-"}.get(bd.FILTER_TYPES[f2_type], "model")
         add("filter", f"Filter 2 serial -> DigiFormer ({bd.FILTER_TYPES[f2_type]})",
             f"approximated as {former}, cutoff raw {f2_cut} (A12: amount curve not exact)")
     for f in (1, 2):
