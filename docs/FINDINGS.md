@@ -210,3 +210,21 @@ evidence, not as current instructions.
   `prognose entropy` zeigt warum: `spec_mad_db` hat IG 2,28 von H 2,82,
   ist aber Bestandteil der Score-Formel (Score = 70 % spektrale Ähnlichkeit
   + 30 % Hüllkurve) — die Log-Features sind zirkulär.
+
+### Protokoll-A/B (gleiche Patches, altes Fenster vs. Onset)
+
+`scripts/protocol_ab.py` misst dieselben v5-Patches zweimal (10 Sounds, je 2
+Noten). Auswahl bewusst extrem (6 Verschlechterungen + 4 Verbesserungen aus
+dem v4↔v5-Vergleich), daher **kein repräsentativer Mittelwert**:
+
+| | alt (0,35 s Pre-Roll) | Onset | Δ |
+|---|---:|---:|---:|
+| Mittel (19/20 Zeilen) | 65,0 | 70,9 | **+5,8** |
+
+- Der Protokoll-Effekt ist **patch-abhängig**, kein konstanter Offset:
+  perkussive Sounds ohne Sustain gewinnen massiv (A051 +33, A057 +33,
+  A041 +26 — vorher war das Material schon tot), dichte/klingende Sounds
+  verlieren (A064 −11, A070 −8, A053 −5, A025 −5), weil der Attack-Transient
+  und ein längeres Segment (2,1 s vs. 1,5 s) mitbewertet werden.
+- Damit ist der v5-vs-v4-Delta (+8,7) **nicht** in Konverter und Protokoll
+  zerlegbar, solange die Protokoll-Stichprobe nicht repräsentativ ist.
