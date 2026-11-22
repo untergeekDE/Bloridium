@@ -1067,3 +1067,20 @@ def test_poly_mono_mode_follows_allocation_bit():
     ov, _ = qpat_map.blofeld_to_qpat_params(e016)
     assert ov["PolyMonoMode"] == (1.0, "Mono")
     assert ov["UnisonoCount"] == (1.0, "")
+
+
+def test_filter_env_amount_is_bipolar():
+    # 2026-11-22: the Iridium filter envelope amount is bipolar (0.5 = neutral,
+    # factory qpats use 0.5000). raw 0 -> 0.5 (no modulation), raw 127 -> 1.0.
+    # E072 "Velo City Bass": Filter 1 Env Amount = 86.
+    parsed = bd.parse_sndd((REPO / "dumps/banks/E/E072.bin").read_bytes())
+    raw = parsed["params"]["Filter 1 Env Amount"]
+    assert raw == 86
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Filter1EnvAmount"][0] == pytest.approx(0.5 + 0.5 * 86 / 127)
+    assert ov["Filter2EnvAmount"][0] == pytest.approx(
+        0.5 + 0.5 * parsed["params"]["Filter 2 Env Amount"] / 127)
+    # raw 0 must be neutral, not 0.0 (which would invert the envelope)
+    parsed["params"]["Filter 1 Env Amount"] = 0
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert ov["Filter1EnvAmount"][0] == pytest.approx(0.5)

@@ -380,3 +380,10 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
 - [ ] Entscheiden: Prognose in der Webapp als "experimentell" kennzeichnen oder
       ganz entfernen (aktuell sagt v2 auf neuen Daten 27 Punkte zu niedrig).
 - [ ] Optional: Wiederholbarkeit messen (8 Sounds doppelt) als Obergrenze für R².
+
+### Filter-Env-Amount (0.6.5)
+- [ ] Sauberer Skalentest: Test-Patch, nur Cutoff + Filter1EnvAmount sweepen,
+      Spektralverlauf je Wert messen (monoton?). Bestätigt/kippt 0.6.5.
+- [ ] `FilterNVeloAmount` / `AmpVeloAmount` prüfen (gleiche Bipolar-Frage).
+- [ ] Nach Bestätigung: Bank E neu konvertieren (0.6.5) und erneut messen;
+      dabei 2-3 Wiederholungen pro Ausreißer einplanen.

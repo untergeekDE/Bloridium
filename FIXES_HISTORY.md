@@ -7,6 +7,16 @@ Test baseline on Linux without private data: 200 passed / 46 failed / 17 errors.
 All remaining failures come from the missing `dumps/` and `recordings/` data. The full
 suite is run on the measurement machine (item 11).
 
+## Release 0.6.5 (2026-11-22)
+
+- **Filter envelope amount is bipolar:** `Filter1EnvAmount`/`Filter2EnvAmount`
+  are mapped as `0.5 + 0.5*norm(raw)` instead of `norm(raw)`. The Iridium
+  value 0.5 is neutral (factory qpats); the old mapping gave raw 86 only
+  +0.18 of the range instead of +0.68, so the filter envelope barely moved
+  (bank E outliers E072/E001/E015 too dark, E077/E078 too thin).
+- Still open (TODO_MEASURE): the clean scale test for the amount, and the same
+  suspicion for `FilterNVeloAmount` / `AmpVeloAmount`.
+
 ## Release 0.6.4 (2026-11-22)
 
 - **Poly/Mono allocation mapped:** Blofeld `Allocation/Unisono` bit 0 (1 = Mono)

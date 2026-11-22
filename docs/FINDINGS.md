@@ -343,3 +343,14 @@ Dieselben Patches mehrfach gemessen (gleiches Protokoll, Note 60):
   (Konverter schreibt `raw/127`; Iridium-Factory-Patches nutzen 0,5 als
   neutralen Wert). Am Gerät ließ sich das mit E072 nicht monoton bestätigen
   (Filter-Env-Sweep messtechnisch instabil) — offene Frage.
+
+### Filter-Env-Amount bipolar (0.6.5, Entscheidung 2026-11-22)
+
+- `Filter1/2EnvAmount` wird jetzt als `0,5 + 0,5*raw/127` geschrieben.
+  Begründung: Iridium-Factory-qpats stehen auf 0,5000 (neutral), der Template-
+  Wert ist 0,8523. Mit `raw/127` hatte raw 86 nur +0,18 statt +0,68 Regelweg.
+- **Noch nicht sauber verifiziert:** der monotone Test am Gerät war wegen der
+  patch-spezifischen Messstreuung nicht eindeutig (E072 schwankte 40–64).
+  Offener Punkt: sauberes Test-Patch, nur Cutoff + Amount sweepen.
+- Gleicher Verdacht besteht für `FilterNVeloAmount` und `AmpVeloAmount`
+  (weiterhin `norm(raw)`) — bewusst noch nicht geändert.

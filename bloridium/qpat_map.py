@@ -222,6 +222,19 @@ def norm(raw: int) -> float:
     return max(0.0, min(1.0, raw / 127.0))
 
 
+def unipolar_amount(raw) -> float:
+    """Blofeld unipolar amount 0..127 (0 = no effect) -> Iridium bipolar norm.
+
+    The Iridium filter envelope amount is bipolar with 0.5 = neutral (factory
+    qpats: 0.5000 for two sounds, template 0.8523). Mapping raw/127 left every
+    positive Blofeld amount at only 0..0.5 of the range - the envelope barely
+    moved the filter (bank E outliers E072/E001/E015 'too dark', E077/E078
+    'too thin'). User decision 2026-11-22: map to 0.5 + 0.5*norm, pending the
+    clean scale test (TODO_MEASURE).
+    """
+    return 0.5 + 0.5 * norm(raw)
+
+
 def osc_destination(raw: int) -> float:
     """Blofeld F1/F2 balance (raw 0 = F1, 127 = F2) -> Iridium OscNDestination.
 
@@ -711,9 +724,11 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     setp("Filter1Reso", blofeld_reso_norm(p["Filter 1 Resonance"]))
     setp("Filter2CutOff", blofeld_cutoff_norm(p["Filter 2 Cutoff"]))
     setp("Filter2Reso", blofeld_reso_norm(p["Filter 2 Resonance"]))
-    setp("Filter1EnvAmount", norm(p["Filter 1 Env Amount"]))
+    setp("Filter1EnvAmount", unipolar_amount(p["Filter 1 Env Amount"]),
+         f"{p['Filter 1 Env Amount']} raw (bipolar 0.5 = 0)")
     setp("Filter1VeloAmount", norm(p["Filter 1 Env Velocity"]))
-    setp("Filter2EnvAmount", norm(p["Filter 2 Env Amount"]))
+    setp("Filter2EnvAmount", unipolar_amount(p["Filter 2 Env Amount"]),
+         f"{p['Filter 2 Env Amount']} raw (bipolar 0.5 = 0)")
     setp("Filter2VeloAmount", norm(p["Filter 2 Env Velocity"]))
     fe = "Filter Envelope"
     for bk, ik in (("Attack", "Filter1EnvAttack"), ("Decay", "Filter1EnvDecay"),
