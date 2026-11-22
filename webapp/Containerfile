@@ -22,7 +22,7 @@ RUN pip install -r requirements.txt
 # The RF model (models/prognose_rf.pkl, ~0.9 MB, git-tracked since 64c73e3) is baked in
 # at /app/models/, where matching.resolve_model_path() finds it. To use another model,
 # mount over it: -v <dir>:/app/models:ro  or set BLORIDIUM_MODEL=/path/to/model.pkl
-COPY webapp/app.py webapp/convert.py webapp/matching.py webapp/midi_file.py ./
+COPY webapp/app.py webapp/convert.py webapp/matching.py webapp/midi_file.py webapp/ratelimit.py ./
 COPY webapp/static ./static
 COPY bloridium/blofeld_dump.py bloridium/qpat.py bloridium/qpat_map.py bloridium/waldorf.py bloridium/prognose.py bloridium/version.py ./core/
 COPY docs/refs/qpat/template_waveform.qpat ./template_waveform.qpat

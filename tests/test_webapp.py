@@ -375,6 +375,83 @@ def test_result_and_download_no_store(core, sample_sdata, tmp_path, monkeypatch)
     d.close()
 
 
+def test_upload_rate_limit(tmp_path, sample_sdata, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)
+    monkeypatch.setenv("UPLOAD_RATE_MAX", "2")
+    monkeypatch.setenv("UPLOAD_RATE_WINDOW_S", "600")
+    app = create_app()
+    app.data_dir = tmp_path
+    client = app.test_client()
+    syx = _sndd_bytes(0, 42, sample_sdata)
+    headers = {"X-Forwarded-For": "198.51.100.10"}
+
+    for _ in range(2):
+        r = client.post("/upload", data={"file": (io.BytesIO(syx), "a.syx")},
+                        headers=headers, content_type="multipart/form-data")
+        assert r.status_code == 200
+    r = client.post("/upload", data={"file": (io.BytesIO(syx), "a.syx")},
+                    headers=headers, content_type="multipart/form-data")
+    assert r.status_code == 429
+    assert int(r.headers["Retry-After"]) >= 1
+    assert b"Too many uploads" in r.data
+
+    other = client.post("/upload", data={"file": (io.BytesIO(syx), "a.syx")},
+                        headers={"X-Forwarded-For": "198.51.100.11"},
+                        content_type="multipart/form-data")
+    assert other.status_code == 200
+
+
+def test_permissions_policy_header(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    app = create_app()
+    app.data_dir = tmp_path
+    r = app.test_client().get("/")
+    assert "camera=()" in r.headers["Permissions-Policy"]
+    assert "microphone=()" in r.headers["Permissions-Policy"]
+
+
+def test_short_sndd_is_clean_400(core, sample_sdata, tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)
+    app = create_app()
+    app.data_dir = tmp_path
+    client = app.test_client()
+    sd = sample_sdata[:20]
+    msg = (bytes([0xF0, 0x3E, 0x13, 0x00, 0x10, 0, 0])
+           + sd + bytes([core.blofeld_dump.checksum(sd), 0xF7]))
+    r = client.post("/upload", data={"file": (io.BytesIO(msg), "short.syx")},
+                    content_type="multipart/form-data")
+    assert r.status_code == 400
+    assert b"SDATA length" in r.data
+
+
+def test_too_many_sounds_is_clean_400(core, sample_sdata, tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)
+    app = create_app()
+    app.data_dir = tmp_path
+    client = app.test_client()
+    syx = b"".join(_sndd_bytes(0, i % 128, sample_sdata) for i in range(1025))
+    r = client.post("/upload", data={"file": (io.BytesIO(syx), "big.syx")},
+                    content_type="multipart/form-data")
+    assert r.status_code == 400
+    assert b"too many sounds" in r.data
+
+
+def test_too_many_sysex_messages_is_clean_400(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)
+    app = create_app()
+    app.data_dir = tmp_path
+    client = app.test_client()
+    data = b"\xf0\xf7" * 4097
+    r = client.post("/upload", data={"file": (io.BytesIO(data), "many.syx")},
+                    content_type="multipart/form-data")
+    assert r.status_code == 400
+    assert b"too many SysEx" in r.data
+
+
 def test_versions_are_unified():
     from bloridium.version import __version__
     assert convert.CONVERSION_VERSION == matching.SIMILARITY_VERSION == \

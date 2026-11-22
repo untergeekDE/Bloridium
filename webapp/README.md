@@ -80,7 +80,8 @@ from the image (OCI format) – if you want it in the image, build with
 2. Upload a `.syx` bank backup (e.g. `bank-a-2019-06-17.syx` from the SysEx
    backups – 128 SNDD messages; a single sound also works as `.bin`/`.hex`;
    a `.mid` MIDI file works too – its SysEx events are extracted from the
-   track data, notes/meta are skipped, e.g. `Voltage-Bank-C.mid`)
+   track data, notes/meta are skipped, e.g. `Voltage-Bank-C.mid`). One upload
+   may contain at most 1024 sounds and 4096 SysEx messages.
 3. The results page shows per sound: location, name, **predicted score** (RF
    prognosis ± std, or placeholder), count of parameters **not in the MIDI map**
    (hover the number for the list; the old separate "mapped" column was removed
@@ -131,6 +132,9 @@ The public instance serves `/privacy`. The short version:
   cleanup deletes it after `DATA_TTL_HOURS=1`.
 - Uploads are not used for training.
 - There are no cookies, analytics, or third-party assets.
+- Uploads are capped at 1024 sounds/4096 SysEx messages and rate-limited per
+  IP (default 10 uploads / 10 minutes, per worker; Apache/network limits can
+  add a stronger shared limit).
 
 The Apache vhost (`deploy/bloridium.conf`) truncates the client address in
 **both** the access and error logs (`192.0.2.xxx`, `2001:db8::xxxx`) using
@@ -164,6 +168,10 @@ python3 -m pytest tests/test_webapp.py -q
 | `DATA_TTL_HOURS` | `1` | Maximum retention if a download never happens |
 | `CLEANUP_INTERVAL_S` | `30` | Cleanup sweep interval (background thread + request throttle) |
 | `BLORIDIUM_CLEANUP_THREAD` | `1` | Set to `0` to disable the background cleanup thread (tests) |
+| `MAX_SOUNDS` | `1024` | Maximum SNDD sounds converted per upload |
+| `MAX_SYSEX_MESSAGES` | `4096` | Maximum SysEx messages parsed per upload |
+| `UPLOAD_RATE_MAX` | `10` | Uploads allowed per client and rate window |
+| `UPLOAD_RATE_WINDOW_S` | `600` | Rate-limit window in seconds |
 | `MAX_UPLOAD_MB` | `8` | Upload limit |
 | `PORT` | `8000` | local dev server only |
 | `BLORIDIUM_CORE_DIR` | `/app/core` in the container | pure-python bloridium modules (incl. `prognose.py`) |

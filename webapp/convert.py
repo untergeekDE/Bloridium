@@ -126,16 +126,23 @@ def upload_messages(filename: str, data: bytes) -> list[bytes]:
     return split_sysex_messages(data)
 
 
-def parse_upload(filename: str, data: bytes) -> dict:
+def parse_upload(filename: str, data: bytes, max_sounds: int = 1024,
+                 max_messages: int = 4096) -> dict:
     """Parse upload: decode .hex, extract SysEx (.mid via SMF, else raw), parse SNDDs.
 
     Returns: {"sounds": [parse_sndd results...], "errors": [...], "skipped": int}
+    Raises UploadError when the input exceeds the sound/message limits.
+
+    The limits protect the public endpoint: a bank is 128 sounds, and one
+    upload should never turn into tens of thousands of conversions.
     """
     if filename.lower().endswith(".hex"):
         try:
             data = bytes.fromhex("".join(data.decode("ascii").split()))
         except (UnicodeDecodeError, ValueError) as e:
             raise UploadError(f"invalid .hex file: {e}") from None
+    if data.count(b"\xf0") > max_messages:
+        raise UploadError(f"too many SysEx messages (maximum {max_messages})")
     core = load_core()
     sounds, errors, skipped = [], [], 0
     for idx, msg in enumerate(upload_messages(filename, data)):
@@ -144,10 +151,17 @@ def parse_upload(filename: str, data: bytes) -> dict:
         except ValueError:
             skipped += 1  # foreign message (e.g. MULD, Identity) – not SNDD
             continue
+        if len(parsed["sdata"]) != core.blofeld_dump.SDATA_SIZE:
+            errors.append({"index": idx,
+                           "error": f"wrong SDATA length {len(parsed['sdata'])} "
+                                    f"(expected {core.blofeld_dump.SDATA_SIZE})"})
+            continue
         if not parsed["chk_ok"]:
             errors.append({"index": idx, "error": "checksum wrong"})
             continue
         sounds.append(parsed)
+        if len(sounds) > max_sounds:
+            raise UploadError(f"too many sounds (maximum {max_sounds})")
     return {"sounds": sounds, "errors": errors, "skipped": skipped}
 
 
@@ -184,7 +198,8 @@ def convert_sound(core, template: dict, parsed: dict, loc: str) -> dict:
             "mapped": len(overrides), "unmapped": unmapped, "ignored": ignored}
 
 
-def process_upload(filename: str, data: bytes, data_dir, model_path=None) -> dict:
+def process_upload(filename: str, data: bytes, data_dir, model_path=None,
+                   max_sounds: int = 1024, max_messages: int = 4096) -> dict:
     """Full pipeline. Writes <data_dir>/<token>/{result.zip,report.json}.
 
     model_path: RF model for the score prognosis (None -> auto-detect via
@@ -198,7 +213,8 @@ def process_upload(filename: str, data: bytes, data_dir, model_path=None) -> dic
     core = load_core()
     template = core.qpat.load(default_template_path())
     bundle, resolved_model = matching.load_model_bundle(core, model_path)
-    parsed_up = parse_upload(filename, data)
+    parsed_up = parse_upload(filename, data, max_sounds=max_sounds,
+                             max_messages=max_messages)
     if not parsed_up["sounds"]:
         detail = "; ".join(f"Msg {e['index']}: {e['error']}" for e in parsed_up["errors"][:3])
         raise UploadError(

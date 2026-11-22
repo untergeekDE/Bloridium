@@ -7,7 +7,10 @@ Background: webapp/static/bloridium-scaled.jpg (photo Iridium + Blofeld).
 Local:   python3 webapp/app.py            ( then http://localhost:8000 )
 Podman:  gunicorn -b 0.0.0.0:8000 app:app  (see webapp/Containerfile)
 
-Env: DATA_DIR (default ./data), DATA_TTL_HOURS (default 24), PORT (default 8000),
+Env: DATA_DIR (default ./data), DATA_TTL_HOURS (default 1), PORT (default 8000),
+     CLEANUP_INTERVAL_S (default 30), BLORIDIUM_CLEANUP_THREAD (default 1),
+     MAX_SOUNDS (default 1024), MAX_SYSEX_MESSAGES (default 4096),
+     UPLOAD_RATE_MAX (default 10), UPLOAD_RATE_WINDOW_S (default 600),
      BLORIDIUM_CORE_DIR / BLORIDIUM_TEMPLATE (see convert.py)
 """
 
@@ -26,8 +29,24 @@ from flask import Flask, abort, after_this_request, request, send_file
 
 import convert
 import matching
+from ratelimit import SlidingWindowLimiter
 
 TOKEN_RE = re.compile(r"[0-9a-f]{32}")
+
+PERMISSIONS_POLICY = ("camera=(), microphone=(), geolocation=(), payment=(), "
+                      "usb=(), serial=(), midi=()")
+
+
+def client_ip() -> str:
+    """Client address for rate limiting.
+
+    Apache's mod_proxy appends the real peer to X-Forwarded-For. Use the last
+    entry so a client-supplied first entry cannot bypass the limit.
+    """
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[-1].strip() or "unknown"
+    return request.remote_addr or "unknown"
 
 def footer(sim_ver: str) -> str:
     return ('<footer><strong>Read the blog post on <a href="https://www.untergeek.de/2026/11/bloridium-porting-blofeld-sounds-to-the-iridium/#more-6616">untergeek.de</a> &middot;</strong> '
@@ -116,6 +135,10 @@ time, the requested URL (including the random download token), HTTP status,
 transferred bytes, referrer and user agent. This is used only to operate the
 service and to detect abuse. Server logs are rotated and deleted according
 to the server configuration.</li>
+<li><b>Abuse protection.</b> Uploads are rate-limited per IP address. The
+address is kept only in a short-lived in-memory counter for the rate-limit
+window (default 10 minutes) and is not written to disk. Each upload may
+contain at most 1024 sounds.</li>
 </ul>
 
 <h2>No training on your data</h2>
@@ -209,6 +232,12 @@ def create_app() -> Flask:
     app.data_dir = Path(os.environ.get("DATA_DIR") or (Path(__file__).parent / "data"))
     app.data_dir.mkdir(parents=True, exist_ok=True)
     app.ttl_hours = float(os.environ.get("DATA_TTL_HOURS", "1"))
+    app.max_sounds = int(os.environ.get("MAX_SOUNDS", "1024"))
+    app.max_messages = int(os.environ.get("MAX_SYSEX_MESSAGES", "4096"))
+    app.upload_limiter = SlidingWindowLimiter(
+        limit=int(os.environ.get("UPLOAD_RATE_MAX", "10")),
+        window_s=float(os.environ.get("UPLOAD_RATE_WINDOW_S", "600")),
+    )
 
     def page(body: str) -> str:
         return PAGE.format(conv=convert.CONVERSION_VERSION, body=body)
@@ -262,13 +291,22 @@ def create_app() -> Flask:
 
     @app.post("/upload")
     def upload():
+        allowed, retry_after = app.upload_limiter.allow(client_ip())
+        if not allowed:
+            return (page(f'<p class="err">Too many uploads from your address. '
+                         f'Please try again in {retry_after} seconds.</p>'
+                         '<p><a href="/">back</a></p>'), 429,
+                    {"Retry-After": str(retry_after)})
+
         f = request.files.get("file")
         if f is None or not f.filename:
             return page('<p class="err">No file selected.</p><p><a href="/">back</a></p>'), 400
         data = f.read()
         try:
-            report = convert.process_upload(f.filename, data, app.data_dir,
-                                            model_path=os.environ.get("BLORIDIUM_MODEL"))
+            report = convert.process_upload(
+                f.filename, data, app.data_dir,
+                model_path=os.environ.get("BLORIDIUM_MODEL"),
+                max_sounds=app.max_sounds, max_messages=app.max_messages)
         except convert.UploadError as e:
             return page(f'<p class="err">Invalid upload: {escape(str(e))}</p>'
                         '<p><a href="/">back</a></p>'), 400
@@ -307,7 +345,8 @@ def create_app() -> Flask:
         return resp
 
     @app.after_request
-    def _no_store(response):
+    def _headers(response):
+        response.headers.setdefault("Permissions-Policy", PERMISSIONS_POLICY)
         if request.endpoint in {"upload", "download"}:
             response.headers["Cache-Control"] = "no-store"
         return response
