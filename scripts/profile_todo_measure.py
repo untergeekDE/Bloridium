@@ -6,7 +6,6 @@ recordings/todo_measure_<group>.jsonl and, with `report`, a Markdown summary.
 
 Groups:
   pulse_amt    A1 positive case: Osc 2 = Pulse, PWM source LFO 1, sweep amount.
-  pulse_src    A1 positive case: PWM amount fixed, sweep source.
   fx1types     A3 split: FX1 only (FX2 off), sweep Effect 1 type + mix.
   reverb       A3 split: FX1 off, FX2 = Reverb, sweep Effect 2 mix; tail metric.
   unison_detune A4: 5 voices, sweep Unisono Detune; spectral width at C4.
@@ -41,43 +40,46 @@ SR = audio.SAMPLERATE
 C4 = 261.63
 WIDTH_LO, WIDTH_HI = C4 - 55, C4 + 55   # ±55 Hz around C4 (matches TODO_MEASURE table)
 
-SOUND = {  # quiet, dry base sound used by all groups
-    8: 0, 17: 64, 18: 64, 19: 64, 65: 0,
+SOUND = {  # audible dry base sound: Osc 1 saw only
+    8: 2, 17: 64, 18: 64, 19: 64, 24: 0, 40: 0,
+    61: 127, 62: 0, 63: 0, 64: 0, 65: 0, 66: 0,
     128: 0, 129: 0, 144: 0, 145: 0,
 }
+# wide-open filter so PWM harmonics stay audible (init filter env closes fast)
+OPEN = {77: 1, 78: 127, 80: 0, 87: 0, 89: 0, 97: 0}
 
 GROUPS = {
     "pulse_amt": dict(
         kind="effect", prefix="toa_",
-        variant={**SOUND, 24: 1, 25: 64, 26: 1, 27: 0,
-                 62: 0, 63: 127, 64: 0, 66: 0,
-                 160: 0, 161: 100, 163: 0, 166: 0, 167: 0},
+        # Fade must be 64 (center): raw 0 fades the LFO out immediately, so the
+        # first pulse run measured no Blofeld PWM at all.
+        variant={**SOUND, **OPEN, 8: 0, 24: 1, 25: 64, 26: 1, 27: 64,
+                 62: 0, 63: 127, 64: 0, 65: 0, 66: 0,
+                 160: 0, 161: 20, 163: 0, 166: 0, 167: 64},
         params=[27], values={27: [0, 32, 64, 127]}, dur=2.0),
-    "pulse_src": dict(
-        kind="effect", prefix="tos_",
-        variant={**SOUND, 24: 1, 25: 64, 26: 1, 27: 64,
-                 62: 0, 63: 127, 64: 0, 66: 0,
-                 160: 0, 161: 100, 163: 0, 166: 0, 167: 0},
-        params=[26], values={26: [0, 1, 3, 15, 30]}, dur=2.0),
     "fx1types": dict(
-        kind="effect", prefix="tof_",
-        variant={**SOUND, 62: 0, 64: 0, 66: 0, 8: 2, 63: 127,
-                 128: 3, 129: 127, 130: 40, 131: 80},
-        params=[128, 129], values={128: list(range(9)), 129: [0, 32, 64, 127]},
+        kind="effect", prefix="tof_", fx_policy="fx1",
+        variant={**SOUND, 128: 3, 129: 127, 130: 40, 131: 80},
+        params=[128, 129], values={128: list(range(6)), 129: [0, 32, 64, 127]},
         dur=2.0),
+    "fx2types": dict(
+        kind="reverb", prefix="to2_", fx_policy="fx2_mapped", takes=2,
+        variant={**SOUND, **OPEN, 128: 0, 144: 0, 145: 127, 146: 80,
+                 147: 64, 148: 100, 150: 100, 151: 80, 217: 0, 205: 0},
+        params=[144], values={144: [0, 6, 7, 8]}),
     "reverb": dict(
         kind="reverb", prefix="tor_",
-        variant={**SOUND, 62: 0, 64: 0, 66: 0,
+        variant={**SOUND, **OPEN,
                  128: 0, 144: 8, 145: 0, 147: 64, 148: 100,
                  217: 0, 205: 0},
         params=[145], values={145: [0, 32, 64, 127]}, takes=2),
     "unison_detune": dict(
         kind="width", prefix="tou_",
-        variant={**SOUND, 58: 0x40, 59: 0, 62: 0, 64: 0, 66: 0, 217: 0},
+        variant={**SOUND, **OPEN, 58: 0x40, 59: 0, 217: 0},
         params=[59], values={59: [0, 32, 64, 127]}, takes=2, dur=3.2),
     "unison_count": dict(
         kind="width", prefix="toc_",
-        variant={**SOUND, 58: 0x00, 59: 127, 62: 0, 64: 0, 66: 0, 217: 0},
+        variant={**SOUND, **OPEN, 58: 0x00, 59: 127, 217: 0},
         params=[58], values={58: [0, 16, 32, 48, 64, 80, 96, 112]},
         takes=2, dur=3.2),
 }
@@ -100,6 +102,36 @@ def overrides_for(sd: bytes):
 
 def base_values() -> dict:
     return {k: v["value"] for k, v in qpat.load(REPO / "dumps/00000-.qpat")["params"].items()}
+
+
+def dry_settings(cfg: dict) -> list[tuple[str, float]]:
+    """FX state around a measurement: silence FX that are not under test."""
+    policy = cfg.get("fx_policy", "fx2" if cfg["kind"] == "reverb" else "dry")
+    if policy == "fx1":      # measure FX1 only
+        return [("FX2Type", 0.0), ("FX2Bypass", 0.0), ("FXTotalDryWet", 1.0)]
+    if policy == "fx2":      # measure FX2 (reverb) only
+        return [("FX1Type", 0.0), ("FX2Type", 6.0), ("FX2Bypass", 0.0),
+                ("FXTotalDryWet", 1.0)]
+    if policy == "fx2_mapped":  # FX2 type comes from the converter, keep it
+        return [("FX1Type", 0.0), ("FX2Bypass", 0.0), ("FXTotalDryWet", 1.0)]
+    return [("FX1Type", 0.0), ("FX2Type", 0.0), ("FX1Bypass", 0.0), ("FX2Bypass", 0.0)]
+
+
+def apply_fx(irr, cfg: dict) -> None:
+    """Apply and verify the FX state (FX changes are occasionally swallowed)."""
+    policy = cfg.get("fx_policy", "fx2" if cfg["kind"] == "reverb" else "dry")
+    checks = {"fx1": [("FX2Type", 0.0)], "fx2": [("FX1Type", 0.0), ("FX2Type", 6.0)],
+              "fx2_mapped": [("FX1Type", 0.0)],
+              "dry": [("FX1Type", 0.0), ("FX2Type", 0.0)]}[policy]
+    for _attempt in range(3):
+        irr.set_many(dry_settings(cfg))
+        time.sleep(0.12)
+        try:
+            if all(abs(irr.get(k) - v) < 1e-6 for k, v in checks):
+                return
+        except Exception:
+            pass
+    print(f"  WARN: FX state not confirmed ({checks})", flush=True)
 
 
 class IridiumState:
@@ -165,47 +197,54 @@ def spectral_width(x: np.ndarray, lo: float = WIDTH_LO, hi: float = WIDTH_HI) ->
     return float(np.sqrt((pw * (ff - mean) ** 2).sum() / s))
 
 
+def modulation_depth(x: np.ndarray, n: int = 2048, hop: int = 1024) -> float:
+    """Frame-wise log-spectrum standard deviation (how much the timbre moves)."""
+    frames = []
+    x = np.asarray(x, dtype=np.float64)
+    for i in range(0, len(x) - n, hop):
+        seg = x[i:i + n] * np.hanning(n)
+        X = np.abs(np.fft.rfft(seg)) ** 2
+        f = np.fft.rfftfreq(n, 1 / SR)
+        edges = np.geomspace(100, 8000, 25)
+        frames.append([np.log10(X[(f >= a) & (f < b)].mean() + 1e-12)
+                       for a, b in zip(edges[:-1], edges[1:])])
+    if len(frames) < 3:
+        return float("nan")
+    A = np.array(frames)
+    A -= A.mean(axis=0)
+    return float(np.mean(np.std(A, axis=0)))
+
+
 def rms_db(x: np.ndarray) -> float:
     return float(20 * np.log10(max(np.sqrt(np.mean(np.asarray(x) ** 2)), 1e-9)))
 
 
 # ---------------------------------------------------------------- recording
 def record_release(bl, irr, note: int = 60, pre: float = 1.5,
-                   hold: float = 1.2, tail: float = 4.0) -> np.ndarray:
+                   hold: float = 1.2, tail: float = 5.0) -> np.ndarray:
     """Record with note-off in the middle, so the FX tail is captured."""
-    s = audio.settings()
-    cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "avfoundation",
-           "-i", f":{s['device']}", "-t", f"{tail:.3f}", "-ar", str(s["samplerate"]),
-           "-f", "f32le", "-"]
-    for _attempt in range(4):
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        try:
-            time.sleep(pre)
-            for ch in range(16):
-                bl.control_change(123, 0, channel=ch)
-                bl.control_change(7, 127, channel=ch)
-            irr.silence_part()
-            bl.note_on(note=note, velocity=100)
-            irr.note_on(note=note, velocity=100)
-            time.sleep(hold)
-            bl.note_off(note=note)
-            irr.note_off(note=note)
-            raw, _ = proc.communicate(timeout=tail + 20)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.communicate()
-            time.sleep(1.5)
-            continue
-        finally:
-            if proc.poll() is None:
-                proc.kill()
-        break
-    else:
-        raise RuntimeError("ffmpeg konnte das Interface nicht öffnen")
-    data = np.frombuffer(raw, dtype=np.float32)
-    n = s["raw_channels"]
-    data = data[: data.size - (data.size % n)].reshape(-1, n)
-    return data.T
+    import threading
+
+    def sched():
+        time.sleep(pre - 0.1)
+        for ch in range(16):
+            bl.control_change(123, 0, channel=ch)
+            bl.control_change(7, 127, channel=ch)
+        irr.silence_part()
+        time.sleep(0.05)
+        bl.note_on(note=note, velocity=100)
+        irr.note_on(note=note, velocity=100)
+        time.sleep(hold)
+        bl.note_off(note=note)
+        irr.note_off(note=note)
+
+    th = threading.Thread(target=sched, daemon=True)
+    th.start()
+    try:
+        d = audio.record(duration=tail, channels=None)
+    finally:
+        th.join()
+    return d
 
 
 def rec_hold(bl, irr, dur: float) -> np.ndarray:
@@ -220,7 +259,7 @@ def tail_metric(d: np.ndarray) -> dict:
         n = len(x)
         # note-off at pre(1.5)+hold(1.2)=2.7 s after ffmpeg start
         sus = x[int(1.0 * SR):int(2.5 * SR)]
-        tail = x[min(n - 1, int(3.1 * SR)):min(n, int(5.0 * SR))]
+        tail = x[min(n - 1, int(3.0 * SR)):]
         out[name] = {"sustain_db": round(rms_db(sus), 1),
                      "tail_db": round(rms_db(tail), 1),
                      "tail_rel": round(rms_db(tail) - rms_db(sus), 1)}
@@ -246,10 +285,8 @@ def run_group(name: str, cfg: dict, init: dict) -> None:
             raise RuntimeError("Basis-Dump nicht geladen")
         irr.cmd("init-patch", wait=0.8)
         irr.set_many([(k, v[0]) for k, v in sorted(base_ov.items())])
-        if cfg["kind"] == "reverb":
-            irr.set_many([("FX1Type", 0.0), ("FX2Type", 6.0), ("FXTotalDryWet", 1.0)])
-        else:
-            irr.set_many([("FX1Type", 0.0), ("FX2Type", 0.0)])
+        time.sleep(0.6)  # let init-patch finish before touching the FX chain
+        apply_fx(irr, cfg)
 
         header = {"kind": "meta", "group": name, "prefix": cfg["prefix"],
                   "variant": cfg["variant"], "params": cfg["params"],
@@ -286,11 +323,7 @@ def run_group(name: str, cfg: dict, init: dict) -> None:
                         continue
                     target_ov = overrides_for(actual)
                     state.apply(state.desired(target_ov))
-                    if cfg["kind"] == "reverb":
-                        irr.set_many([("FX1Type", 0.0), ("FX2Type", 6.0),
-                                      ("FXTotalDryWet", 1.0)])
-                    else:
-                        irr.set_many([("FX1Type", 0.0), ("FX2Type", 0.0)])
+                    apply_fx(irr, cfg)
                     time.sleep(0.15)
 
                     row = {"kind": "row", "group": name, "prefix": cfg["prefix"],
@@ -342,11 +375,22 @@ def run_group(name: str, cfg: dict, init: dict) -> None:
                                    tail_i={k: round(v, 1) for k, v in mi.items()})
                         try:
                             row["iridium_gain"] = round(irr.get("ReverbGain"), 3)
+                            row["iridium_fx2"] = round(irr.get("FX2Type"), 3)
                         except Exception as exc:  # pragma: no cover - device hiccup
                             row["iridium_gain"] = f"ERR {exc}"
                         print(f"  {name} {pname:22s} {raw:3d} tail-rel "
                               f"B {mb['tail_rel']:6.1f} dB  I {mi['tail_rel']:6.1f} dB  "
                               f"gain {row['iridium_gain']}", flush=True)
+
+                    if cfg.get("fx_policy") == "fx1":
+                        try:
+                            got = irr.get("FX1Type")
+                            want_fx1 = target_ov.get(
+                                "FX1Type", base_ov.get("FX1Type", (0.0, "")))[0]
+                            row["iridium_fx1"] = round(got, 3)
+                            row["iridium_fx1_ok"] = abs(got - want_fx1) < 1e-6
+                        except Exception as exc:  # pragma: no cover
+                            row["iridium_fx1"] = f"ERR {exc}"
 
                     log.write(json.dumps(row) + "\n")
                     log.flush()
@@ -418,26 +462,53 @@ def write_report() -> None:
     lines = ["# TODO_MEASURE — Messergebnisse 2026-11-21", "",
              "Automatisch erzeugt von `scripts/profile_todo_measure.py report`.", ""]
 
-    if "pulse_amt" in data or "pulse_src" in data:
+    if "pulse_amt" in data:
         lines += ["## A1 — PWM bei Pulse-Wellenform (positiver Fall)", "",
-                  "Osc 2 = Pulse, PWM Source = LFO 1 (Amount-Sweep) bzw. Amount = 64 (Source-Sweep),"
-                  " FX aus.", ""]
-        for g in ("pulse_amt", "pulse_src"):
+                  "Osc 2 = Pulse, PWM Source = LFO 1; LFO 1 mit Fade = 64 (kein Ausblenden),"
+                  " Filter offen, FX aus. Amount 64 ist die Neutralstellung (0 Modulation),"
+                  " 0 = maximale negative, 127 = maximale positive Modulation.", ""]
+        for g in ("pulse_amt",):
             if g not in data:
                 continue
             meta, rr = data[g]
+            prefix = meta.get("prefix", "")
             lines += [f"**{rr[0]['param'] if rr else g}** (Schwelle {meta.get('threshold', 0):.1f})", "",
-                      "| raw | Blofeld | Iridium | Cos | Status |", "|---:|---:|---:|---:|---|"]
+                      "| raw | Blofeld | Iridium | Cos | Modulation BF / IR | Status |",
+                      "|---:|---:|---:|---:|---:|---|"]
             for r in rr:
                 cos = "-" if r.get("cos") is None else f"{r['cos']:.2f}"
+                mods = []
+                for nm in ("blofeld", "iridium"):
+                    f = REPO / f"recordings/todo/{prefix}{r['idx']:03d}_{r['raw']:03d}_{nm}.npy"
+                    mods.append(modulation_depth(np.load(f)) if f.exists() else float("nan"))
                 lines.append(f"| {r['raw']} | {r['mag_b']:.2f} | {r['mag_i']:.2f} | "
-                             f"{cos} | {r['status']} |")
+                             f"{cos} | {mods[0]:.3f} / {mods[1]:.3f} | {r['status']} |")
             lines.append("")
+
+    if "fx2types" in data:
+        meta, rr = data["fx2types"]
+        lines += ["## A3 — FX2-Typen (FX1 = Off, Effect 2 Mix 127)", "",
+                  "Blofeld erlaubt in Effect 2 nur Delay/Clk.Delay/Reverb; Effect 1 nur"
+                  " Chorus/Flanger/Phaser/Overdrive/Triple FX. Delay/Reverb in Effect 1"
+                  " normalisiert das Gerät auf Chorus (Readback geprüft). Delay-Tails"
+                  " weichen ab: der Blofeld-Delay braucht seine Zeit-/Feed-Parameter,"
+                  " der Konverter setzt nur Feed/HiCut (p5/p6), keine Delay-Zeit.", "",
+                  "| Effect 2 Type | Blofeld Tail | Iridium Tail | Iridium FX2 |",
+                  "|---:|---:|---:|---:|"]
+        for r in rr:
+            lines.append(f"| {r['raw']} | {r['tail_b']['tail_rel']:.1f} dB | "
+                         f"{r['tail_i']['tail_rel']:.1f} dB | {r.get('iridium_fx2')} |")
+        lines.append("")
 
     if "fx1types" in data:
         meta, rr = data["fx1types"]
         lines += ["## A3 — FX getrennt: FX1 allein (FX2 = Off)", "",
-                  f"Schwelle {meta.get('threshold', 0):.1f}.", "",
+                  f"Schwelle {meta.get('threshold', 0):.1f}. Die Baseline ist Phaser"
+                  " (100 % wet); die Typen 0–5 sind die gültigen Effect-1-Typen."
+                  " Delay/Clk.Delay/Reverb normalisiert der Blofeld in Effect 1 auf"
+                  " Chorus (Readback: 6/7/8 → 1). Beide Seiten reagieren auf alle"
+                  " gültigen Typen mit vergleichbarer Stärke; der spektrale Charakter"
+                  " der Engines unterscheidet sich (niedriger Cos).", "",
                   "| Parameter | raw | Blofeld | Iridium | Cos | Status |",
                   "|---|---:|---:|---:|---:|---|"]
         for r in rr:
@@ -450,8 +521,8 @@ def write_report() -> None:
         meta, rr = data["reverb"]
         summ = derive_reverb(rr)
         lines += ["## A3 — FX getrennt: FX2 = Reverb (FX1 = Off)", "",
-                  "Metrik: Pegel des Hall-Schweifs 0,4–2,3 s nach Note-Off relativ zum"
-                  " gehaltenen Ton.", "",
+                  "Metrik: Pegel des Hall-Schweifs ab 3,0 s (≈1 s nach Note-Off) bis"
+                  " Aufnahmeende, relativ zum gehaltenen Ton.", "",
                   "| Mix | Blofeld Tail | Iridium Tail | Iridium ReverbGain |",
                   "|---:|---:|---:|---:|"]
         for r in rr:
@@ -465,7 +536,7 @@ def write_report() -> None:
             continue
         meta, rr = data[g]
         rr = derive_width(rr)
-        lines += [f"## A4 — {'Unisono Detune' if g.endswith('detune') else 'Unisono Count'}",
+        lines += [f"## A4 — {'Unisono Detune (5 Stimmen)' if g.endswith('detune') else 'Unisono Count (Detune 127)'}",
                   "",
                   "Metrik: leistungsgewichtete Spektralbreite um C4 (±55 Hz), Mittel aus 2 Takes.", "",
                   "| raw | Blofeld | Iridium | Δ Blofeld | Δ Iridium | Status |",

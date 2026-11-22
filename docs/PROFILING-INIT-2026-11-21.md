@@ -34,7 +34,7 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 
 ## 3. Ergebnis
 
-**121** konvertierte Parameter geprüft, **832** Einzelmessungen. Mit belastbarem Urteil: **59** (davon **24** direkt im Init, **35** über Test B/C/D/E). OK **21**, teilweise **25**, Mismatch **6**, defekt **7**, n/a **62**.
+**121** konvertierte Parameter geprüft, **846** Einzelmessungen. Mit belastbarem Urteil: **59** (davon **24** direkt im Init, **35** über Test B/C/D/E). OK **21**, teilweise **26**, Mismatch **7**, defekt **5**, n/a **62**.
 
 | # | Block | Parameter | Werte (roh) | Status | cos | Stärke I/B | Befund |
 |---|---|---|---|---|---|---|---|
@@ -47,7 +47,7 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 | 17 | Oszillatoren | Osc 2 Octave | 32, 48, 64, 80 | **OK** | 0,90 | 0,96 | Test B: Wirkung vergleichbar |
 | 18 | Oszillatoren | Osc 2 Semitone | 52, 58, 64, 76 | **OK** | – | – | Test B: Wirkung vergleichbar |
 | 19 | Oszillatoren | Osc 2 Detune | 0, 32, 64, 127 | **OK** | – | – | Test D Osc 2: Wirkung vergleichbar |
-| 24 | Oszillatoren | Osc 2 Shape | 0, 18, 36, 72 | **OK** | 0,98 | 0,79 | Test D Osc 2: Wirkung vergleichbar |
+| 24 | Oszillatoren | Osc 2 Shape | 0, 18, 36, 72 | **OK** | 0,99 | 0,73 | Test D Osc 2: Wirkung vergleichbar |
 | 25 | Oszillatoren | Osc 2 Pulsewidth | 0, 32, 64, 127 | **n/a** | – | – | Test D Osc 2: nicht hörbar/messbar |
 | 26 | Oszillatoren | Osc 2 PWM Source | 0, 8, 15, 30 | **n/a** | – | – | Test D Osc 2: nicht hörbar/messbar |
 | 27 | Oszillatoren | Osc 2 PWM Amount | 0, 32, 64, 127 | **n/a** | – | – | Test D Osc 2: nicht hörbar/messbar |
@@ -64,10 +64,10 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 | 53 | Oszillatoren | Glide | 0, 1 | **n/a** | – | – | nicht hörbar/messbar |
 | 57 | Mixer | Glide Rate | 0, 32, 64, 127 | **n/a** | – | – | nicht hörbar/messbar |
 | 58 | Mixer | Allocation/Unisono | 0, 32, 64, 127 | **teilweise** | 0,79 | 0,93 | einzelne Werte weichen ab |
-| 59 | Mixer | Unisono Detune | 0, 32, 64, 127 | **defekt** | 0,70 | 1,08 | Test D Unisono: Iridium ohne messbare Reaktion |
+| 59 | Mixer | Unisono Detune | 0, 32, 64, 127 | **teilweise** | 0,78 | 1,14 | Test D Unisono: einzelne Werte weichen ab |
 | 61 | Mixer | Mixer Osc 1 Level | 0, 32, 64, 127 | **OK** | 0,98 | 1,04 | Wirkung vergleichbar |
 | 62 | Mixer | Mixer Osc 1 Balance | 0, 32, 64, 127 | **Mismatch** | – | – | Test E Pan: nur Iridium reagiert |
-| 63 | Mixer | Mixer Osc 2 Level | 0, 32, 64, 127 | **OK** | 0,93 | 0,96 | Test D Osc 2: Wirkung vergleichbar |
+| 63 | Mixer | Mixer Osc 2 Level | 0, 32, 64, 127 | **OK** | 0,95 | 1,08 | Test D Osc 2: Wirkung vergleichbar |
 | 64 | Mixer | Mixer Osc 2 Balance | 0, 32, 64, 127 | **n/a** | – | – | Test E Pan: nicht hörbar/messbar |
 | 65 | Mixer | Mixer Osc 3 Level | 0, 32, 64, 127 | **OK** | 0,95 | 1,05 | Test D Osc 3: Wirkung vergleichbar |
 | 67 | Mixer | Mixer Noise Level | 0, 32, 64, 127 | **teilweise** | 0,65 | 0,72 | einzelne Werte weichen ab |
@@ -84,10 +84,10 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 | 89 | Filter | Filter 1 Mod Source | 0, 8, 15, 30 | **n/a** | – | – | nicht hörbar/messbar |
 | 90 | Filter | Filter 1 Mod Amount | 0, 32, 64, 127 | **teilweise** | 0,66 | 0,70 | einzelne Werte weichen ab |
 | 95 | Filter | Filter 1 Pan Amount | 0, 32, 64, 127 | **teilweise** | 1,00 | – | Test E Pan: einzelne Werte weichen ab |
-| 97 | Filter | Filter 2 Type | 0, 3, 6, 11 | **defekt** | 0,25 | 1,00 | Test D Filter 2: Iridium ohne messbare Reaktion |
-| 98 | Filter | Filter 2 Cutoff | 0, 32, 64, 127 | **teilweise** | 0,85 | 0,58 | Test D Filter 2: einzelne Werte weichen ab |
+| 97 | Filter | Filter 2 Type | 0, 3, 6, 11 | **teilweise** | 0,61 | 0,91 | Test D Filter 2: einzelne Werte weichen ab |
+| 98 | Filter | Filter 2 Cutoff | 0, 32, 64, 127 | **teilweise** | 0,91 | 0,88 | Test D Filter 2: einzelne Werte weichen ab |
 | 100 | Filter | Filter 2 Resonance | 0, 32, 64, 127 | **Mismatch** | 0,44 | 0,52 | Test res2b: Wirkung vergleichbar |
-| 101 | Filter | Filter 2 Drive | 0, 32, 64, 127 | **teilweise** | 0,97 | 0,80 | Test D Filter 2: einzelne Werte weichen ab |
+| 101 | Filter | Filter 2 Drive | 0, 32, 64, 127 | **teilweise** | 0,88 | 0,65 | Test D Filter 2: einzelne Werte weichen ab |
 | 106 | Filter | Filter 2 Keytrack | 0, 32, 64, 127 | **teilweise** | 0,93 | – | Test D F2-Keytrack: einzelne Werte weichen ab |
 | 107 | Filter | Filter 2 Env Amount | 0, 32, 64, 127 | **teilweise** | 0,99 | – | Test D F2-Env: einzelne Werte weichen ab |
 | 108 | Filter | Filter 2 Env Velocity | 0, 32, 64, 127 | **teilweise** | 0,66 | – | Test D F2-Velocity: einzelne Werte weichen ab |
@@ -100,15 +100,15 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 | 124 | Verstärker | Amplifier Mod Amount | 0, 32, 64, 127 | **teilweise** | 0,42 | 0,60 | einzelne Werte weichen ab |
 | 128 | Effekte | Effect 1 Type | 0, 2, 4, 8 | **n/a** | – | – | nicht hörbar/messbar |
 | 129 | Effekte | Effect 1 Mix | 0, 32, 64, 127 | **teilweise** | 0,82 | 0,99 | einzelne Werte weichen ab |
-| 130 | Effekte | Effect 1 Parameter 1 | 0, 32, 64, 127 | **teilweise** | 0,67 | 0,97 | Test B (FX): einzelne Werte weichen ab |
-| 131 | Effekte | Effect 1 Parameter 2 | 0, 32, 64, 127 | **teilweise** | 0,53 | 1,05 | Test B (FX): einzelne Werte weichen ab |
+| 130 | Effekte | Effect 1 Parameter 1 | 0, 32, 64, 127 | **Mismatch** | 0,44 | 1,58 | Test B (FX): Wirkung vergleichbar |
+| 131 | Effekte | Effect 1 Parameter 2 | 0, 32, 64, 127 | **teilweise** | 0,44 | 1,35 | Test D FX: einzelne Werte weichen ab |
 | 132 | Effekte | Effect 1 Parameter 3 | 0, 32, 64, 127 | **n/a** | – | – | Test D FX: nicht hörbar/messbar |
 | 133 | Effekte | Effect 1 Parameter 4 | 0, 32, 64, 127 | **n/a** | – | – | Test D FX: nicht hörbar/messbar |
 | 134 | Effekte | Effect 1 Parameter 5 | 0, 32, 64, 127 | **teilweise** | 0,94 | 0,97 | Test D FX: einzelne Werte weichen ab |
 | 144 | Effekte | Effect 2 Type | 0, 2, 4, 8 | **n/a** | – | – | nicht hörbar/messbar |
 | 145 | Effekte | Effect 2 Mix | 0, 32, 64, 127 | **defekt** | – | – | Iridium ohne messbare Reaktion |
-| 147 | Effekte | Effect 2 Parameter 2 | 0, 32, 64, 127 | **n/a** | – | – | Test B (FX): nicht hörbar/messbar |
-| 148 | Effekte | Effect 2 Parameter 3 | 0, 32, 64, 127 | **n/a** | – | – | Test B (FX): nicht hörbar/messbar |
+| 147 | Effekte | Effect 2 Parameter 2 | 0, 32, 64, 127 | **n/a** | – | – | nicht hörbar/messbar |
+| 148 | Effekte | Effect 2 Parameter 3 | 0, 32, 64, 127 | **n/a** | – | – | nicht hörbar/messbar |
 | 160 | LFOs | LFO 1 Shape | 0, 1, 2, 5 | **n/a** | – | – | nicht hörbar/messbar |
 | 161 | LFOs | LFO 1 Speed | 0, 31, 62, 125 | **defekt** | – | – | Test D LFO: Iridium ohne messbare Reaktion |
 | 163 | LFOs | LFO 1 Sync | 0, 32, 64, 127 | **n/a** | – | – | Test D LFO: nicht hörbar/messbar |
@@ -162,7 +162,7 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 
 ### Kernaussagen
 
-- **21** Parameter übertragen die Wirkung sauber, **13** weichen deutlich ab, **25** teilweise. **62** sind im Init-Sound grundsätzlich nicht beurteilbar, weil ihr Ziel dort aus ist.
+- **21** Parameter übertragen die Wirkung sauber, **12** weichen deutlich ab, **26** teilweise. **62** sind im Init-Sound grundsätzlich nicht beurteilbar, weil ihr Ziel dort aus ist.
 - **Feinstimmung (Detune):** Der Iridium reagiert mit 203 Cent pro Norm-Einheit, der Blofeld mit rund 1,6 Cent pro Rohschritt. Die bisherige Map (Divisor 254) erzeugte nur die Hälfte der Verstimmung; richtig ist `Iridium = 0,5 + (Rohwert − 64) / 127`. Der Konverter wurde entsprechend korrigiert.
 - **Grobstimmung (Oktave/Halbton), Wellenform und Filter-Cutoff/-Typ** folgen der Vorlage gut. Der Oszillator-Pegel passt; die Verstärker-Lautstärke ist am Iridium etwas stärker (rund 1,8×) und sollte leicht komprimiert werden.
 - **Test D (Ziel eingeschaltet):** Osc 2/3 inkl. Pitch, Shape und Pegel folgen jetzt sauber (cos 0,94–1,00). Filter-Hüllkurve (Amount/Attack/Sustain) und FX-Mix sind brauchbar; der Noise-Pegel folgt in der Tendenz. Architekturbedingt offen bleiben PWM (Warp statt Pulsbreite), Noise-Farbe (nur Pink/White), LFO Fade und Unisono-Detune. **Filter 2:** nach der Routing-Korrektur folgen Cutoff (cos 0,88–0,96), Env Amount (0,92–1,0) und Env Velocity (0,75–0,81); Keytrack ist teilweise (0,89), Typ bleibt offen. **Resonanz (Wiederholung 65/85):** der Iridium reagiert deutlich, aber mit anderer Form (F1 cos 0,06–0,20, F2 cos 0,16) → Mismatch, nicht defekt. Filter-Env Sustain/Release sind OK (Release 100 % cos 0,85); Decay ist bei 100 % OK (cos 0,90), kurze Zeiten bleiben unter der Schwelle; Attack weicht ab (nur Iridium reagiert). Details: `docs/ARCHITEKTUR-DIFFERENZEN.md`.
@@ -180,12 +180,12 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 - **Osc 2 Octave** (SDATA 17), cos 0,90, Stärke 0,96×.
 - **Osc 2 Semitone** (SDATA 18), cos –, Stärke –×.
 - **Osc 2 Detune** (SDATA 19), cos –, Stärke –×.
-- **Osc 2 Shape** (SDATA 24), cos 0,98, Stärke 0,79×.
+- **Osc 2 Shape** (SDATA 24), cos 0,99, Stärke 0,73×.
 - **Osc 3 Octave** (SDATA 33), cos 0,90, Stärke 1,00×.
 - **Osc 3 Detune** (SDATA 35), cos –, Stärke –×.
 - **Osc 3 Shape** (SDATA 40), cos 1,00, Stärke 1,01×.
 - **Mixer Osc 1 Level** (SDATA 61), cos 0,98, Stärke 1,04×.
-- **Mixer Osc 2 Level** (SDATA 63), cos 0,93, Stärke 0,96×.
+- **Mixer Osc 2 Level** (SDATA 63), cos 0,95, Stärke 1,08×.
 - **Mixer Osc 3 Level** (SDATA 65), cos 0,95, Stärke 1,05×.
 - **Filter 1 Type** (SDATA 77), cos 0,93, Stärke 1,29×.
 - **Filter 1 Env Amount** (SDATA 87), cos 0,91, Stärke 0,70×.
@@ -199,6 +199,7 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 
 - **Osc 3 Semitone** (SDATA 34, Oszillatoren): teilweise.
 - **Allocation/Unisono** (SDATA 58, Mixer): teilweise, cos 0,79, Stärke 0,93×.
+- **Unisono Detune** (SDATA 59, Mixer): teilweise, cos 0,78, Stärke 1,14×.
 - **Mixer Noise Level** (SDATA 67, Mixer): teilweise, cos 0,65, Stärke 0,72×.
 - **Filter 1 Cutoff** (SDATA 78, Filter): teilweise, cos 0,90, Stärke 0,92×.
 - **Filter 1 Drive** (SDATA 81, Filter): teilweise, cos 0,95, Stärke 0,99×.
@@ -206,8 +207,9 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 - **Filter 1 Env Velocity** (SDATA 88, Filter): teilweise, cos 0,38.
 - **Filter 1 Mod Amount** (SDATA 90, Filter): teilweise, cos 0,66, Stärke 0,70×.
 - **Filter 1 Pan Amount** (SDATA 95, Filter): teilweise, cos 1,00.
-- **Filter 2 Cutoff** (SDATA 98, Filter): teilweise, cos 0,85, Stärke 0,58×.
-- **Filter 2 Drive** (SDATA 101, Filter): teilweise, cos 0,97, Stärke 0,80×.
+- **Filter 2 Type** (SDATA 97, Filter): teilweise, cos 0,61, Stärke 0,91×.
+- **Filter 2 Cutoff** (SDATA 98, Filter): teilweise, cos 0,91, Stärke 0,88×.
+- **Filter 2 Drive** (SDATA 101, Filter): teilweise, cos 0,88, Stärke 0,65×.
 - **Filter 2 Keytrack** (SDATA 106, Filter): teilweise, cos 0,93.
 - **Filter 2 Env Amount** (SDATA 107, Filter): teilweise, cos 0,99.
 - **Filter 2 Env Velocity** (SDATA 108, Filter): teilweise, cos 0,66.
@@ -215,17 +217,14 @@ Rauschboden: Blofeld 0,39 · Iridium 0,41 (Wirkungsmaß). Schwelle für „hörb
 - **Amplifier Velocity** (SDATA 122, Verstärker): teilweise, cos 0,97.
 - **Amplifier Mod Amount** (SDATA 124, Verstärker): teilweise, cos 0,42, Stärke 0,60×.
 - **Effect 1 Mix** (SDATA 129, Effekte): teilweise, cos 0,82, Stärke 0,99×.
-- **Effect 1 Parameter 1** (SDATA 130, Effekte): teilweise, cos 0,67, Stärke 0,97×.
-- **Effect 1 Parameter 2** (SDATA 131, Effekte): teilweise, cos 0,53, Stärke 1,05×.
 - **Osc 1 PWM Amount** (SDATA 11, Oszillatoren): Mismatch.
 - **Osc Pitch Amount** (SDATA 51, Oszillatoren): Mismatch.
 - **Mixer Osc 1 Balance** (SDATA 62, Mixer): Mismatch.
 - **Mixer Noise Balance** (SDATA 68, Mixer): Mismatch.
 - **Filter 1 Resonance** (SDATA 80, Filter): Mismatch, cos 0,25, Stärke 0,66×.
 - **Filter 2 Resonance** (SDATA 100, Filter): Mismatch, cos 0,44, Stärke 0,52×.
-- **Unisono Detune** (SDATA 59, Mixer): defekt, cos 0,70, Stärke 1,08×.
+- **Effect 1 Parameter 1** (SDATA 130, Effekte): Mismatch, cos 0,44, Stärke 1,58×.
 - **Mixer Noise Colour** (SDATA 69, Mixer): defekt, cos 0,44, Stärke 0,55×.
-- **Filter 2 Type** (SDATA 97, Filter): defekt, cos 0,25, Stärke 1,00×.
 - **Effect 2 Mix** (SDATA 145, Effekte): defekt.
 - **LFO 1 Speed** (SDATA 161, LFOs): defekt.
 - **LFO 1 Delay** (SDATA 166, LFOs): defekt.
@@ -264,22 +263,22 @@ Für die übrigen Parameter reichen vier Stützstellen nicht für eine belastbar
 | Parameter | Status | Stärke I/B | Empfehlung |
 |---|---|---|---|
 | Allocation/Unisono | teilweise | 0,93 | Wirkung passt, Abweichung liegt in der Form |
-| Unisono Detune | defekt | 1,08 | Iridium ohne ausreichende Wirkung → Ziel prüfen |
+| Unisono Detune | teilweise | 1,14 | Wirkung passt, Abweichung liegt in der Form |
 | Mixer Noise Level | teilweise | 0,72 | Iridium nur 0,7× so stark → Wert spreizen |
 | Mixer Noise Colour | defekt | 0,55 | Iridium ohne ausreichende Wirkung → Ziel prüfen |
 | Filter 1 Cutoff | teilweise | 0,92 | Wirkung passt, Abweichung liegt in der Form |
 | Filter 1 Resonance | Mismatch | 0,66 | Iridium nur 0,7× so stark → Wert spreizen |
 | Filter 1 Drive | teilweise | 0,99 | Wirkung passt, Abweichung liegt in der Form |
 | Filter 1 Mod Amount | teilweise | 0,70 | Iridium nur 0,7× so stark → Wert spreizen |
-| Filter 2 Type | defekt | 1,00 | Iridium ohne ausreichende Wirkung → Ziel prüfen |
-| Filter 2 Cutoff | teilweise | 0,58 | Iridium nur 0,6× so stark → Wert spreizen |
+| Filter 2 Type | teilweise | 0,91 | Wirkung passt, Abweichung liegt in der Form |
+| Filter 2 Cutoff | teilweise | 0,88 | Wirkung passt, Abweichung liegt in der Form |
 | Filter 2 Resonance | Mismatch | 0,52 | Iridium nur 0,5× so stark → Wert spreizen |
-| Filter 2 Drive | teilweise | 0,80 | Iridium nur 0,8× so stark → Wert spreizen |
+| Filter 2 Drive | teilweise | 0,65 | Iridium nur 0,7× so stark → Wert spreizen |
 | Amplifier Volume | teilweise | 1,15 | Wirkung passt, Abweichung liegt in der Form |
 | Amplifier Mod Amount | teilweise | 0,60 | Iridium nur 0,6× so stark → Wert spreizen |
 | Effect 1 Mix | teilweise | 0,99 | Wirkung passt, Abweichung liegt in der Form |
-| Effect 1 Parameter 1 | teilweise | 0,97 | Wirkung passt, Abweichung liegt in der Form |
-| Effect 1 Parameter 2 | teilweise | 1,05 | Wirkung passt, Abweichung liegt in der Form |
+| Effect 1 Parameter 1 | Mismatch | 1,58 | Iridium 1,6× zu stark → Wert komprimieren |
+| Effect 1 Parameter 2 | teilweise | 1,35 | Iridium 1,4× zu stark → Wert komprimieren |
 | Effect 1 Parameter 5 | teilweise | 0,97 | Wirkung passt, Abweichung liegt in der Form |
 | Filter Envelope Decay | teilweise | 0,75 | Iridium nur 0,8× so stark → Wert spreizen |
 | Amplifier Envelope Attack | teilweise | 1,19 | Wirkung passt, Abweichung liegt in der Form |
@@ -298,7 +297,7 @@ Die maschinenlesbare Fassung der Messwerte steht in `docs/profiling_init_2026-11
 
 ## 7. Anhang
 
-- Einzelmessungen: `docs/profiling_init_2026-11-21.csv` (832 Zeilen, alle Werte und Iridium-Zielparameter).
+- Einzelmessungen: `docs/profiling_init_2026-11-21.csv` (846 Zeilen, alle Werte und Iridium-Zielparameter).
 - Aufnahmen: `recordings/profile/` (je Parameter/Wert/Gerät eine `.npy`).
 - Messprotokoll: `recordings/profile_sweep.jsonl` (Init), `recordings/profile_testb_clean.jsonl` / `_fx.jsonl` (Test B), `recordings/profile_testb_release.jsonl` (Test C).
 - Kurven/Kandidaten (maschinenlesbar): `docs/profiling_curves_2026-11-21.json`.

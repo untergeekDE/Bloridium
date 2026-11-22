@@ -395,3 +395,22 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
   Nach dem neuen Lauf: `--log recordings/sim_log_v3.jsonl --model
   models/prognose_rf_v3.pkl`.
 - Ablauf und Akzeptanz: `docs/MEASURE-RF100-V3.md`.
+
+## 2026-11-22 — A005 am Gerät geprüft: Osc1 aus korrekt, DigiFormer-HP zu hoch
+
+- User-Check Slot 204 (A005 HooverBass): Osc1 im Mix aus, F2/DigiFormer-HP
+  nimmt den Bass. **Osc1 ist korrekt:** Blofeld Mixer Osc1 Level = 0
+  (SDATA 61), das qpat schreibt `Osc1Vol=0`.
+- **F2:** Blofeld `HP 12dB` raw 48, seriell → `DigiFormerType=Nave HP12`,
+  `DigiFormerAmount=0.393`. Am Ohr zu weit offen; Messung (Notes 60/72):
+  Amount 0,393 → 46/40, 0,25 → 52/55, 0,15 → 51/53, 0,08 → 58/50,
+  **Bypass → 26/26**. Der HP wird gebraucht, ist aber zu hoch angesetzt.
+  Ein zweiter Sweep über Former-Typ/Amount war nicht reproduzierbar (der
+  Shell-Zustand ließ sich nicht bestätigen) → offener Fix **A12** in
+  `TODO_FIX.md` (eigene Amount-Kalibrierung nötig).
+- Zusätzlich: die fehlenden Bänder liegen bei A005 eine Oktave **unter** dem
+  Grundton (30–50 dB) — der bekannte Oktav-/CoarsePitch-Fall, unabhängig vom
+  Former.
+- Messlauf v3: `measure_rf100.py --verify-sd` → 100/100 (Name + Byte-Größe);
+  `ls` blockiert den QUIR-Readout, daher Verify in eigener Sitzung und
+  `--run --skip-verify` für den Lauf.

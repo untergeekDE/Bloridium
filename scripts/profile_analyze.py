@@ -25,6 +25,7 @@ LOGS = {
     "fx": REPO / "recordings/profile_testb_fx.jsonl",
     "release": REPO / "recordings/profile_testb_release.jsonl",
     "f2": REPO / "recordings/profile_testb_f2.jsonl",
+    "f2ser": REPO / "recordings/profile_testb_f2ser.jsonl",
     "fe": REPO / "recordings/profile_testb_fe.jsonl",
     "fe_decay": REPO / "recordings/profile_testb_fe_decay.jsonl",
     "fe_rel": REPO / "recordings/profile_testb_fe_rel.jsonl",

@@ -60,9 +60,9 @@
     },
     {
       "parameter": "Unisono Detune",
-      "status": "defekt",
-      "staerke_iridium_zu_blofeld": 1.08,
-      "hinweis": "keine ausreichende Iridium-Wirkung"
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 1.14,
+      "hinweis": "weiter beobachten"
     },
     {
       "parameter": "Mixer Osc 1 Balance",
@@ -132,14 +132,14 @@
     },
     {
       "parameter": "Filter 2 Type",
-      "status": "defekt",
-      "staerke_iridium_zu_blofeld": 1.0,
-      "hinweis": "keine ausreichende Iridium-Wirkung"
+      "status": "teilweise",
+      "staerke_iridium_zu_blofeld": 0.91,
+      "hinweis": "weiter beobachten"
     },
     {
       "parameter": "Filter 2 Cutoff",
       "status": "teilweise",
-      "staerke_iridium_zu_blofeld": 0.58,
+      "staerke_iridium_zu_blofeld": 0.88,
       "hinweis": "weiter beobachten"
     },
     {
@@ -151,7 +151,7 @@
     {
       "parameter": "Filter 2 Drive",
       "status": "teilweise",
-      "staerke_iridium_zu_blofeld": 0.8,
+      "staerke_iridium_zu_blofeld": 0.65,
       "hinweis": "weiter beobachten"
     },
     {
@@ -198,14 +198,14 @@
     },
     {
       "parameter": "Effect 1 Parameter 1",
-      "status": "teilweise",
-      "staerke_iridium_zu_blofeld": 0.97,
+      "status": "Mismatch",
+      "staerke_iridium_zu_blofeld": 1.58,
       "hinweis": "weiter beobachten"
     },
     {
       "parameter": "Effect 1 Parameter 2",
       "status": "teilweise",
-      "staerke_iridium_zu_blofeld": 1.05,
+      "staerke_iridium_zu_blofeld": 1.35,
       "hinweis": "weiter beobachten"
     },
     {

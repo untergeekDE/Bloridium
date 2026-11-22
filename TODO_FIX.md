@@ -27,9 +27,25 @@ dieser Liste entfernt. Offen bleibt nur die jeweilige **Neumessung** am Gerät.
 
 Nächste Messblöcke (Reihenfolge):
 
-0. **Verifikation A1/A2/A3/A4** — PWM (`osc2`), Filter 2 (`f2`), Reverb-Mix (`fx`),
-   Unisono (`unison`); Details und Akzeptanz in `FIXES_HISTORY.md`/`TODO_MEASURE.md`.
-1. **5 · Glide/Legato** — Zwei-Noten-Recorder; Rate/Mode 0/1, 20/60/100.
+0. ✅ **Verifikation A1/A3/A4** (2026-11-21 erledigt): PWM-Pulse, getrennter
+   Reverb-Mix und Unisono-Spektralbreite gemessen — Details in
+   `docs/TODO-MEASURE-2026-11-21.md`. Die A2/F2-Neumessung bleibt offen
+   (`TODO_MEASURE.md`, Abschnitt 2).
+   **Neue Fix-Befunde aus A1 (für diese Session):** (a) die Prüfung
+   `PWM Amount != 0` ist falsch — 0 ist die maximale negative Modulation,
+   64 ist neutral; (b) die Iridium-Warp-Wirkung ist deutlich schwächer als die
+   Blofeld-Pulsbreitenmodulation, u. a. wegen der unkalibrierten LFO-Speed-Kurve
+   (A7).
+1. ✅ **5 · Glide/Legato** (2026-11-21 erledigt) — Mono-Setup + YIN-Tracker;
+   Details in `docs/GLIDE-2026-11-21.md`. Portamento OK, aber
+   **Glide-Rate-Kurve weicht ab** (Blofeld raw 70/85 = 1013/2117 ms vs.
+   Iridium 315/384 ms) und **Glide-Modus/Mono sind nicht gemappt**
+   (Glissando/fingered bleiben auf dem Iridium Onset). Neue Fix-Punkte:
+   (a) `glide_rate_norm` an die gemessenen Anker anpassen
+   (50→0,32, 64→0,59, 70→0,79, ab 85→1,0; Iridium-Maximum ~1,6 s);
+   (b) `GlideType` aus dem Blofeld-Modus setzen (Portamento→Onset,
+   fingered→Legato); Glissando bleibt eine Näherung, weil der Iridium keinen
+   Schritt-Modus hat.
 2. **6 · Unisono** — Count 2/4/8, Detune, Pan (A4-Befund absichern).
 3. **7 · Sync** — nur Osc 2+3, Intervall +7, Sync aus/ein.
 4. **8 · FX pro Typ** — Chorus/Flanger/Phaser/Delay/Reverb, je 100 % wet.
@@ -58,7 +74,7 @@ bei Keytrack, Anschlagspaare bei Velocity.
   nachziehen (Attack/Decay/Sustain getrennt), Kurvenform dokumentieren.
 - **Akzeptanz:** Attack/Sustain cos ≥ 0,85 und Stärke 0,7–1,4.
 
-### A7 · 🟡 Fade umgesetzt (2026-11-21), Free-Speed offen · LFO: Fade abbilden, Free-Speed kalibrieren
+### A7 · 🟡 Fade im Code, am Gerät unwirksam; Free-Speed unkalibriert · LFO: Fade abbilden, Free-Speed kalibrieren
 - **Beleg:** „LFO 1 Fade“ = **defekt** (Blofeld 2,6–2,9; Iridium 0,1–0,3).
   „LFO 1 Speed“: langsame Werte ohne Iridium-Wirkung, schnelle nur teilweise
   (cos 0,65). Der Iridium hat `LfoNAttack`/`LfoNDecay` — die werden nicht genutzt.
@@ -66,10 +82,14 @@ bei Keytrack, Anschlagspaare bei Velocity.
 - **Fix:** Blofeld-Fade → `LfoNAttack` (Fade-in) bzw. `LfoNDecay` (Fade-out);
   Free-Speed-Hz-Kurve mit 6–8 Stützstellen kalibrieren (langsame LFOs zuerst).
 - **Akzeptanz:** Fade-Sweep OK/teilweise; Speed-Sweep über 4 Werte cos ≥ 0,8.
-- **Stand:** Fade-Mapping umgesetzt: raw>64 → `LfoNAttack=(raw−64)/63`,
-  raw<64 → `LfoNDecay=(64−raw)/64`, 64 → beide 0. Keytrack bleibt unmapped.
-  Test: `test_lfo_fade_maps_to_attack_decay`. Die Zeit-Skalierung ist linear
-  angenähert; Free-Speed-Kalibrierung braucht weiterhin eine Messung.
+- **Stand (2026-11-22, `docs/LFO-2026-11-21.md`):** Fade-Mapping ist im Code,
+  aber am Gerät **nicht wirksam**. Der Blofeld-Wert ist eine **Rate** (größer =
+  schneller), positiv Fade-in / negativ Fade-out nach Delay — die lineare
+  `(raw−64)/63`-Zeitabbildung ist in der Richtung falsch. Der Iridium-
+  `Lfo1Attack/Decay` zeigt bei den konvertierten Werten (und bei 1.0 in allen
+  `Lfo1Global`-Modi) keine messbare Ein-/Ausblendung. Free-Speed: Iridium
+  2–4× zu langsam (raw 40: 2,63/1,09 Hz; raw 80: 30,65/16,32 Hz) — Hz-Kurve
+  nötig. Keytrack bleibt unmapped.
 
 ### A9 · P1 · Noise: Kennlinie und Farbe
 - **Beleg:** „Mixer Noise Level“ in der Tendenz richtig (cos 0,77–0,93), aber
@@ -89,6 +109,26 @@ bei Keytrack, Anschlagspaare bei Velocity.
   über die erste Stufe annähern.
 - **Akzeptanz:** Entscheidung dokumentiert, Test-Sound mit ADS1DS2R konvertiert.
 
+### A12 · P1 · Serieller F2 im DigiFormer: Amount (Cutoff) zu hoch
+- **Beleg (2026-11-22, A005 HooverBass, Blofeld F2 = HP 12dB raw 48 →
+  `DigiFormerType=Nave HP12`, `DigiFormerAmount=0.393`):** am Gerät geprüft
+  (Slot 204) und gemessen. Erster Sweep note 60/72: Amount 0,393 → 46/40;
+  0,25 → 52/55; 0,15 → 51/53; 0,08 → 58/50; **Bypass → 26/26**. Der HP wird
+  also gebraucht, ist aber zu weit offen (Bass fehlt). Zweiter Sweep mit
+  Former-Typ/Amount-Kombinationen war nicht reproduzierbar (Shell-Zustand nicht
+  bestätigt) → saubere Kalibrierung nötig.
+- **Nebenbefund:** Osc1 = aus ist **korrekt** (Blofeld Mixer Osc1 Level = 0);
+  der fehlende Bass bei A005 ist zusätzlich der bekannte Oktavfall (Bänder eine
+  Oktave unter dem Grundton fehlen um 30–50 dB).
+- **Stelle:** `qpat_map.py`, serieller F2-Zweig (`DigiFormerAmount =
+  blofeld_cutoff_norm(raw)`).
+- **Fix:** DigiFormerAmount-Kennlinie separat kalibrieren (Amount-Sweep am
+  Iridium, HP- und LP-Former) und invertieren; nicht die Filter-Cutoff-Norm
+  wiederverwenden.
+- **Akzeptanz:** A005 (und 2–3 weitere serielle F2-Sounds) erreichen mit dem
+  kalibrierten Amount höhere Scores als mit dem aktuellen Wert; Test in
+  `tests/test_qpat_map.py`.
+
 ---
 
 ## B. Mapping-Lücken (Iridium-Parameter vorhanden, ungenutzt)
@@ -96,7 +136,6 @@ bei Keytrack, Anschlagspaare bei Velocity.
 | # | Blofeld | Iridium-Parameter | Aufwand |
 |---|---|---|---|
 | B1 · P1 | Ringmod O1×O3 | `RingModOsc1ToOsc3` | klein |
-| B2 · P1 | Glide Mode | `GlideType` | klein |
 | B3 · P2 | Unisono Pan/Detune-Delay | `UnisonoPan`, `UnisonoDelay` | klein |
 | B4 · P2 | Osc Bend Range / Keytrack | `OscNPitchBendRange`, `OscNKeytrack` | klein |
 | B5 · P2 | Filter-Modelle | `Filter1Model`, `Filter2Model` (Svf/Ladder/…) | mittel |
@@ -114,8 +153,9 @@ Profiling-Report, kein `unmapped`-Eintrag mehr.
 1. **A2** + Neumessung `f2`.
 2. **A6, A7, A9** — Kennlinien/Kalibrierung.
 3. **A5, A10**.
-4. **B1–B8** und **D/E** parallel.
-5. Verifikation A1/A3/A4 gemäß `TODO_MEASURE.md` (Code ist fertig).
+4. **B1, B3–B8** und **D/E** parallel.
+5. ✅ Verifikation A1/A3/A4 (2026-11-21; siehe `docs/TODO-MEASURE-2026-11-21.md`);
+   offen bleiben A2/F2 und A7 (LFO-Speed-Kurve).
 
 # Sonstige Fixes
 

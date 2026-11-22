@@ -5,6 +5,7 @@ The command channel is deliberately kept out of every generated report.
 """
 from __future__ import annotations
 
+import re
 import time
 from pathlib import Path
 
@@ -64,10 +65,17 @@ class Iridium:
     # ---- parameters -----------------------------------------------------
     def pid(self, name: str) -> int:
         if name not in self._pids:
-            r = self.cmd(f"find-pid {name}", wait=0.25)
-            if " pid " not in r:
-                raise RuntimeError(f"no pid for {name!r}: {r!r}")
-            self._pids[name] = int(r.split(" pid ")[-1])
+            last = ""
+            for _attempt in range(4):
+                self.drain(quiet=0.15, max_s=2.0)
+                last = self.cmd(f"find-pid {name}", wait=0.6, timeout=1.5)
+                m = re.search(r"has pid\s+(\d+)", last)
+                if m:
+                    self._pids[name] = int(m.group(1))
+                    break
+                time.sleep(0.3)
+            else:
+                raise RuntimeError(f"no pid for {name!r}: {last!r}")
         return self._pids[name]
 
     def get(self, name: str) -> float:

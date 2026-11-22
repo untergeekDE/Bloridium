@@ -67,14 +67,14 @@ Legend: ✅ direct (1:1) · 🟡 approximation · ⚠️ mapped with known devia
 | 49 | Osc 2 Sync to O3 | Osc2WaveformSync | 🟡 approximation | 1.0 = Sync on (A071/A008) |
 | 50 | Osc Pitch Source | Matrix-Slot -> Pitch | 🟡 approximation | 2026-11-18: extra matrix slot (e.g. A008 LFO1*MW -> Wheel) |
 | 51 | Osc Pitch Amount | MatrixAmount | 🟡 approximation | amt_bipolar |
-| 53 | Glide | - | ❌ unmapped | Global/System/etc. |
-| 56 | Glide Mode | - | ❌ unmapped | Global/System/etc. |
+| 53 | Glide | GlideOnOff | ✅ direct | on/off |
+| 56 | Glide Mode | GlideType | 🟡 approximation | Portamento/fingered P -> Onset/Legato; Glissando/fingered G approximate continuous (no stepped glide), note in `unmapped` |
 
 ## Mixer (SDATA 57-72)
 
 | SDATA | Blofeld parameter | Iridium qpat target | Status | Deviation / Notes |
 |---|---|---|---|---|
-| 57 | Glide Rate | GlideRate | 🟡 approximation | time-calibrated (exponential, anchors in `qpat_map.py`: raw 20 = norm 0.15 = 0.045 s; Iridium norm 0.378 = 0.29 s display; raw 127 ≈ 5 s). Linear norm() set too high (A073 raw 48: 0.378/0.29 s instead of correct ~0.30/~0.15 s) |
+| 57 | Glide Rate | GlideRate | 🟡 approximation | equal-time via measured anchors (Block 5): raw 50/64/70 -> 0.32/0.59/0.79, >=85 clamps to 1.0; Blofeld max ~5 s vs Iridium ~1.6 s |
 | 58 | Allocation/Unisono | UnisonoCount + UnisonoDetune + neutral Pan/Delay | 🟡 approximation | bitfield `0uuu000a` (spec 4.10): count = bits **4–6** (fixed 2026-11-21, A4); Pan 0.5 / Delay 0.0 because the Blofeld has neither |
 | 59 | Unisono Detune | UnisonoDetune | ✅ direct | norm |
 | 61 | Mixer Osc 1 Level | OscNVol | ✅ direct | norm raw/127 |

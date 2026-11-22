@@ -24,7 +24,7 @@ To close the gap, Bloridium provides tools to **measure and track the difference
 
 - **Limited Iridium control:** To read back sounds from the Iridium, you have to copy them from the transfer medium
 - **No fully automatic tweaking - yet** - but all the tools are there for an AI agent to use, see below.
-- **Many things are ignored in conversion**: 
+- **Many things cannot be converted 1:1 to the Iridium**: see the [table of architectural differences](docs/ARCHITECTURE-DIFFERENCES.md). 
     - Wavetables unique to the Blofeld
     - Osc FM and Sync
     - Balance, Brilliance, Noise mixer
@@ -135,21 +135,6 @@ Parameters & safety:
 - **Warning: CC7 = 0 is silent on the Iridium** (Output Level).
 - Global DB option: `--db PATH` or `$BLORIDIUM_DB` (default `<repo>/bloridium.db`). Exit codes: 0 ok, 1 error, 2 hardware unreachable (with port list).
 - Similarity score (`bloridium/sim.py`, `score_version` 2 since v0.4.0): 70 % spectral similarity (`1 − spec_mad_db/20 dB`, the mean level-aligned deviation of the log-spectrogram bands) + 30 % envelope DTW → score 0–100, plus per-band dB deltas. The v1 cosine score saturated (see `docs/FINDINGS.md`); log rows without `score_version` are v1 and are skipped by `prognose train`. Offline via `scripts/sim_compare.py --npy A.npy B.npy`, live via `--live` or `scripts/sim_live.py --param "Filter1 Cutoff" --value 90 --ref ref.npy`; every run is logged to `recordings/sim_log.jsonl`.
-
-## History & Todo
-
-- 2026-11-08: CLI design + Phase 1 implementation (`docs/superpowers/specs/2026-11-08-bloridium-cli-design.md`).
-- 2026-11-09: similarity tool (sim score, A/B measurement) designed and built (`docs/superpowers/specs/2026-11-09-similarity-tool-design.md`).
-- 2026-11-18: hardware discovery (`bloridium discover`) + user-editable `bloridium.yaml` (`docs/CONFIG.md`, plan `docs/superpowers/plans/2026-11-18-discover-config.md`); codebase translated to English-only.
-- Todo: Iridium answers no SysEx at all (suspected `SysEx RX` off on the device — hardware change, ask first).
-- Todo: Iridium parameters without CC (e.g. Filter1 Cutoff, mod matrix) reachable only via MIDI Learn on the device.
-- Todo: mapping model trained from `recordings/sim_log.jsonl`.
-- Full findings: `docs/FINDINGS.md`; inventory + next-session plan: `docs/STATUS.md`.
-- 2026-11-20: review fixes, v0.4.0 – similarity score v2, unified version, GPL-3.0 (`FIXES_HISTORY.md`).
-- 2026-11-21: converter fixes v0.5.3 – PWM only for pulse shapes, Reverb mix via
-  `ReverbGain`, unisono bits 4–6 + neutral pan/delay, Filter 2 parallel
-  (`FilterLink=Independent`, `Filter2Type`, resonance curve, insert drive),
-  LFO fade -> `LfoNAttack`/`LfoNDecay`; measurement backlog in `TODO_MEASURE.md`.
 
 ## License
 

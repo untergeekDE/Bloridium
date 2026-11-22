@@ -193,9 +193,20 @@ suite is run on the measurement machine (item 11).
   PWM Source LFO 2): PWM Source 0/8/15/30 und PWM Amount 0/32/64/127 sind jetzt
   auf **beiden** Seiten n/a (B 0,13–0,51 / I 0,14–0,43). A007: nur noch Osc 2/3
   (Pulse) erzeugen Warp-Zeilen, Osc 1 (Saw) nicht.
+- **Positiver Pulse-Fall verifiziert (Gerät, 2026-11-21):**
+  `profile_todo_measure.py pulse_amt` (Osc 2 = Pulse, PWM Source = LFO 1,
+  LFO-Fade = 64, Filter offen). Die PWM-Zeile wird angelegt (`WF2 Warp`); der
+  Blofeld moduliert bei Amount 0/127 deutlich (Wirkung 8,1/6,6; zeitliche
+  Spektralstreuung 2,95/2,80). Der Iridium-Warp reagiert nur schwach
+  (0,2; 0,22). Ursache ist u. a. die unkalibrierte LFO-Speed-Kurve (Blofeld
+  raw 20 ≈ 0,36 Hz, Iridium `Lfo1Speed = 0,157` ≈ 0,2 Hz).
 - **Tests:** `test_pwm_row_only_for_pulse_shapes`,
   `test_a007_osc_pwm_mapped_to_wf_warp_rows_ge_21`.
-- **Offen:** optionaler positiver Pulse-Sweep am Gerät (Unit-Test deckt ihn ab).
+- **Neue offene Punkte (Fix-Session):**
+  - `qpat_map.py` prüft `PWM Amount != 0`, aber 0 ist die **maximale negative**
+    Modulation (64 = neutral). Amount 0 bekommt daher fälschlich keine Zeile.
+  - Amount 32 (−32) zeigt am Blofeld keine messbare Modulation; die
+    PWM-Betragskennlinie ist nicht linear um 64.
 
 ### A2 · ✅ umgesetzt (2026-11-21), Neumessung offen · Filter 2
 - **Beleg (Profiling/Test D, verifizierter Load):** F2 **Cutoff** cos 0,89,
@@ -238,9 +249,12 @@ suite is run on the measurement machine (item 11).
   Iridium-Handbuch (OS3, „Reverb / Gain“) beschreibt Gain als Dry/Wet-Regler
   (0 % = nur trocken, 100 % = nur Hall), also als echten stufenlosen Mix.
 - **Test:** `test_reverb_fx2_mix_via_reverb_gain_and_params`.
-- **Verifikation offen:** Der `fx`-Sweep lief mit FX1 (Chorus) und FX2 (Reverb)
-  gleichzeitig und war dadurch überlagert; Messanordnung wird in
-  `TODO_MEASURE.md` getrennt (erst Chorus mit FX2=Off, dann Reverb mit FX1=Off).
+- **Verifiziert (Gerät, 2026-11-21):** getrennte Messung mit
+  `profile_todo_measure.py`: FX1 = Off, nur FX2 = Reverb, Effect 2 Mix
+  0/32/64/127. Tail-Pegel ab 3,0 s relativ zum Halten: Blofeld
+  −58,5/−27,9/−19,5/−14,9 dB, Iridium −58,9/−34,0/−23,4/−15,7 dB;
+  `ReverbGain`-Readback 0,0/0,252/0,504/1,0. Beide Seiten steigen monoton über
+  43 dB — **A3 verifiziert**.
 
 ### A4 · ✅ umgesetzt (2026-11-21) · Unisono Count/Detune
 - **Beleg:** „Unisono Detune“ war **defekt** (Iridium-Stärke 0,69, keine Reaktion),
@@ -253,12 +267,14 @@ suite is run on the measurement machine (item 11).
   weil der Blofeld weder Pan-Spread noch Voice-Delay hat (Template-Default 0.25
   verzögerte die Iridium-Stimmen).
 - **Verifiziert (Gerät, 2026-11-21):** `param-info 3691` = Enum 0 Off / 1 = 2 …
-  7 = 8; Readback nach dem Lauf: Count 4 (5 Stimmen), Detune 1.0, Pan 0.5,
-  Delay 0.0. Spektralbreite um C4 wächst monoton (Iridium 1,15 → 3,13 → 10,18 Hz
-  bei Detune 0/64/127; Blofeld 1,21 → 6,14 → 11,39 Hz).
+  7 = 8; Readback: Count 4 (5 Stimmen), Detune 1.0, Pan 0.5, Delay 0.0.
+  Breiten-Metrik (5 Stimmen, C4, ±55 Hz, 2 Takes): Detune 0/32/64/127 →
+  Blofeld 1,50/3,67/6,95/13,89 Hz, Iridium 1,47/1,56/3,19/11,51 Hz. Count
+  0/2/4/8 (Detune 127): Blofeld 1,42 → 9,5–11,9 Hz, Iridium 1,41 → 10,5–11,6 Hz.
+  Unisono greift beidseitig; die Iridium-Kennlinie ist bei kleinen Detune-Werten
+  komprimiert. Die Breite trennt 2/4/8 Stimmen nicht — dafür gilt der
+  `UnisonoCount`-Readback.
 - **Test:** `test_unison_count_uses_bits_4_to_6`.
-- **Offen:** Messmetrik auf Spektralbreite umstellen und Count 2/4/8 separat
-  messen; Details in `TODO_MEASURE.md`.
 
 ### A7a · ✅ umgesetzt (2026-11-21) · LFO-Fade -> Attack/Decay
 - **Beleg:** „LFO 1 Fade“ war defekt (Blofeld 2,6–2,9; Iridium 0,1–0,3), obwohl
@@ -267,8 +283,34 @@ suite is run on the measurement machine (item 11).
   raw > 64 → `LfoNAttack=(raw−64)/63` (Fade-in), raw < 64 →
   `LfoNDecay=(64−raw)/64` (Fade-out), raw 64 → beide 0.
 - **Test:** `test_lfo_fade_maps_to_attack_decay`.
-- **Offen (A7):** Free-Speed-Kalibrierung (Hz-Kurve) braucht eine Messung;
-  die Fade-Zeit-Skalierung ist linear angenähert.
+- **Nachmessung (2026-11-22, `docs/LFO-2026-11-21.md`):** Free-Speed ist
+  unkalibriert — Iridium 2–4× zu langsam (raw 40: 2,63/1,09 Hz; raw 80:
+  30,65/16,32 Hz). Der Blofeld-Fade ist eine **Rate** (größer = schneller),
+  keine Zeit; die lineare `(raw−64)/63`-Abbildung ist in der Richtung falsch.
+  Der Iridium-`Lfo1Attack/Decay` zeigt bei den konvertierten Werten (und bei
+  1.0 in allen `Lfo1Global`-Modi) keine messbare Ein-/Ausblendung.
+- **Offen (A7):** Free-Speed-Hz-Kurve kalibrieren; Fade-Mapping neu aufsetzen
+  (Richtung invertieren, Zeitbereich prüfen).
+
+### B2 / Block 5 · ✅ umgesetzt (2026-11-21) · Glide Mode + Rate-Kalibrierung
+- **Beleg (Messung, `docs/GLIDE-2026-11-21.md`):** Glide on/off OK; Portamento
+  Rate 50 OK (155/144 ms); ab raw 70 war der konvertierte Iridium-Glide zu kurz
+  (raw 70: 1013/315 ms, raw 85: 2117/384 ms). Glide Mode wurde nicht übertragen;
+  Glissando/fingered G erzeugen auf dem Blofeld Halbtonschritte, der Iridium
+  glitt durchgehend.
+- **Umsetzung:**
+  1. **Rate:** `blofeld_glide_seconds()`/`iridium_glide_seconds()` nutzen jetzt
+     die gemessenen Stützstellen (Blofeld 50/64/70/85 = 155/592/1013/2117 ms;
+     Iridium 0.30/0.50/0.75/1.00 = 139/379/896/1600 ms). `glide_rate_norm()`
+     invertiert die Iridium-Kurve per Gleichzeit; raw 50/64/70 -> 0.32/0.59/0.79,
+     ab 85 -> 1.0. Iridium-Maximum ~1.6 s, Blofeld bis ~5 s -> hohe Raten klemmen.
+  2. **Mode:** `Glide Mode` -> `GlideType`: Portamento -> Onset (0),
+     fingered P -> Legato (1). Glissando/fingered G -> Onset/Legato als
+     kontinuierliche Näherung; Hinweis im `unmapped`-Report.
+- **Tests:** `test_glide_rate_matches_measured_curve`,
+  `test_glide_mode_maps_to_glide_type`.
+- **Grenze:** Iridium hat keinen Mono-/fingered-Allocation-Modus; staccato
+  fingered gleitet dort trotzdem. Glissando-Schritte sind nicht abbildbar.
 
 ### A8 · ✅ umgesetzt (2026-11-21) · Filter-Pan-Ziele (Betrag bipolar)
 - **Beleg (Test E, L/R, vor der Korrektur):** „Filter 1 Pan Amount“ war bei

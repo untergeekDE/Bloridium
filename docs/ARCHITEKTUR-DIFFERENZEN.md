@@ -32,12 +32,12 @@ Parameter gibt es daher drei Fälle:
 | **Ringmodulation** | O1×O2 **und** O1×O3, je mit Balance | `RingModOsc1ToOsc2` **und** `RingModOsc1ToOsc3` vorhanden | O1×O3 ist **abbildbar**, wird aber nicht genutzt | `RingModOsc1ToOsc3` zusätzlich setzen | im Init nicht hörbar (Osc 2/3 aus) |
 | **Wellenformen** | ~70 Shapes inkl. Sync-, Fuzz- und Wavetable-Varianten | Wavetable (viele Tabellen) + Waveform (Saw/Sine/Tri/Square/Noise) + Particle/Resonator/Kernels/Seeds | nur ein Teil ist 1:1 | Bridge-Tabelle für Wavetables; VA-Shapes direkt | Osc 1/2/3 Shape überwiegend OK (cos 0,93–0,99); einzelne Tabellen Mismatch |
 | **Unisono** | bis 8 Stimmen, Detune; kein Pan/Delay | `UnisonoCount`, `UnisonoDetune`, **`UnisonoPan`, `UnisonoDelay`** | Count/Detune reichen nicht | Count aus Bitfeld **4–6** (Spec 4.10), Detune norm; Pan 0.5 / Delay 0 neutral halten | **behoben (A4, 2026-11-21):** Bits 4–6 statt 5–7 (Stimmenzahl war halbiert); Neumessung offen |
-| **Glide** | 4 Modi (Portamento/fingered P/Glissando/fingered G) | `GlideOnOff`, `GlideRate`, **`GlideType`** | Modi sind abbildbar, werden aber nicht gesetzt | `GlideType` aus dem Blofeld-Modus; Rate zeitkalibriert (÷ 127) | im Init nicht messbar (kein Legato) |
+| **Glide** | Mono/Poly, 4 Modi (Portamento/fingered P/Glissando/fingered G), Rate 0–127 | `GlideOnOff`, `GlideRate`, `GlideType` (nur Onset/Legato), **kein Mono-Modus** | Modi und Mono sind nicht 1:1 abbildbar; Rate-Kurve weicht ab | `GlideType` aus dem Modus (Portamento→Onset, fingered→Legato); Rate über gemessene Anker; hohe Raten auf 1,0 klemmen | **Block 5 (2026-11-21):** Portamento OK (155/144 ms); Rate ab raw 70 zu kurz (1013/315 ms, 2117/384 ms); Glissando/fingered nicht übertragen; Iridium max ~1,6 s |
 | **Hüllkurven** | 4 Hüllkurven, Modi ADSR/ADS1DS2R/OneShot/Loop, Attack-Level, Decay2/Sustain2 | Hüllkurven mit Kurven (RC/Exp/Lin), Loop-Modi, Delay | zweite Decay/Sustain-Stufe fehlt | ADSR 1:1; ADS1DS2R auf ADSR annähern (Stufe 2 geht verloren) | FE Env Amount/Attack/Sustain OK (cos 0,90–0,99); Amp Attack/Sustain teilweise; FE Decay nur bei langen Zeiten |
-| **LFOs** | 3 LFOs: Shape, Speed, Sync, Clocked, Phase, Delay, **Fade**, Keytrack | 6 LFOs: Shape, Speed, Sync, Phase, **Delay, Attack, Decay**, Slew, Warp | Fade/Keytrack haben kein direktes Pendant | Fade → `LfoNAttack`/`LfoNDecay`; Keytrack → Matrix `Keytrack → LFO Speed` | Fade-Mapping umgesetzt (A7a); LFO Speed bei langsamen Werten defekt (Free-Speed-Hz offen) |
+| **LFOs** | 3 LFOs: Shape, Speed, Sync, Clocked, Phase, Delay, **Fade** (Rate), Keytrack | 6 LFOs: Shape, Speed, Sync, Phase, **Delay, Attack, Decay**, Slew, Warp | Fade/Keytrack haben kein direktes Pendant; Speed-Kurven weichen ab | Fade → `LfoNAttack`/`LfoNDecay` (Richtung invertieren); Keytrack → Matrix `Keytrack → LFO Speed` | **2026-11-22:** Speed Iridium 2–4× zu langsam (raw 40: 2,63/1,09 Hz); Fade ist eine Rate, Attack/Decay am Iridium ohne messbare Wirkung |
 | **Modifier** | 4 Rechen-Modifier (+ − × AND OR XOR MAX min) | Matrix-Control (Src + Ctrl), keine freien Rechenoperatoren | nur ×-Produkte und + mit Konstante annäherbar | `LFO × ModWheel` als Src+Ctrl; übrige Operatoren „nicht unterstützt“ | — |
 | **Arpeggiator** | Arp mit 16-Step-Pattern, Glide/Accent, Timing | Arp/Sequencer (`ArpOn`, `ArpStepLength`, `ArpGate`, …) | eigener Block, vollständig unmapped | Arp-Grundfunktion könnte gemappt werden (Step-Länge, Oktaven, Sortierung) | nicht getestet |
-| **FX** | 2 Slots, feste Typen, Dry/Wet je Typ | 2 FX-Slots + Mod-FX, mehr Typen | Typ-Mapping nötig; Parameter-Indizes weichen ab | DryWet-Key je Typ; Parameter 1:1 nach Index | FX Mix teilweise; Parameter 1/2 teilweise; **Parameter 5 bei 64/127 stark übersteuert** |
+| **FX** | 2 Slots, feste Typen, Dry/Wet je Typ | 5 FX-Slots + Mod-FX, mehr Typen | Typ-Mapping nötig; Parameter-Indizes weichen ab | DryWet-Key je Typ; Parameter 1:1 nach Index | FX Mix teilweise; Parameter 1/2 teilweise; **Parameter 5 bei 64/127 stark übersteuert** |
 | **Stimmen** | 16 Parts, multitimbral | 4 Parts/Layer | für Sound-Konvertierung irrelevant | ein Part (Part 1, Kanal 6) | — |
 
 ---
@@ -166,10 +166,17 @@ mit Fade und Keytrack.
 
 - **Workaround:** Blofeld-Fade → `LfoNAttack`/`LfoNDecay`; Keytrack →
   Matrix `Keytrack → LFO Speed`; Clocked/Sync → `LfoNSync` + `SyncRatio`.
-- **Stand:** Fade-Mapping ist umgesetzt (bipolar: positiv → Attack, negativ →
-  Decay, A7a, Test `test_lfo_fade_maps_to_attack_decay`). **LFO Speed** bleibt
-  offen: langsame Werte ohne Iridium-Wirkung, schnelle nur teilweise
-  (Free-Speed-Hz-Skala noch nicht kalibriert).
+- **Messung (2026-11-22, `docs/LFO-2026-11-21.md`):**
+  - **Free-Speed:** Blofeld raw 20/40/60/80 = 0,45/2,63/10,43/30,65 Hz;
+    Iridium 0,11/1,09/5,66/16,32 Hz. Der lineare `norm(raw)`-Mapping ist bei
+    mittleren/hohen Werten 2–4× zu langsam → Hz-Kurve nötig.
+  - **Fade:** Der Blofeld-Wert ist eine **Rate** (größerer Betrag = schneller),
+    positiv = Fade-in, negativ = Fade-out nach `Delay`. Der Iridium zeigt mit
+    den konvertierten `Lfo1Attack/Decay`-Werten keine messbare Ein-/Ausblendung
+    (auch bei 1.0 in allen `Lfo1Global`-Modi). Die lineare `(raw−64)/63`-
+    Zeitabbildung ist damit in der Richtung falsch.
+- **Stand:** Fade-Mapping ist als Code vorhanden (A7a), aber am Gerät **nicht
+  wirksam**; Free-Speed ist unkalibriert.
 
 ### 2.9 Modulationsmatrix und Modifier
 
@@ -208,6 +215,31 @@ Der Iridium hat Arp/Sequencer-Parameter (`ArpOn`, `ArpStepLength`, `ArpGate`,
 - **Workaround:** Grundfunktion (On/Off, Step-Länge, Oktaven, Sortierung, Gate)
   könnte gemappt werden; Step-Pattern/Accent/Glide bleiben unmapped.
 
+### 2.12 Glide: Mono/Modi vs. Onset/Legato
+
+Der Blofeld hat **Poly/Mono**, vier Glide-Modi (Portamento, fingered P,
+Glissando, fingered G) und eine Rate 0–127 (exponentiell, Millisekunden bis
+mehrere Sekunden). Der Iridium hat **keinen Mono-Modus** (`VoiceAllocationMode`
+kennt nur 8/16 Stimmen), aber `GlideOnOff`, `GlideRate` (0…1) und `GlideType`
+(Onset = jede neue Note gleitet, Legato = nur bei Überlappung).
+
+- **Gemappt:** `GlideOnOff` und `GlideRate`. **Nicht gemappt:** Glide-Modus und
+  Mono-Allocation.
+- **Messung Block 5 (2026-11-21, C3→C5, trocken):**
+  - Portamento bei Rate 50: **OK** (Blofeld 155 ms / Iridium 144 ms).
+  - Rate-Kurve: Blofeld raw 50/64/70/85 = 155/592/1013/2117 ms. Iridium
+    `GlideRate` 0,30/0,50/0,75/1,00 = 139/379/896/1600 ms. Der Konverter mappt
+    raw 85 auf 0,50 → 384 ms (0,18×); raw 70 auf 0,419 → 315 ms (0,31×).
+    Empfehlung: raw 50 → ~0,32, 64 → ~0,59, 70 → ~0,79, ab 85 → 1,0.
+  - Glissando/fingered G: der Blofeld erzeugt Halbtonschritte (6 bzw. 14
+    Plateaus), der Iridium gleitet durchgehend (0) → Modus fehlt.
+  - Staccato + fingered: der Blofeld gleitet nicht, der Iridium (Onset) schon.
+- **Grenze:** Kein Mono-Modus und maximal ~1,6 s Glide auf dem Iridium. Die
+  Blofeld-Zeiten ab raw 85 (2,1 s … 5 s) sind nicht 1:1 erreichbar.
+- **Workaround:** `GlideType` aus dem Modus ableiten (Portamento→Onset,
+  fingered→Legato); Glissando hat kein Iridium-Pendant (Legato als Näherung);
+  Rate über die gemessenen Anker kalibrieren und hohe Werte auf 1,0 klemmen.
+
 ---
 
 ## 3. Abbildbar, aber im Konverter noch nicht genutzt (Mapping-Lücken)
@@ -218,7 +250,7 @@ werden aber nicht gesetzt:
 | Blofeld | vorhandener Iridium-Parameter | Nutzen |
 |---|---|---|
 | Mixer RingMod Balance / O1×O3 | `RingModOsc1ToOsc3` | Ringmod auf Osc 3 |
-| Glide Mode | `GlideType` | Portamento/Glissando/fingered |
+| Glide Mode | `GlideType` | Portamento/fingered→Onset/Legato; Glissando nicht abbildbar |
 | Allocation/Unisono | `UnisonoPan`, `UnisonoDelay` | breitere Unisono-Stimmen |
 | LFO Fade | `LfoNAttack`, `LfoNDecay` | Ein-/Ausblenden |
 | LFO Keytrack | Matrix `Keytrack → LFO Speed` | geschwindigkeitsabhängige LFOs |
@@ -227,46 +259,3 @@ werden aber nicht gesetzt:
 | Noise Colour (stufenlos) | Filter-Cutoff/-Typ oder Particle-Dirt | Farbverlauf annähern |
 
 ---
-
-## 4. Empfohlene nächste Schritte
-
-1. ✅ **PWM-Zeile nur für pulsartige Blofeld-Wellenformen** — umgesetzt (A1,
-   2026-11-21), Neumessung offen.
-2. ✅ **Filter-2-/Balance-Mapping** — Balance → `OscNDestination`/`FilterLevel`,
-   parallel `FilterLink=Independent` + `Filter2Type`, Filter-Drive als Insert,
-   Resonanz-Kennlinie (A2, 2026-11-21); Neumessung `f2` offen.
-3. ✅ **Unisono Detune** — Bitfeld-Korrektur (Bits 4–6) + neutrale Pan/Delay-Werte
-   (A4, 2026-11-21), Neumessung offen.
-4. **LFO Fade** auf `LfoNAttack`/`LfoNDecay` legen und **Free-Speed** in Hz
-   kalibrieren (langsame LFOs weichen).
-5. **FX-Parameter-Indizes** prüfen: Parameter 5 ist bei 64/127 stark übersteuert
-   (Iridium 5–11×), Parameter 1/2 nur teilweise.
-6. **Noise-Farbe** dokumentieren: nur Pink/White; für Zwischenwerte Filter-Cutoff
-   mitführen.
-7. **Pan/Balance** in einer L/R-getrennten Messung prüfen; die aktuelle
-   Monosumme kann sie prinzipbedingt nicht bewerten.
-
----
-
-## 5. Testaufbau (reproduzierbar)
-
-Alle Zahlen stammen aus `docs/PROFILING-INIT-2026-11-21.md` und
-`docs/profiling_init_2026-11-21.csv`. Die Varianten sind in
-`scripts/profile_testb_sweep.py` (`MODES`) definiert:
-
-| Variante | Ziel | Aktivierung |
-|---|---|---|
-| `clean` | Osc 2/3 | beide Saw, Pegel 100, Balance Mitte |
-| `f2` | Filter 2 | F2 LP24, Balance auf F2 (127), Routing parallel (0) – Lauf war inkonsistent, siehe §2.4 |
-| `fe`, `fe_decay`, `fe_rel` | Filter-Hüllkurve | Cutoff 64, Env-Amount 100, Sustain 80/100 |
-| `osc2`, `osc3` | Osc 2/3 solo | Osc 1 aus, Balance auf F1 |
-| `noise` | Noise-Mixer | alle Oscs aus, Noise-Pegel 100 |
-| `lfo1` | LFO 1 | Mod 1: LFO1 → O1 Pitch, Betrag 90 |
-| `unison` | Unisono | 2 Stimmen, Detune-Sweep |
-| `fx1` | FX 1 | Chorus, 100 % wet |
-| `sync` | Sync | Osc 2+3 an, Osc 2 Sync |
-
-Grenzen der Aussagekraft: Test-D-Varianten mit mehreren klingenden Oszillatoren haben
-eine höhere Streuung (Schwebung/Phase); Pan/Balance sind mit der Monosumme nicht
-messbar; Release-Parameter brauchen den separaten Durchgang mit Note-off während der
-Aufnahme.
