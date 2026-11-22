@@ -361,3 +361,9 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
 - [ ] Messprotokoll für Sustain-0-Patches: Aufnahme ab Note-On, sonst bleiben
       A014/A026/A070 stumm.
 - [ ] v5 auf SD `rf500`/Slots 300–399 laden und vollständig messen.
+
+### v5-Lauf (2026-11-22, erledigt)
+- [x] 100 Sounds, Onset-Protokoll, Slots 200–299 → 79,5 im Mittel.
+- [ ] Protokoll-Bias quantifizieren: 10 v5-Sounds zusätzlich mit dem alten
+      Pre-Roll-Fenster messen (gleiche Patches) → sauberer v4↔v5-Delta.
+- [ ] Release-Zeiten messen (Note-Off-Erkennung).

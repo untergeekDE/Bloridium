@@ -187,3 +187,26 @@ evidence, not as current instructions.
 - **Stumme Percussive-Patches** (Sustain 0, kurzer Decay) sind ein
   Messprotokoll-Problem: Aufnahme ab Note-On statt 0,35 s davor.
 - Neu konvertiert: `transfer/rf100_v5` (SD `rf500`, Slots 300–399).
+
+### RF100-Messlauf v5 (Onset-Protokoll, 2026-11-22)
+
+- **Slot-Falle:** Der Verzeichnis-Import vergibt Slots in Dateireihenfolge.
+  `rf100_v5` (im Manifest für 300–399 gebaut) landete beim Import ab 200 in
+  **200–299**; Readback von A001/A051/A100 bestätigt die Reihenfolge.
+  Der Runner hat dafür jetzt `--slot-start 200`. Die v4-Slots sind damit
+  überschrieben.
+- **Ergebnis:** 200 Zeilen / 100 Sounds — Mittel **79,5**, Median 81,3,
+  `spec_mad` 5,4 dB, `env_dtw` 0,050, `spec_cos` 0,991.
+  Urteile: 63 close / 125 medium / **12 far** (v4: 24/137/35).
+- **Vergleich zu v4** (98 gemeinsame Sounds): +8,7 im Mittel, 83 besser,
+  11 schlechter. **Nicht kausal zurechenbar**, weil gleichzeitig das
+  Aufnahmeprotokoll gewechselt hat (Onset statt 0,35 s Pre-Roll).
+- Die 11 Verschlechterungen sind spektral, nicht in der Hüllkurve:
+  A025 −14,8 (mad 2,6→6,8), A035 −11,7, A053 −11,4, A064 −9,8,
+  A070 −8,2, A090 −7,8. Vermutlich schneidet das alte Fenster den
+  Attack-Transienten weg, der jetzt mitbewertet wird.
+- **Prognose-Modell:** v5-Retrain (n=100, MAE 7,39) ergibt
+  R² −0,029 / R²_cv 0,110 gegen v2 (0,064/0,132) → **v2 bleibt**.
+  `prognose entropy` zeigt warum: `spec_mad_db` hat IG 2,28 von H 2,82,
+  ist aber Bestandteil der Score-Formel (Score = 70 % spektrale Ähnlichkeit
+  + 30 % Hüllkurve) — die Log-Features sind zirkulär.
