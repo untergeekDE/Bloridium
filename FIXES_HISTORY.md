@@ -10,14 +10,19 @@ suite is run on the measurement machine (item 11).
 ## Release 0.6.0 (2026-11-22)
 
 - **RF100 v3:** A001–A100 re-converted with the A1/A2/A3/A4/A7a and Glide fixes
-  (`transfer/rf100_v3`, SD folder `rf300`, slots 200–299).
+  (`transfer/rf100_v3`, SD folder `rf300`, slots 200–299) and measured against
+  the Blofeld from the stored slots: 200 rows, 197 scored, **mean 66.9**
+  (v2: 51.1 on the same sounds), 73 of 99 sounds better.
 - Version bump only — the converter output is unchanged since 0.5.3.
-- **Correction (2026-11-22):** the first v3 measurement run was invalid:
-  `load-patch 2:<dir>/<file>.qpat` is silently a no-op on this firmware, so the
-  Iridium edit buffer never changed. The run and its model were discarded
-  (`recordings/sim_log_v3_invalid_loadpath.jsonl`); `models/prognose_rf.pkl`
-  stays on v2 until the corrected run (+ slot loading and per-patch readback
-  verification) is re-measured and retrained.
+- **Prognosis model stays v2:** retrained on the v3 labels (n=99, MAE 9.32,
+  R² −0.013 / R²_cv 0.075) it did not beat v2 (MAE 10.47, R² 0.064 / 0.132),
+  so `models/prognose_rf.pkl` is unchanged.
+- **Load trap found and fixed:** `load-patch 2:<dir>/<file>.qpat` is accepted
+  but silently does nothing; only `load-patch <slot>` loads. The first v3 run
+  was invalid and was discarded (`recordings/sim_log_v3_invalid_loadpath.jsonl`);
+  the runner now verifies three edit-buffer parameters after every load.
+- Open: A12 (`DigiFormerAmount`), weak cases A057/A020/A051, silent Blofeld
+  channel on A050/A097.
 
 ## Scoring & prognosis
 

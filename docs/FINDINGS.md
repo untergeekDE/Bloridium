@@ -415,23 +415,30 @@ Befunde am Geraet (User, Slot 204 = A005 HooverBass) und Fixes in qpat_map.py:
   `ls` blockiert den QUIR-Readout, daher Verify in eigener Sitzung und
   `--run --skip-verify` für den Lauf.
 
-## 2026-11-22 — RF100 v3: erster Messlauf ungültig (load-patch-Pfad ist ein No-op)
+## 2026-11-22 — RF100 v3: gültiger Lauf, Entropy, Retrain (Modell bleibt v2)
 
-- **Befund:** `load-patch 2:<dir>/<file>.qpat` wird von der Firmware akzeptiert,
+- **Ladefehler zuerst:** `load-patch 2:<dir>/<file>.qpat` wird akzeptiert,
   ändert den Edit-Buffer aber **nicht** (Readback `Osc1FinePitch` blieb 0.500,
-  während der Slot-Load 208 den qpat-Wert 0.988 lieferte). Nur
-  `load-patch <slot>` lädt wirklich. Der erste v3-Lauf (200 Zeilen) hat daher
-  über weite Strecken denselben Iridium-Sound gemessen.
-- **Verworfen:** Log `recordings/sim_log_v3_invalid_loadpath.jsonl`, Modell
-  `models/prognose_rf_v3.pkl` gelöscht, `models/prognose_rf.pkl` wieder v2.
-  Die dort berichteten Zahlen (mean 56,6; R² 0,212) sind **nicht** gültig und
-  die „Regressionen“ A009/A001/A095 waren ein Artefakt.
-- **Korrekte Stichproben** (Slot-Load + Readback-Verifikation, 2026-11-22):
-  A001 76,5/73,9 · A009 68,7/59,4 · A016 72,8/79,5. A009 ist damit **nicht**
-  schlechter als v2 (alt 60,3/69,9), A016 deutlich besser.
-- **Runner-Fix:** `measure_rf100.py` lädt per Slot aus dem Manifest und prüft
-  nach jedem Load drei Parameter per `get-param` (`Osc1FinePitch`,
-  `Filter1CutOff`, `Filter1EnvAmount`); Abweichung > 0,002 bricht ab. Neuer
-  Lauf schreibt `recordings/sim_log_v3.jsonl`.
-- **Offen:** neuer Lauf + Entropy/Retrain; A12 (DigiFormerAmount) muss neu
-  gemessen werden, weil auch der frühere DF-Sweep den Pfad-Load nutzte.
+  Slot-Load 208 lieferte 0.988). Nur `load-patch <slot>` lädt. Der erste Lauf
+  war damit ungültig (`recordings/sim_log_v3_invalid_loadpath.jsonl`) und wurde
+  verworfen; der Runner lädt jetzt den Manifest-Slot und prüft nach jedem Load
+  `Osc1FinePitch`, `Filter1CutOff`, `Filter1EnvAmount` (±0,002).
+- **Gültiger Lauf:** 200 Zeilen, **197 gescort**, 3 stumm (A050 note 72+60,
+  A097 note 72 — Blofeld-Kanal). **mean 66,9, median 68,3, Range 26,2–96,3.**
+  Auf den 99 gemeinsamen Locs: **+15,9 im Mittel, 73 besser, 20 schlechter**
+  (Schwelle ±2). Beste: A066 94, A082 93, A054 93, A065 88, A003 88, A012 86.
+  Schwächste: A057 29, A020 32, A051 38, A024 39, A023 44, A053 45.
+- **Muster der schwachen Fälle:** Iridium deutlich lauter im Sub-Oktav-Band
+  (+40…+70 dB bei 117–302 Hz) und leiser in den Höhen (−40…−50 dB) — dunkler
+  als der Blofeld. Octave/CoarsePitch-Werte sind korrekt (40→0, 52→12, 64→24,
+  76→36, 100→48); Verdacht: Filter-Cutoff-/FX-Abbildung bei diesen Patches,
+  nicht die Oktavlage. Follow-up, kein Release-Blocker.
+- **Entropy** (n=99): H(y)=2,93 bits; `spec_mad_db` zirkulär (IG 1,89,
+  pearson −0,986); partielle IG: `spec_dtw` 0,380, `env_dtw` 0,522.
+- **Retrain** (`--target score`): n=99, MAE 9,32, RMSE 12,51,
+  **R² −0,013 / R²_cv 0,075** → **nicht geshippt** (schlechter als v2
+  0,064/0,132). `models/prognose_rf.pkl` bleibt v2. Grund: die v3-Labels sind
+  viel breiter (26–96) und die Restfehler werden von nicht modellierten
+  Faktoren (FX, Wavetables, Filtermodell) dominiert.
+- **Offen:** A12 (DigiFormerAmount) mit Slot-Load neu messen; schwache Fälle
+  A057/A020/A051 auf Cutoff/FX prüfen; A050/A097-Stille (Blofeld-Seite) klären.

@@ -332,13 +332,15 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
   **erster Lauf 2026-11-22 ungültig:** `load-patch <PFAD>` ist ein stiller
   No-op, der Iridium-Edit-Buffer blieb gleich (Readback-Beweis). Log verworfen
   (`recordings/sim_log_v3_invalid_loadpath.jsonl`), Modell auf v2 zurück.
-- [~] **Neuer Lauf mit Slot-Load + Readback-Verifikation** (3 Parameter pro
-  Patch) — läuft 2026-11-22, Log `recordings/sim_log_v3.jsonl`.
-- [ ] Danach Entropy-Check und Retrain; Modell nur shippen, wenn R² > v2
-      (0,064 / 0,132).
+- [x] **Neuer Lauf mit Slot-Load + Readback-Verifikation** (2026-11-22):
+  200 Zeilen, 197 gescort, **mean 66,9** (v2 51,1 auf denselben Sounds),
+  73/99 besser, Bestwert 96,3; 3 stumm (A050 ×2, A097 note72).
+- [x] Entropy: H(y)=2,93 bits. Retrain: MAE 9,32, R² −0,013 / R²_cv 0,075 →
+  **nicht geshippt**, `models/prognose_rf.pkl` bleibt v2.
 - [ ] A12 (DigiFormerAmount) mit Slot-Load neu messen — der frühere Sweep
       nutzte den Pfad-Load.
-- [ ] Regressionen A009 (65→39), A001 (80→66), A095 (40→28) eingrenzen.
+- [ ] Schwache v3-Fälle prüfen (A057 29, A020 32, A051 38, A024 39): Iridium
+      dunkler + Sub-Oktav-Überschuss; Verdacht Cutoff/FX, nicht Oktavlage.
 
 **Hinweis:** `measure_rf100.py --verify-sd` prüft jetzt auch ohne `--run`
 (read-only); vorher kehrte das Skript vor der Prüfung zurück.
