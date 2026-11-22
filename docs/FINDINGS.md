@@ -104,3 +104,23 @@ evidence, not as current instructions.
   Basses. Der bleibt der Sub-Oktav-/CoarsePitch-Fall.
 - Konsequenz: A12 bleibt offen, aber neu gefasst — Amount-Kennlinie pro
   Former-Modell gegen Hz kalibrieren, nicht die Filter-Cutoff-Norm skalieren.
+
+## 2026-11-22 — Sub-Oktav-Ursache: Template-Semitone-Slots (Fix, +33 Punkte)
+
+- **Ursache:** Das Template `template_waveform.qpat` liefert
+  `Osc2WaveformSemitone2 = 0` und `Osc3WaveformSemitone1 = 0`; 0 bedeutet
+  **−12 Halbtöne**. Der Konverter hat diese Slots nie überschrieben, also lief
+  **Osc 3 in jedem konvertierten Sound eine Oktave zu tief** (und Osc 2 je nach
+  aktivem Slot ebenfalls). Das CoarsePitch-Mapping war korrekt.
+- **Beweis (live, Slot-Load + Readback):** A020 Osc3 (Coarse 24 = +0) klang
+  262 Hz statt 523 Hz. `Osc3WaveformSemitone1 = 12` → 525 Hz. Nur Slot 1 ist
+  aktiv; Slots 2–4 sind inert.
+- **Wirkung am Gerät** (nur diese Slots auf 12 gesetzt, sonst identisch):
+  A020 30,3 → **63,0**, A023 40,2 → **51,8**, A024 38,2 → **61,2**.
+- **Fix:** `qpat_map.py` setzt für alle drei Oszillatoren alle vier
+  `OscNWaveformSemitoneX` auf 12 (+0) — die Blofeld-Semitone steckt bereits in
+  CoarsePitch. Test: `test_waveform_semitone_slots_neutral`.
+- **Neu konvertiert:** `transfer/rf100_v4` (SD `rf400`, Slots 300–399);
+  Diff gegen v3 = nur die zwei geleakten Slots. 88/100 Sounds haben Osc3 hörbar.
+- **Nächster Schritt:** v4 auf SD kopieren, Slots 300–399 laden, neu messen;
+  die v3-Scores (26–96) sind für Sounds mit hörbarem Osc3 zu niedrig.

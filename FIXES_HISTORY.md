@@ -7,6 +7,19 @@ Test baseline on Linux without private data: 200 passed / 46 failed / 17 errors.
 All remaining failures come from the missing `dumps/` and `recordings/` data. The full
 suite is run on the measurement machine (item 11).
 
+## Release 0.6.1 (2026-11-22)
+
+- **Fix:** the waveform template shipped `Osc2WaveformSemitone2 = 0` and
+  `Osc3WaveformSemitone1 = 0` (= -12 semitones) and the converter never
+  overrode them, so Osc 3 ran an octave low in every converted sound
+  (CoarsePitch itself was correct). All four semitone slots of every
+  oscillator are now neutral (12 = +0); test
+  `test_waveform_semitone_slots_neutral`.
+- **Measured effect** (only those slots changed): A020 30.3 -> 63.0,
+  A023 40.2 -> 51.8, A024 38.2 -> 61.2.
+- Re-converted to `transfer/rf100_v4` (SD `rf400`, slots 300-399).
+  88/100 sounds have an audible Osc 3, so the v3 scores are too low for them.
+
 ## Release 0.6.0 (2026-11-22)
 
 - **RF100 v3:** A001–A100 re-converted with the A1/A2/A3/A4/A7a and Glide fixes

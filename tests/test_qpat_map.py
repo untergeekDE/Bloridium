@@ -980,3 +980,15 @@ def test_a007_octaves_in_range_no_constant_rows():
     rows = _rows(ov)
     assert not any(r.get("Src", (0.0,))[0] == qpat_map.MATRIX_SRC["Constant"]
                    for r in rows.values())
+
+
+def test_waveform_semitone_slots_neutral(overrides):
+    # The template shipped Osc2 slot2 and Osc3 slot1 as 0 (= -12 semitones); the
+    # converter never overrode them, so those oscillators ran an octave low
+    # (live 2026-11-22: A020 Osc3 coarse +0 sounded -12; slots=12 -> score 30->63).
+    # The Blofeld semitone is already part of CoarsePitch, so all four slots of
+    # every oscillator must be neutral (12 = +0).
+    for osc in (1, 2, 3):
+        for slot in (1, 2, 3, 4):
+            key = f"Osc{osc}WaveformSemitone{slot}"
+            assert overrides[key][0] == pytest.approx(12.0), key

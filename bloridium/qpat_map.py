@@ -526,6 +526,13 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
         # (audio pitch sweep, see plan 2026-11-18); divisor 254 assumes +/-127 cent range.
         setp(f"Osc{n}FinePitch", fine_pitch_norm(p[f"Osc {n} Detune"]), "")
         setp(f"Osc{n}Vol", norm(p[f"Mixer Osc {n} Level"]), "")
+        # Extra per-waveform semitone offsets. The template shipped Osc2 slot 2 and
+        # Osc3 slot 1 as 0 (= -12 semitones) and the converter never touched them, so
+        # those oscillators ran an octave low (verified live 2026-11-22: A020 Osc3
+        # coarse +0 sounded -12; slots = 12 restored the octave, score 30 -> 63).
+        # The Blofeld semitone is already part of CoarsePitch -> all slots neutral.
+        for _slot in (1, 2, 3, 4):
+            setp(f"Osc{n}WaveformSemitone{_slot}", 12.0, "+0")
         # Pan: the Blofeld has NO osc pan - 'Mixer Osc N Balance' is the F1/F2 share
         # (MAPPING-MASTER), not a stereo pan. Mapped wrongly, Pan 0.0 = hard left
         # on the Iridium (user finding 2026-11-15, stereo image, e.g. A043 Balance=0).
