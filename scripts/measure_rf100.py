@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Measure A001-A100: Blofeld bank A vs. the qpats stored on the Iridium.
 
-The qpats must be loaded into the Iridium's patch slots 200-299 (the user's
-transfer step). The runner loads each sound by slot number and verifies the
-edit buffer via `get-param` readback before playing a note.
+The qpats must be loaded into the Iridium's patch slots (the transfer step
+imports a whole directory in file order; `--slot-start` maps entry i to
+slot-start+i when the manifest slots do not match what the device did). The
+runner loads each sound by slot number and verifies the edit buffer via
+`get-param` readback before playing a note.
 
 `load-patch 2:<dir>/<file>.qpat` must NOT be used: the firmware accepts the
 command but silently does nothing (verified 2026-11-22 by edit-buffer
@@ -282,6 +284,10 @@ def main(argv=None) -> int:
     ap.add_argument("--log", type=Path, default=DEFAULT_LOG)
     ap.add_argument("--notes", default="72,60")
     ap.add_argument("--only", help="comma-separated locations, e.g. A001,A043")
+    ap.add_argument("--slot-start", type=int, default=None,
+                    help="override the manifest slots: entry i is loaded from "
+                         "slot-start+i (the Iridium numbers imported patches "
+                         "by file order, e.g. 200)")
     ap.add_argument("--hold", type=float, default=1.2)
     ap.add_argument("--tail", type=float, default=0.9)
     ap.add_argument("--no-resume", action="store_true",
@@ -296,7 +302,15 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     manifest = load_manifest(args.manifest)
-    entries = parse_only(args.only, manifest["entries"])
+    all_entries = manifest["entries"]
+    entries = parse_only(args.only, all_entries)
+    if args.slot_start is not None:
+        order = {e["loc"]: n for n, e in enumerate(all_entries)}
+        for e in entries:
+            e["slot"] = args.slot_start + order[e["loc"]]
+        print(f"slot base {args.slot_start}: "
+              f"{entries[0]['loc']} -> {entries[0]['slot']}, "
+              f"{entries[-1]['loc']} -> {entries[-1]['slot']}")
     sd_dir = manifest["sd_dir"]
     notes = [int(n) for n in args.notes.split(",")]
     done = set() if args.no_resume else done_keys(args.log)
