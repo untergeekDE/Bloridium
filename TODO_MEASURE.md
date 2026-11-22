@@ -387,3 +387,13 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
 - [ ] `FilterNVeloAmount` / `AmpVeloAmount` prüfen (gleiche Bipolar-Frage).
 - [ ] Nach Bestätigung: Bank E neu konvertieren (0.6.5) und erneut messen;
       dabei 2-3 Wiederholungen pro Ausreißer einplanen.
+
+### LFO-Decay-Fix (0.6.6, 2026-11-23)
+- [x] Ursache: `LfoNDecay = 0` tötet den LFO (gemessen: Pitch flach bei 0.0,
+      Vibrato bei 1.0). Decay existiert im Blofeld nicht.
+- [x] Fix: immer 1.0; negativer Blofeld-Fade als unmapped markiert.
+- [x] Neu konvertiert: `transfer/don_solaris_v1` (Bank E, 200-299) und
+      `transfer/rf100_v6` (Bank A, 300-399), beide 0.6.6.
+- [ ] Beide Pakete auf SD laden und **neu messen** - alle bisherigen Scores
+      (A 79,5 / E 68,2) sind mit toten LFOs entstanden.
+- [ ] Danach Filter-Env-Amount-Skalentest und Prognose-Entscheidung wiederholen.
