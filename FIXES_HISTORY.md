@@ -7,6 +7,13 @@ Test baseline on Linux without private data: 200 passed / 46 failed / 17 errors.
 All remaining failures come from the missing `dumps/` and `recordings/` data. The full
 suite is run on the measurement machine (item 11).
 
+## Release 0.6.4 (2026-11-22)
+
+- **Poly/Mono allocation mapped:** Blofeld `Allocation/Unisono` bit 0 (1 = Mono)
+  -> Iridium `PolyMonoMode` (0 Poly / 1 Mono, verified live via param-info 2870).
+  The older note that the Iridium has no mono mode is wrong. 40 of the first
+  100 AnalogVoltage sounds are mono; 14 of bank A.
+
 ## Release 0.6.3 (2026-11-22)
 
 - **Envelope curves: Attack = RC, Decay/Release = Exp** (was all Lin). The Lin

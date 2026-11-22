@@ -627,6 +627,14 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # UnisonoCount is an enum (runtime param-info 3691: 0=Off, 1=2 voices ... 7=8),
     # not a norm. Blofeld Allocation/Unisono = 0uuu000a (spec 4.10): bits 4-6 are the
     # voice index (0=mono/off, 1=dual ... 5=6 voices) -> same enum, see unison_count().
+    # Poly/Mono: Blofeld Allocation/Unisono = 0uuu000a (spec 4.10) -> bit 0 is the
+    # allocation (1 = Mono). The Iridium HAS a mono mode after all
+    # (PolyMonoMode 0=Poly, 1=Mono - verified live 2026-11-22, param-info 2870);
+    # older notes claiming there is none are wrong. 40 of the first 100
+    # AnalogVoltage sounds are mono basses/leads.
+    alloc_raw = p.get("Allocation/Unisono", 0)
+    mono = bool(int(alloc_raw) & 1) if isinstance(alloc_raw, (int, float)) else False
+    setp("PolyMonoMode", 1.0 if mono else 0.0, "Mono" if mono else "Poly")
     setp("UnisonoCount", unison_count(p.get("Allocation/Unisono", 0)))
     setp("UnisonoDetune", norm(p.get("Unisono Detune", 0)))
     # The Blofeld has neither a unison pan spread nor a unison delay; the template

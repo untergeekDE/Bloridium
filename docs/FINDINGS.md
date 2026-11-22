@@ -246,3 +246,11 @@ dem v4↔v5-Vergleich), daher **kein repräsentativer Mittelwert**:
   haben F1-Drive > 0.
 - **Hüllkurven:** Die Lin-Kurven machten Releases zu lang; jetzt
   Attack = RC, Decay = Exp, Release = Exp (Entscheidung des Nutzers).
+
+### Poly/Mono wird jetzt gemappt (0.6.4)
+
+- Blofeld `Allocation/Unisono` = `0uuu000a` (Spec 4.10): Bit 0 = Mono.
+  Iridium hat doch einen Mono-Modus: `PolyMonoMode` (0 Poly, 1 Mono) —
+  live verifiziert (param-info 2870, Wert umschaltbar). Die ältere Notiz
+  "der Iridium hat keinen Mono-Modus" ist damit widerlegt.
+- Betroffen: 40 der ersten 100 AnalogVoltage-Sounds (Bässe/Leads), 14 in Bank A.

@@ -1046,3 +1046,24 @@ def test_f1_drive_uses_sat_lowpass_instead_of_fx_drive():
     ov, _ = qpat_map.blofeld_to_qpat_params(base)
     assert ov["Filter12Type"] == (4.0, "24dB sat. LP")
     assert "DriveType" not in ov        # no second (FX) drive stage
+
+
+def test_poly_mono_mode_follows_allocation_bit():
+    # Blofeld Allocation/Unisono = 0uuu000a, bit 0 = mono. The Iridium has
+    # PolyMonoMode 0=Poly / 1=Mono (verified live 2026-11-22, param-info 2870).
+    e016 = bd.parse_sndd((REPO / "dumps/banks/E/E016.bin").read_bytes())
+    assert int(e016["params"]["Allocation/Unisono"]) & 1 == 1
+    ov, _ = qpat_map.blofeld_to_qpat_params(e016)
+    assert ov["PolyMonoMode"] == (1.0, "Mono")
+
+    # poly sound (E001)
+    e001 = bd.parse_sndd((REPO / "dumps/banks/E/E001.bin").read_bytes())
+    assert int(e001["params"]["Allocation/Unisono"]) & 1 == 0
+    ov, _ = qpat_map.blofeld_to_qpat_params(e001)
+    assert ov["PolyMonoMode"] == (0.0, "Poly")
+
+    # unison + mono bit (Allocation raw 0b0_001_0_1 = 17): 2 voices, mono
+    e016["params"]["Allocation/Unisono"] = 17
+    ov, _ = qpat_map.blofeld_to_qpat_params(e016)
+    assert ov["PolyMonoMode"] == (1.0, "Mono")
+    assert ov["UnisonoCount"] == (1.0, "")
