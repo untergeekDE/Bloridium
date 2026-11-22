@@ -254,3 +254,46 @@ dem v4↔v5-Vergleich), daher **kein repräsentativer Mittelwert**:
   live verifiziert (param-info 2870, Wert umschaltbar). Die ältere Notiz
   "der Iridium hat keinen Mono-Modus" ist damit widerlegt.
 - Betroffen: 40 der ersten 100 AnalogVoltage-Sounds (Bässe/Leads), 14 in Bank A.
+
+### Don Solaris Bank E — Messlauf (0.6.4, 2026-11-22)
+
+200 Zeilen / 100 Sounds, Onset-Protokoll, Slots 200-299 (verifiziert):
+
+| Kennzahl | Bank E | Bank A/v5 |
+|---|---:|---:|
+| Mittel | **68,2** | 79,5 |
+| Median | 68,6 | 81,3 |
+| sd | 11,0 | 9,3 |
+| close / medium / far | 10 / 141 / 49 | 63 / 125 / 12 |
+
+- Vergleich der Untergruppen: **Mono 68,3 vs. Poly 68,1** (kein Mono-Nachteil),
+  `24dB sat. LP` 70,2 vs. sauberer Filter 67,6, Sync-Sounds (n=2) 58,0.
+- Innerhalb-Sound-Streuung zwischen den beiden Noten: Mittel 7,8 Punkte
+  (Median 6,8) -> das Label selbst hat ~3 Punkte Rauschen, erklärt die
+  Modell-Schwäche also nicht.
+- Schwächste Sounds: E072 Velo City Bass 33,9 (Drive 18, Chorus+ClockDelay),
+  E078 OBX FlameThrower 41,9, E015 OB Love 46,5, E001 Prophet Brass 47,9,
+  E077 TX81z Bass 48,0 (Drive 30), E041 48,6, E005 SCI Unison Sync 48,9.
+
+### Prognose: kein Modell generalisiert (2026-11-22)
+
+`scripts/eval_model_bank.py` (pro Location) und Gegenproben über die Bänke:
+
+| Modell | getestet auf | R² | Steigung | Spearman |
+|---|---|---:|---:|---:|
+| v2 (`prognose_rf.pkl`) | eigener Log `sim_log_v2_rf` | +0,68 | 1,43 | 0,86 |
+| v2 | v4 | −2,57 | — | −0,02 |
+| v2 | v5 | −9,64 | −0,06 | −0,08 |
+| v5-Retrain | Bank E | −1,82 | 0,74 | 0,11 |
+| Bank-E-Retrain | Bank A | −2,25 | 0,14 | −0,01 |
+| kombiniert (A+E) | Bank E / A | 0,50 / 0,66 | 1,45 / 1,40 | 0,80 / 0,84 |
+
+- Die kombinierten Werte sind **in-sample** (Modell auf genau diesen Zeilen
+  trainiert); der ehrliche Holdout ist R² 0,138 / R²_cv 0,128.
+- Einzelbänke: Bank-E-Retrain Holdout R² −0,237, Bank-A-Retrain −0,029.
+- Ridge/lineare Modelle mit Top-k-Features transferieren ebenfalls nicht
+  (R² < −1 in beide Richtungen, Spearman ≤ 0,26).
+- **Fazit:** Der Score lässt sich aus den Blofeld-Parametern derzeit nicht
+  vorhersagen. v2 war ein Memorierer seines eigenen Logs. 367 Features bei
+  n=100 überfordern den RF; die Entropie-Analyse zeigt zusätzlich, dass die
+  Log-Features zirkulär sind (`spec_mad_db` ist Teil der Score-Formel).

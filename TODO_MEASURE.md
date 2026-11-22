@@ -373,3 +373,10 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
 - [x] SD-Upload verifiziert: E001-E100 in 200-299.
 - [ ] Bank E mit 0.6.3 neu konvertieren, hochladen, messen (Onset-Protokoll).
 - [ ] Prognose-Modell mit Bank E zusammen neu trainieren (v2 vs. kombiniert).
+
+### Bank E / Prognose (2026-11-22, erledigt)
+- [x] Bank E gemessen (100 Sounds, 0.6.4): Mittel 68,2, keine stummen Sounds.
+- [x] Modell-Gegenprobe über Bänke: kein Transfer (R² < 0).
+- [ ] Entscheiden: Prognose in der Webapp als "experimentell" kennzeichnen oder
+      ganz entfernen (aktuell sagt v2 auf neuen Daten 27 Punkte zu niedrig).
+- [ ] Optional: Wiederholbarkeit messen (8 Sounds doppelt) als Obergrenze für R².
