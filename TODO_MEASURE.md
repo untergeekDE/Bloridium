@@ -367,3 +367,9 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
 - [ ] Protokoll-Bias quantifizieren: 10 v5-Sounds zusätzlich mit dem alten
       Pre-Roll-Fenster messen (gleiche Patches) → sauberer v4↔v5-Delta.
 - [ ] Release-Zeiten messen (Note-Off-Erkennung).
+
+### Don Solaris Bank E (2026-11-22)
+- [x] Bank E live vom Blofeld gedumpt (128 Sounds, `dumps/banks/E`).
+- [x] SD-Upload verifiziert: E001-E100 in 200-299.
+- [ ] Bank E mit 0.6.3 neu konvertieren, hochladen, messen (Onset-Protokoll).
+- [ ] Prognose-Modell mit Bank E zusammen neu trainieren (v2 vs. kombiniert).

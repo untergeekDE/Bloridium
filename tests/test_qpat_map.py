@@ -228,7 +228,8 @@ def test_a019_wavetable_mapped():
 
 def test_filter_types_v14_values(overrides):
     # SH Power: F1 = LP 24dB -> Filter12Type 3.0 (v14!); F2 = Bypass -> Former Bypass
-    assert overrides["Filter12Type"] == (3.0, "24dB LP")
+    # A043/SH Power drives filter 1 -> saturating 24 dB LP (2026-11-22)
+    assert overrides["Filter12Type"] == (4.0, "24dB sat. LP")
     assert overrides["FilterState"] == (0.0, "Active")
     # F2 Bypass -> Filter2State 'Off' (2.0): 'Bypass' alone leaked dry past F1
     # (evidence: dumps/00202-SH Power.qpat, v15 Filter2State=2.0 'Off')
@@ -456,7 +457,7 @@ def test_osc2_sync_mapped_a071_a008_not_a001():
         parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9[loc]))
         assert parsed["params"]["Osc 2 Sync to O3"] == 1
         ov, unmapped = qpat_map.blofeld_to_qpat_params(parsed)
-        assert ov["Osc2WaveformSync"][0] == 1.0, loc
+        assert ov["Osc2WaveformSync"][0] == qpat_map.SYNC_AMOUNT, loc
         assert not any("Sync to O3" in u for u in unmapped), loc
     parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMPS_9["A001"]))
     ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
@@ -772,6 +773,26 @@ def test_ppg_lp_maps_to_24db_lp():
     assert ov["Filter12Type"] == (3.0, "24dB LP")
 
 
+def test_driven_24db_lowpass_uses_sat_variant_a043():
+    # Same sound with Filter 1 Drive 16 (Clipping) -> "24dB sat. LP" (2026-11-22)
+    parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMP))
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    assert parsed["params"]["Filter 1 Drive"] == 16
+    assert ov["Filter12Type"] == (4.0, "24dB sat. LP")
+
+
+def test_sync_pitch_mod_retargets_to_wf2_sync_e016():
+    # Don Solaris E016 "P1 Sync": Osc 2 hard sync on, Mod 1 Env3 -> O2 Pitch.
+    # Ear-matched on the device: the modulation must sweep WF2 Sync, not Osc2 Pitch.
+    parsed = bd.parse_sndd((REPO / "dumps/banks/E/E016.bin").read_bytes())
+    assert parsed["params"]["Osc 2 Sync to O3"] == 1
+    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
+    rows = _rows(ov)
+    assert rows[1]["Dst"] == (50.0, "WF2 Sync")
+    assert rows[1]["Src"][1] == "Free Env1"
+    assert ov["Osc2WaveformSync"] == (qpat_map.SYNC_AMOUNT, "Sync 0.25")
+
+
 def test_filter_drive_simulated_as_fx1_drive_tube_a005():
     # A005: F1 Drive 0, F2 Drive 8 Curve "Tube" -> FX1 = Drive, DriveType = Tube (1.0)
     parsed = bd.parse_sndd((REPO / A005).read_bytes())
@@ -788,16 +809,14 @@ def test_filter_drive_simulated_as_fx1_drive_tube_a005():
     assert any("replaced by filter-drive" in u and "Chorus" in u for u in un)
 
 
-def test_filter_drive_clipping_maps_to_pnp_and_keeps_inaudible_fx1_a043():
-    # A043: F1 Drive 16 Curve "Clipping" -> DriveType PNP (0.0); FX1 Chorus mix 0
-    # (inaudible) -> wird ersetzt, aber OHNE unmapped-Notiz
+def test_filter_drive_clipping_uses_sat_lowpass_a043():
+    # A043: F1 Drive 16 Curve "Clipping" -> saturating 24 dB LP instead of a
+    # separate FX1 Drive stage (2026-11-22).
     parsed = bd.parse_sndd(workflow.load_sndd_file(REPO / DUMP))
     ov, un = qpat_map.blofeld_to_qpat_params(parsed)
-    assert ov["FX1Type"][0] == qpat_map.FX_TYPE["Drive"]
-    assert ov["DriveType"][0] == 0.0
-    assert ov["DriveAmount"][0] == pytest.approx(16 / 127)
-    assert ov["DriveDryWet"][0] == pytest.approx(1.0)
-    assert not any("replaced by filter-drive" in u for u in un)
+    assert ov["Filter12Type"] == (4.0, "24dB sat. LP")
+    assert "DriveType" not in ov
+    assert ov["FX1Type"][0] == qpat_map.FX_TYPE["Chorus"]
 
 
 def test_filter_drive_pickup_curve_maps_to_pickup():
@@ -873,11 +892,13 @@ def test_resolve_mod_source_unit():
     assert qpat_map._resolve_mod_source(p2, "Modifier 1") == (None, None)
 
 
-def test_envelope_curves_are_linear(overrides):
-    # Blofeld ADSRs are linear; Iridium template default Attack=RC must be overridden
+def test_envelope_curves_rc_exp_exp(overrides):
+    # user decision 2026-11-22: Attack = RC, Decay/Release = Exp. The old all-Lin
+    # mapping made releases audibly too long.
     for grp in ("AmpEnv", "Filter1", "Filter2", "FreeEnv1", "FreeEnv2"):
-        for ph in ("Attack", "Decay", "Release"):
-            assert overrides[f"{grp}{ph}Curve"] == (2.0, "Lin"), f"{grp}{ph}Curve"
+        assert overrides[f"{grp}AttackCurve"] == (1.0, "RC")
+        assert overrides[f"{grp}DecayCurve"] == (0.0, "Exp")
+        assert overrides[f"{grp}ReleaseCurve"] == (0.0, "Exp")
 
 
 def test_a007_osc_pwm_mapped_to_wf_warp_rows_ge_21():
@@ -1013,3 +1034,15 @@ def test_envelope_times_use_the_curve(parsed, overrides):
         qpat_map.envelope_time_norm("attack", raw_a))
     assert overrides["AmpEnvDecay"][0] == pytest.approx(
         qpat_map.envelope_time_norm("decay", raw_d))
+
+
+def test_f1_drive_uses_sat_lowpass_instead_of_fx_drive():
+    # 2026-11-22: F1 drive -> "24dB sat. LP" (filter model), no extra FX1 Drive.
+    p = {"Filter 1 Type": "LP 24dB", "Filter 2 Type": "Bypass", "Filter Routing": 0,
+         "Filter 1 Drive": 40, "Filter 1 Drive Curve": "Tube",
+         "Filter 2 Drive": 0}
+    base = bd.parse_sndd((REPO / "dumps/blofeld_sndd_A043_20261108_135516.bin").read_bytes())
+    base["params"].update(p)
+    ov, _ = qpat_map.blofeld_to_qpat_params(base)
+    assert ov["Filter12Type"] == (4.0, "24dB sat. LP")
+    assert "DriveType" not in ov        # no second (FX) drive stage

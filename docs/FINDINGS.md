@@ -228,3 +228,21 @@ dem v4↔v5-Vergleich), daher **kein repräsentativer Mittelwert**:
   und ein längeres Segment (2,1 s vs. 1,5 s) mitbewertet werden.
 - Damit ist der v5-vs-v4-Delta (+8,7) **nicht** in Konverter und Protokoll
   zerlegbar, solange die Protokoll-Stichprobe nicht repräsentativ ist.
+
+### Don Solaris AnalogVoltage (Bank E) — Mapping-Befunde 2026-11-22
+
+- **SD-Upload verifiziert:** Nach dem Import ab 200 liegen **E001-E100 in
+  200-299**. 12-Parameter-Fingerprint (Cutoff/Reso/Env/Matrix/LFO/Vol) gegen
+  die lokale 0.6.2-Konvertierung: Slot 200=E001, 250=E051, 299=E100,
+  max. Abweichung 0.0005 -> Webapp- und CLI-Konvertierung sind identisch.
+- **Sync-Sounds:** Bei aktivem `Osc 2 Sync to O3` gehört die Pitch-Modulation
+  auf **WF2 Sync** (Iridium-Dst 50, `param-info 2480`), nicht auf `Osc2 Pitch`
+  — sonst wird nur der ganze Oszillator verstimmt. `Osc2WaveformSync` ist
+  kontinuierlich (Gerät: 0-36 Halbtöne), kein Schalter; Grundwert 0,25
+  (Gehör-Abgleich E016 vs. Slot 215).
+- **Filter-Drive:** Blofeld-Filterdrive auf einem 24-dB-LP entspricht eher
+  `24dB sat. LP` (Gehörentscheidung). Die frühere FX1-Drive-Simulation
+  entfällt dafür, sonst verzerrt es doppelt. 27 der ersten 100 Bank-E-Sounds
+  haben F1-Drive > 0.
+- **Hüllkurven:** Die Lin-Kurven machten Releases zu lang; jetzt
+  Attack = RC, Decay = Exp, Release = Exp (Entscheidung des Nutzers).

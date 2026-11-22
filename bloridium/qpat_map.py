@@ -124,8 +124,9 @@ MATRIX_SRC = {"Off": 0.0, "Amp Env": 1.0, "Filter1 Env": 2.0, "Filter2 Env": 3.0
 MATRIX_DST = {"Off": 0.0, "Pitch": 1.0, "Osc1 Pitch": 2.0, "Osc2 Pitch": 3.0, "Osc3 Pitch": 4.0,
               "Osc1 Mix": 5.0, "Osc2 Mix": 6.0, "Osc3 Mix": 7.0,
               "Osc1 Pan": 8.0, "Osc2 Pan": 9.0, "Osc3 Pan": 10.0,
-              "WT1 Position": 11.0, "WF1 Warp": 18.0, "WT2 Position": 42.0, "WF2 Warp": 49.0,
-              "WT3 Position": 73.0, "WF3 Warp": 80.0,
+              "WT1 Position": 11.0, "WF1 Warp": 18.0, "WF1 Sync": 19.0,
+              "WT2 Position": 42.0, "WF2 Warp": 49.0, "WF2 Sync": 50.0,
+              "WT3 Position": 73.0, "WF3 Warp": 80.0, "WF3 Sync": 81.0,
               "DF Amount": 104.0, "DF Color": 105.0, "DF Pan": 107.0, "DF Level": 108.0,
               "Filter1 Cutoff": 109.0, "Filter1 Reso": 110.0, "Filter1 Pan": 111.0,
               "Filter1 Level": 112.0, "Filter2 Cutoff": 113.0, "Filter2 Reso": 114.0,
@@ -453,6 +454,13 @@ def envelope_time_norm(stage: str, raw) -> float:
     return anchors[-1][1]
 
 
+# Iridium oscillator Sync is a CONTINUOUS amount (device UI: 0..36 semitones, the
+# qpat value is normalized 0..1), not a switch. The Blofeld only has on/off hard
+# sync, so pick a moderate amount: 0.25 (~9 semitones) was tuned by ear on
+# Don Solaris E016 ("P1 Sync", Iridium slot 215) - 1.0 was far too extreme.
+SYNC_AMOUNT = 0.25
+
+
 def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     """parsed: blofeld_dump.parse_sndd(). -> (overrides, unmapped)
 
@@ -571,7 +579,7 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     # Hard sync (P1-1, ANALYSIS-2026-11-15): Blofeld "Osc 2 Sync to O3" -> Osc2WaveformSync
     # (A071/A008 had sync=1 and landed unmapped -> "no sync on the Iridium").
     if p.get("Osc 2 Sync to O3"):
-        setp("Osc2WaveformSync", 1.0, "Sync on")
+        setp("Osc2WaveformSync", SYNC_AMOUNT, f"Sync {SYNC_AMOUNT:.2f}")
     # --- Mixer-Noise -> freier Iridium-Osc als Noise-Quelle (2026-11-20) ---
     # Blofeld "Mixer Noise Level/Balance/Colour" hat keinen direkten qpat-Key; der
     # Iridium hat keinen eigenen Noise-Mixer-Eintrag, aber ein Osc KANN Noise sein
@@ -641,6 +649,11 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     f1_label = p["Filter 1 Type"]
     f2_label = p["Filter 2 Type"]
     m1 = BLOFELD_FILTER_TO_IRIDIUM.get(f1_label if isinstance(f1_label, str) else "", "24dB LP")
+    f1_drive = p.get("Filter 1 Drive", 0)
+    if m1 == "24dB LP" and isinstance(f1_drive, (int, float)) and f1_drive > 0:
+        # user decision 2026-11-22: a driven Blofeld 24 dB ladder sounds much closer
+        # to the Iridium's saturating 24 dB LP than to the clean one.
+        m1 = "24dB sat. LP"
     if m1:
         setp("Filter12Type", FILTER12_TYPE[m1], m1)
         setp("FilterState", 0.0, "Active")
@@ -728,12 +741,14 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                      if bk in ("Attack", "Decay") else norm(p[f"Envelope {n} {bk}"]))
             setp(ik, value, f"{p[f'Envelope {n} {bk}']} raw")
 
-    # --- envelope curves: Blofeld ADSRs are LINEAR, but the Iridium template defaults
-    # Attack=RC (1.0) — massive audible difference (user finding 2026-11-21).
-    # Curve enum (factory qpats): 0=Exp, 1=RC resp. 'Exp alt', 2=Lin -> set all to Lin.
+    # --- envelope curves: Attack = RC, Decay/Release = Exp (user decision 2026-11-22).
+    # The old all-Lin setting made releases audibly too long ("Lin statt Exp"); it had
+    # been chosen in 2026-11-21 against the template default Attack=RC, before the
+    # envelope times were calibrated. Curve enum (factory qpats): 0=Exp, 1=RC, 2=Lin.
     for grp in ("AmpEnv", "Filter1", "Filter2", "FreeEnv1", "FreeEnv2"):
-        for ph in ("Attack", "Decay", "Release"):
-            setp(f"{grp}{ph}Curve", 2.0, "Lin")
+        setp(f"{grp}AttackCurve", 1.0, "RC")
+        setp(f"{grp}DecayCurve", 0.0, "Exp")
+        setp(f"{grp}ReleaseCurve", 0.0, "Exp")
 
     # --- LFO ---
     # ATTENTION key names: template/device know "Lfo1Speed" (lowercase), NOT "LFO1Speed"!
@@ -838,6 +853,12 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
                 on = 0
             if 1 <= on <= 3:
                 d_disp = f"WT{on} Position" if osc_is_wavetable.get(on) else f"WF{on} Warp"
+        if d_disp == "Osc2 Pitch" and p.get("Osc 2 Sync to O3"):
+            # Sync sounds (user finding 2026-11-22, Don Solaris E016 vs slot 215):
+            # on the Blofeld the envelope sweeps the synced oscillator, which on the
+            # Iridium is the WF2 Sync amount - routing it to Osc2 Pitch only detunes
+            # the whole oscillator. Ear-matched: Mod FreeEnv1 -> WF2 Sync.
+            d_disp = "WF2 Sync"
         if seriell and not f2_bypass:
             # P1-2 (ANALYSIS-2026-11-15): in serial mode the audible F2 is the DigiFormer
             # (Filter2State 'Off') -> modulations to F2 must target the Former instead,
@@ -1029,8 +1050,13 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     drives = []
     for fn in (1, 2):
         dv = p.get(f"Filter {fn} Drive", 0)
-        if isinstance(dv, (int, float)) and dv > 0:
-            drives.append((fn, dv, p.get(f"Filter {fn} Drive Curve", "")))
+        if not (isinstance(dv, (int, float)) and dv > 0):
+            continue
+        if fn == 1 and m1 == "24dB sat. LP":
+            # F1 drive is already modelled by the saturating 24 dB ladder; an extra
+            # FX1 Drive would distort twice (2026-11-22).
+            continue
+        drives.append((fn, dv, p.get(f"Filter {fn} Drive Curve", "")))
     if drives:
         fno, drive, curve = max(drives, key=lambda d: d[1])
         fx1_label = p.get("Effect 1 Type", "")

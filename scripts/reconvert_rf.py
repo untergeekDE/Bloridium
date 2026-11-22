@@ -129,7 +129,18 @@ def main(argv=None) -> int:
     ap.add_argument("--slot-start", type=int, default=300)
     args = ap.parse_args(argv)
 
-    start, end = loc_number(args.start), loc_number(args.end)
+    # "E001"/"E100" name the bank too; the old loc_number() multiplied the bank
+    # letter into the range, so --bank E --start E001 iterated E513..E612.
+    def _num(s: str) -> int:
+        m = re.search(r"(\d{3})$", s.strip())
+        if not m:
+            raise SystemExit(f"invalid location {s!r} (expected A001..Z128)")
+        return int(m.group(1))
+
+    for s in (args.start, args.end):
+        if s[:1].isalpha():
+            args.bank = s[0].upper()
+    start, end = _num(args.start), _num(args.end)
     if end < start:
         raise SystemExit("--end must be >= --start")
     args.out.mkdir(parents=True, exist_ok=True)

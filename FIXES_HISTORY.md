@@ -7,6 +7,21 @@ Test baseline on Linux without private data: 200 passed / 46 failed / 17 errors.
 All remaining failures come from the missing `dumps/` and `recordings/` data. The full
 suite is run on the measurement machine (item 11).
 
+## Release 0.6.3 (2026-11-22)
+
+- **Envelope curves: Attack = RC, Decay/Release = Exp** (was all Lin). The Lin
+  setting made releases audibly too long (Don Solaris user finding); it dated
+  from before the time calibration.
+- **Sync sounds:** a pitch modulation on a hard-synced oscillator now targets
+  `WF2 Sync` instead of `Osc2 Pitch`. `Osc2WaveformSync` gets a moderate base
+  amount `SYNC_AMOUNT = 0.25` (Iridium sync is continuous, 0..36 semitones),
+  not 1.0. Ear-matched on Don Solaris E016 vs Iridium slot 215.
+- **Filter drive:** a Blofeld `Filter 1 Drive > 0` on a 24 dB LP now selects
+  `24dB sat. LP` instead of `24dB LP`; the separate FX1 Drive simulation is
+  skipped for F1 (no double distortion). F2 drive still uses FX1 Drive.
+- `MATRIX_DST` gains the runtime destinations `WF1/2/3 Sync` (19/50/81,
+  verified with `param-info 2480`).
+
 ## Release 0.6.2 (2026-11-22)
 
 - **Envelope attack/decay times calibrated:** `ENVELOPE_TIME_ANCHORS` +
