@@ -57,12 +57,18 @@ python3 scripts/measure_rf100.py --run --skip-verify
 Der Runner:
 - prüft `ls 2:rf300` gegen **Name und Byte-Größe** der lokalen qpats (Größen
   unterscheiden v2/v3, die Namen nicht),
-- lädt jedes qpat per `load-patch 2:rf300/<file>` (nie von den stillen
-  Speicher-Slots),
+- lädt jedes qpat per `load-patch <slot>` aus den Slots 200–299.
+  **Falle:** `load-patch 2:<dir>/<file>.qpat` wird akzeptiert, ändert den
+  Edit-Buffer aber **nicht** (am 2026-11-22 per Readback bewiesen). Nur die
+  Slot-Nummer lädt wirklich.
+- prüft nach jedem Load drei Parameter per `get-param` gegen das qpat
+  (`Osc1FinePitch`, `Filter1CutOff`, `Filter1EnvAmount`); Abweichung > 0,002
+  bricht ab — damit kann kein stiller Fehlload mehr durchrutschen,
 - prüft nach jedem Laden, dass die QUIR-Shell noch antwortet (sonst Abbruch),
 - wählt am Blofeld Bank A + PC,
 - spielt beide Synths gleichzeitig (Part 1, ch6) und scorst mit v2,
-- bricht ab, wenn der Iridium-Kanal stumm ist (Kabel/Global-MIDI statt Patch),
+- bricht nur ab, wenn der Iridium-Kanal wirklich tot ist (echte Stille oder
+  > 60 dB unter dem Blofeld); leise Patches (z. B. A003) werden weiter gemessen,
 - resumiert standardmäßig über `(loc, note)` bereits gescorte Zeilen
   (`--no-resume` für einen kompletten Neulauf).
 

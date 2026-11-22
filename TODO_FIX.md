@@ -114,9 +114,11 @@ bei Keytrack, Anschlagspaare bei Velocity.
   `DigiFormerType=Nave HP12`, `DigiFormerAmount=0.393`):** am Gerät geprüft
   (Slot 204) und gemessen. Erster Sweep note 60/72: Amount 0,393 → 46/40;
   0,25 → 52/55; 0,15 → 51/53; 0,08 → 58/50; **Bypass → 26/26**. Der HP wird
-  also gebraucht, ist aber zu weit offen (Bass fehlt). Zweiter Sweep mit
-  Former-Typ/Amount-Kombinationen war nicht reproduzierbar (Shell-Zustand nicht
-  bestätigt) → saubere Kalibrierung nötig.
+  also gebraucht, ist aber zu weit offen (Bass fehlt).
+  **Achtung:** dieser Sweep nutzte `load-patch <PFAD>` (still ein No-op) — die
+  Zuordnung „gemessenes Patch = A005“ ist nicht belegt; Messung mit
+  Slot-Load + Readback wiederholen. Der User-Befund am Gerät (Slot 204) bleibt
+  gültig.
 - **Nebenbefund:** Osc1 = aus ist **korrekt** (Blofeld Mixer Osc1 Level = 0);
   der fehlende Bass bei A005 ist zusätzlich der bekannte Oktavfall (Bänder eine
   Oktave unter dem Grundton fehlen um 30–50 dB).

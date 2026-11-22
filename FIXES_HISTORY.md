@@ -10,14 +10,14 @@ suite is run on the measurement machine (item 11).
 ## Release 0.6.0 (2026-11-22)
 
 - **RF100 v3:** A001–A100 re-converted with the A1/A2/A3/A4/A7a and Glide fixes
-  (`transfer/rf100_v3`, SD folder `rf300`, slots 200–299), measured against the
-  Blofeld: 200 rows, 197 scored, mean **56.6** (v2: 50.5), 72 of 99 sounds better.
-- **Prognose v3:** n=99, MAE **8.37**, RMSE 10.89, **R² 0.212 / R²_cv 0.218**
-  (v2: 10.47 / 0.064 / 0.132). `models/prognose_rf.pkl` is now v3; the v2 model
-  is kept as `models/prognose_rf_v2.pkl`.
+  (`transfer/rf100_v3`, SD folder `rf300`, slots 200–299).
 - Version bump only — the converter output is unchanged since 0.5.3.
-- Open: A12 (`DigiFormerAmount` calibration), regressions A009/A001/A095,
-  silent Blofeld channel on A050/A097.
+- **Correction (2026-11-22):** the first v3 measurement run was invalid:
+  `load-patch 2:<dir>/<file>.qpat` is silently a no-op on this firmware, so the
+  Iridium edit buffer never changed. The run and its model were discarded
+  (`recordings/sim_log_v3_invalid_loadpath.jsonl`); `models/prognose_rf.pkl`
+  stays on v2 until the corrected run (+ slot loading and per-patch readback
+  verification) is re-measured and retrained.
 
 ## Scoring & prognosis
 

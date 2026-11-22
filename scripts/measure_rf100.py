@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
-"""Measure A001-A100: Blofeld bank A vs. the qpats on the Iridium SD card.
+"""Measure A001-A100: Blofeld bank A vs. the qpats stored on the Iridium.
 
-This prepares/executes the next RF dataset run. The qpats are loaded directly
-from the SD card via the Iridium shell (`load-patch 2:<sd_dir>/<file>`), never
-from the silent 1-MB storage slots. Both synths play the same note; the
-recordings are scored with the v2 similarity formula and appended to a JSONL
-log that `bloridium prognose train` can consume.
+The qpats must be loaded into the Iridium's patch slots 200-299 (the user's
+transfer step). The runner loads each sound by slot number and verifies the
+edit buffer via `get-param` readback before playing a note.
+
+`load-patch 2:<dir>/<file>.qpat` must NOT be used: the firmware accepts the
+command but silently does nothing (verified 2026-11-22 by edit-buffer
+readback; the 2026-11-22 v3 run was invalid because of this).
+
+Both synths play the same note; the recordings are scored with the v2 score
+and appended to a JSONL log that `bloridium prognose train` consumes.
 
 Safety: without `--run` the script only prints the plan (no MIDI note, no
 load-patch). `--verify-sd` is read-only (`ls`).
 
-Prepare the SD folder first:
-    python3 scripts/reconvert_rf.py --out transfer/rf100_v3 --sd-dir rf300
-    cp -R transfer/rf100_v3 /Volumes/<SD>/rf300
-
 Then, with the Iridium SD mounted as drive 2:
     python3 scripts/measure_rf100.py --verify-sd
-    python3 scripts/measure_rf100.py --run
+    python3 scripts/measure_rf100.py --run --skip-verify
 
 Training afterwards:
     python3 -m bloridium prognose entropy --log recordings/sim_log_v3.jsonl
@@ -27,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from pathlib import Path
@@ -37,7 +39,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "scripts"))
 
-from bloridium import audio, midi, sim  # noqa: E402
+from bloridium import audio, midi, qpat, sim  # noqa: E402
 from _quir import Iridium  # noqa: E402
 import _measure as M  # noqa: E402
 
@@ -167,17 +169,67 @@ def select_blofeld(blo, loc: str) -> None:
     time.sleep(0.7)
 
 
-def load_patch(irr: Iridium, sd_dir: str, sd_name: str) -> None:
-    """Load a qpat from the SD card into the edit buffer.
+def find_pid(irr: Iridium, name: str) -> int:
+    out = collect(irr, f"find-pid {name}", max_s=12.0)
+    m = re.search(r"has pid\s+(-?\d+)", out)
+    if not m or int(m.group(1)) < 0:
+        raise SystemExit(f"cannot resolve QUIR pid for {name!r}: {out!r}")
+    return int(m.group(1))
 
-    A successful load-patch prints nothing, so only errors are detectable; the
-    caller probes the shell separately (`shell_alive`).
+
+def collect_many(irr: Iridium, lines: list[str], max_s: float = 20.0) -> str:
+    """Queue several shell lines, then read until the `temp` sentinel arrives."""
+    irr.drain(quiet=0.2, max_s=2.0)
+    for line in lines:
+        irr.line(line, wait=0.06)
+    irr.line("temp", wait=0.05)
+    buf = bytearray()
+    t0 = time.time()
+    last = time.time()
+    while time.time() - t0 < max_s:
+        time.sleep(0.11)
+        irr._send(0x55)
+        b = irr._read(0.25)
+        if b:
+            buf += b
+            last = time.time()
+        if b"CPU temp" in buf and time.time() - last > 0.8:
+            break
+    return bytes(buf).decode("ascii", "replace")
+
+
+def verify_patch(irr: Iridium, expected: dict, pids: dict, tol: float = 0.002) -> None:
+    """Read a few params back; abort if the edit buffer is not the expected qpat."""
+    out = collect_many(irr, [f"get-param {pid}" for pid in pids.values()])
+    got = {int(m.group(1)): float(m.group(2))
+           for m in re.finditer(r"Param\s+(\d+)\s*=\s*(-?[\d.]+)", out)}
+    bad = []
+    for name, pid in pids.items():
+        want = float(expected[name]["value"])
+        if pid not in got:
+            bad.append(f"{name}: no readback")
+        elif abs(got[pid] - want) > tol:
+            bad.append(f"{name}: got {got[pid]:.3f}, want {want:.3f}")
+    if bad:
+        raise SystemExit("patch verification failed (edit buffer != qpat): "
+                         + "; ".join(bad))
+
+
+def load_patch(irr: Iridium, slot: int) -> None:
+    """Load stored patch `slot` into the edit buffer.
+
+    IMPORTANT: `load-patch 2:<dir>/<file>.qpat` is accepted but silently does
+    nothing on this firmware (verified 2026-11-22: edit-buffer readback stayed
+    unchanged). Only the slot number actually loads the sound.
     """
-    out = collect(irr, f"load-patch 2:{sd_dir}/{sd_name}", max_empty=3, max_s=8.0,
+    out = collect(irr, f"load-patch {slot}", max_empty=3, max_s=10.0,
                   sentinel_every=0.5)
     low = out.lower()
     if any(t in low for t in ("error", "not found", "fail", "f_opendir")):
-        raise RuntimeError(f"load-patch {sd_name}: {out!r}")
+        raise RuntimeError(f"load-patch {slot}: {out!r}")
+
+
+VERIFY_PARAMS = ("Osc1FinePitch", "Filter1CutOff", "Filter1EnvAmount")
 
 
 def parse_only(value: str | None, entries: list[dict]) -> list[dict]:
@@ -249,17 +301,17 @@ def main(argv=None) -> int:
         if not shell_alive(irr):
             raise SystemExit("Iridium shell is not responding (no `temp` output); "
                              "power-cycle the Iridium and retry")
+        pids = {name: find_pid(irr, name) for name in VERIFY_PARAMS}
+        print("verify pids:", pids, flush=True)
         scores = []
         for i, e in enumerate(entries, 1):
             loc, sd_name = e["loc"], e["sd_name"]
             pending = [n for n in notes if (loc, n) not in done]
             if not pending:
                 continue
-            load_patch(irr, sd_dir, sd_name)
-            if not shell_alive(irr, tries=1):
-                raise SystemExit(f"{loc}: Iridium shell stopped answering after "
-                                 "load-patch; rerun to resume (already logged rows "
-                                 "are skipped)")
+            expected = qpat.load(args.manifest.parent / sd_name)["params"]
+            load_patch(irr, int(e["slot"]))
+            verify_patch(irr, expected, pids)
             select_blofeld(blo, loc)
             for note in pending:
                 data = M.capture(blo, irr, note=note, vel=100, dur=args.dur)
@@ -268,11 +320,18 @@ def main(argv=None) -> int:
                 ix = np.asarray(data[list(audio.CHANNELS["iridium"]), :],
                                 dtype=np.float64).mean(axis=0)
                 rms = float(np.sqrt(np.mean(ix ** 2)))
-                if rms < 1e-3:      # -60 dBFS: Iridium path dead, not a patch
-                    raise SystemExit(f"{loc}: Iridium silent (rms {rms:.2e}); "
-                                     "check its audio cable / MIDI settings")
+                brms = float(np.sqrt(np.mean(bx ** 2)))
+                # Dead Iridium path = true silence or >60 dB below the Blofeld.
+                # A quiet patch (e.g. A003 at -62 dBFS) must still be measured.
+                if rms < 2e-5 or (brms > 1e-4 and rms / brms < 1e-3):
+                    raise SystemExit(f"{loc}: Iridium silent (rms {rms:.2e}, "
+                                     f"blofeld {brms:.2e}); check its audio cable / "
+                                     "MIDI settings")
+                if rms < 5e-4:
+                    print(f"  note {loc} note{note}: quiet Iridium (rms {rms:.2e})",
+                          flush=True)
                 meta = {"mode": "rf100_v3", "blofeld": loc, "note": note,
-                        "qpat": sd_name, "sd_dir": sd_dir}
+                        "qpat": sd_name, "sd_dir": sd_dir, "slot": e["slot"]}
                 r = sim.score_pair(bx, ix, sr=audio.SAMPLERATE, meta=meta,
                                    log_path=args.log)
                 if r.get("score") is not None:
