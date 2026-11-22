@@ -304,6 +304,7 @@ def main(argv=None) -> int:
         pids = {name: find_pid(irr, name) for name in VERIFY_PARAMS}
         print("verify pids:", pids, flush=True)
         scores = []
+        silent_streak = 0
         for i, e in enumerate(entries, 1):
             loc, sd_name = e["loc"], e["sd_name"]
             pending = [n for n in notes if (loc, n) not in done]
@@ -322,16 +323,22 @@ def main(argv=None) -> int:
                 rms = float(np.sqrt(np.mean(ix ** 2)))
                 brms = float(np.sqrt(np.mean(bx ** 2)))
                 # Dead Iridium path = true silence or >60 dB below the Blofeld.
-                # A quiet patch (e.g. A003 at -62 dBFS) must still be measured.
-                if rms < 2e-5 or (brms > 1e-4 and rms / brms < 1e-3):
-                    raise SystemExit(f"{loc}: Iridium silent (rms {rms:.2e}, "
-                                     f"blofeld {brms:.2e}); check its audio cable / "
-                                     "MIDI settings")
-                if rms < 5e-4:
-                    print(f"  note {loc} note{note}: quiet Iridium (rms {rms:.2e})",
-                          flush=True)
-                meta = {"mode": "rf100_v3", "blofeld": loc, "note": note,
+                # A quiet patch (e.g. A003) must still be measured; a patch whose
+                # amp envelope decays too fast is logged as an error row and the
+                # run continues (3 silent sounds in a row -> abort: dead cable).
+                dead = rms < 2e-5 or (brms > 1e-4 and rms / brms < 1e-3)
+                silent_streak = silent_streak + 1 if dead else 0
+                meta = {"mode": "rf100_v4", "blofeld": loc, "note": note,
                         "qpat": sd_name, "sd_dir": sd_dir, "slot": e["slot"]}
+                if dead:
+                    print(f"  {loc} note{note}: Iridium silent (rms {rms:.2e}, "
+                          f"blofeld {brms:.2e}) - logged as error", flush=True)
+                    if silent_streak >= 3:
+                        raise SystemExit("3 silent sounds in a row - check the "
+                                         "Iridium audio cable / MIDI settings")
+                elif rms < 5e-4:
+                    print(f"  {loc} note{note}: quiet Iridium (rms {rms:.2e})",
+                          flush=True)
                 r = sim.score_pair(bx, ix, sr=audio.SAMPLERATE, meta=meta,
                                    log_path=args.log)
                 if r.get("score") is not None:

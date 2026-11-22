@@ -124,3 +124,28 @@ evidence, not as current instructions.
   Diff gegen v3 = nur die zwei geleakten Slots. 88/100 Sounds haben Osc3 hörbar.
 - **Nächster Schritt:** v4 auf SD kopieren, Slots 300–399 laden, neu messen;
   die v3-Scores (26–96) sind für Sounds mit hörbarem Osc3 zu niedrig.
+
+## 2026-11-22 — RF100 v4 (Semitone-Fix): Messung, Entropy, Retrain
+
+- **Messung** (`transfer/rf100_v4`, Slots 200–299, Slot-Load + Readback):
+  200 Zeilen, **196 gescort**, 4 stumm (A050, A097 — beide Noten).
+  **mean 70,7**, Median 72,0, Range 28,0–**97,8**.
+- **Entwicklung:** v2 51,1 → v3 67,0 → **v4 70,7**. Gegen v3 auf 98 Sounds
+  **+3,8**, 53 besser / 28 schlechter.
+  - Größte Gewinne: A053 44,6→84,9, A025 57,1→90,1, A020 32,2→62,3,
+    A024 39,1→65,0, A035 64,4→88,2.
+  - Größte Verluste: A015 68,0→48,6, A003 87,8→69,6, A026 67,9→54,7,
+    A061 59,2→47,5 (teils Messstreuung bei sehr leisen/percussiven Patches).
+  - Die Semitone-Ziele: A020 +30, A024 +26, A023 +8.
+- **Entropy** (n=98): H(y)=2,83 bits; `spec_mad_db` zirkulär (IG 1,74);
+  partielle IG: `spec_dtw` 0,390, `env_dtw` 0,584.
+- **Retrain** (`--target score`, v4-Labels): n=98, MAE 11,05, RMSE 13,26,
+  **R² −0,234 / R²_cv 0,070** → **nicht geshippt**. `models/prognose_rf.pkl`
+  bleibt v2 (MAE 10,47, R² 0,064/0,132). Die besseren Labels sind noch weniger
+  aus den Blofeld-Parametern vorhersagbar; die Restfehler dominieren.
+- **Stille-Fälle:** A014/A026/A052/A070/A072 waren im Lauf zeitweise stumm.
+  Kein Fix-Regress: mit zurückgesetzten Slots genauso laut/leise. Ursache ist
+  das Messfenster (0,35 s Pre-Roll) bei Patches mit Amp-Sustain 0 und
+  zu kurzem Iridium-Decay; A072 zusätzlich mit Attack 0,72.
+- **Offen:** Hüllkurven-Zeitabbildung kalibrieren (Decay/Attack), Messprotokoll
+  für Sustain-0-Patches (ab Note-On aufnehmen), Ausreißer A015/A061 prüfen.

@@ -17,8 +17,11 @@ suite is run on the measurement machine (item 11).
   `test_waveform_semitone_slots_neutral`.
 - **Measured effect** (only those slots changed): A020 30.3 -> 63.0,
   A023 40.2 -> 51.8, A024 38.2 -> 61.2.
-- Re-converted to `transfer/rf100_v4` (SD `rf400`, slots 300-399).
+- Re-converted to `transfer/rf100_v4` (slots 200-299).
   88/100 sounds have an audible Osc 3, so the v3 scores are too low for them.
+- **Full v4 run:** 196/200 rows scored, mean **70.7** (v3 67.0, v2 51.1),
+  +3.8 vs v3 with 53/98 better. Prognosis retrain on the v4 labels did not
+  beat the mean (R² -0.234 / R²_cv 0.070) -> model stays v2.
 
 ## Release 0.6.0 (2026-11-22)
 

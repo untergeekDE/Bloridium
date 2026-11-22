@@ -341,8 +341,15 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
       Skalar 0,65 bringt im Mittel +0,7 (11 besser / 10 schlechter) → keine
       pauschale Korrektur. Offen bleibt eine Hz-Kalibrierung pro Former-Modell
       (`TODO_FIX.md`).
-- [ ] Schwache v3-Fälle prüfen (A057 29, A020 32, A051 38, A024 39): Iridium
-      dunkler + Sub-Oktav-Überschuss; Verdacht Cutoff/FX, nicht Oktavlage.
+- [x] Schwache Fälle: Ursache war der Template-Semitone-Leak (Osc 3 eine
+      Oktave zu tief, Fix in 0.6.1). v4: A020 32->62, A023 44->52, A024 39->65.
+- [x] v4-Lauf (Slots 200–299): 196/200 gescort, **mean 70,7** (v3 67,0,
+      v2 51,1), +3,8 gegen v3 (53 besser / 28 schlechter). Retrain auf v4:
+      R² −0,234 / R²_cv 0,070 → **nicht geshippt**, Modell bleibt v2.
+- [ ] Hüllkurven-Zeiten kalibrieren (Decay/Attack); A014/A026/A052/A070/A072
+      waren zeitweise stumm, weil das Messfenster den kurzen Iridium-Decay
+      verpasst (Amp-Sustain 0, Pre-Roll 0,35 s). A072 zusätzlich Attack 0,72.
+- [ ] Ausreißer v4 prüfen: A015 68→49, A003 88→70, A061 59→48.
 
 **Hinweis:** `measure_rf100.py --verify-sd` prüft jetzt auch ohne `--run`
 (read-only); vorher kehrte das Skript vor der Prüfung zurück.
