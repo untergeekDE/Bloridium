@@ -115,10 +115,6 @@ PRIVACY_BODY = """
 <p>This page explains what happens to the file you upload and to the data
 produced while you use the converter.</p>
 
-<h2>Controller</h2>
-<p>J. Eggers, Herbartstr. 17, D-60316 Frankfurt/M, Germany.<br>
-Contact: <a href="https://www.untergeek.de/cc/">Imprint and Contact</a>.</p>
-
 <h2>What we process</h2>
 <ul>
 <li><b>Your upload.</b> The MIDI/SysEx file you select is processed in memory
@@ -153,27 +149,11 @@ pixels, third-party fonts or CDNs. The page loads its background image from
 this server. Links to external sites (for example the blog or GitHub) are
 contacted only when you click them.</p>
 
-<h2>Legal basis</h2>
-<p>Providing the conversion you request is based on Art. 6(1)(b) GDPR
-(pre-contractual/contractual request) or, where no contract applies, on
-Art. 6(1)(f) GDPR (legitimate interest in operating the free tool). Server
-logs are processed on the basis of Art. 6(1)(f) GDPR for security and abuse
-prevention.</p>
-
 <h2>Retention</h2>
 <p>Uploads exist only in memory during the request. Generated ZIP/report
 files are deleted after the one-time download, or after one hour if they are
 never downloaded. Server logs are kept only for the period configured for
 the web server and system logs and are then rotated out.</p>
-
-<h2>Your rights</h2>
-<p>You have the right to access, rectification, erasure, restriction of
-processing, data portability and objection, and the right to complain to a
-supervisory authority. The authority responsible for the controller is the
-<a href="https://datenschutz.hessen.de/">Hessian Commissioner for Data
-Protection and Freedom of Information</a>. Because the service has no user
-accounts, we may need the download token from your link to identify the
-temporary files.</p>
 
 <h2>Score</h2>
 <p>The predicted match score is a rough estimate. It is not an automated
