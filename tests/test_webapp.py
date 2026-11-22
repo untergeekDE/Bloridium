@@ -339,6 +339,41 @@ def test_only_one_download_wins(core, sample_sdata, tmp_path, monkeypatch):
     assert sorted(results) == [200, 404]
 
 
+def test_privacy_page(tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)
+    app = create_app()
+    app.data_dir = tmp_path
+    client = app.test_client()
+    r = client.get("/privacy")
+    assert r.status_code == 200
+    body = r.data.decode()
+    assert "Privacy" in body
+    assert "not used for training" in body
+    assert "deleted" in body and "one hour" in body
+    assert "xxx" in body  # truncated IP
+    home = client.get("/")
+    assert b'href="/privacy"' in home.data
+    assert b"untergeek.de/cc/" in home.data
+
+
+def test_result_and_download_no_store(core, sample_sdata, tmp_path, monkeypatch):
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("BLORIDIUM_MODEL", NO_MODEL)
+    app = create_app()
+    app.data_dir = tmp_path
+    client = app.test_client()
+    syx = _sndd_bytes(0, 42, sample_sdata)
+    r = client.post("/upload", data={"file": (io.BytesIO(syx), "a.syx")},
+                    content_type="multipart/form-data")
+    assert r.headers["Cache-Control"] == "no-store"
+    token = r.data.decode().split("/download/")[1].split('"')[0]
+    d = client.get(f"/download/{token}")
+    assert d.status_code == 200
+    assert d.headers["Cache-Control"] == "no-store"
+    d.close()
+
+
 def test_versions_are_unified():
     from bloridium.version import __version__
     assert convert.CONVERSION_VERSION == matching.SIMILARITY_VERSION == \

@@ -33,6 +33,8 @@ def footer(sim_ver: str) -> str:
     return ('<footer><strong>Read the blog post on <a href="https://www.untergeek.de/2026/11/bloridium-porting-blofeld-sounds-to-the-iridium/#more-6616">untergeek.de</a> &middot;</strong> '
             'Repository of conversion tools: '
             '<a href="https://github.com/untergeekDE/Bloridium">github.com/untergeekDE/Bloridium</a>'
+            ' &middot; <a href="/privacy">Privacy</a>'
+            ' &middot; <a href="https://www.untergeek.de/cc/">Imprint</a>'
             f' &middot; Bloridium v{convert.CONVERSION_VERSION} &middot; GPL-3.0</footer>')
 
 PAGE = """<!doctype html>
@@ -46,6 +48,7 @@ PAGE = """<!doctype html>
  .card{{max-width:780px;margin:3rem auto;background:rgba(255,255,255,.93);padding:1.4rem 1.8rem;
    border-radius:10px;box-shadow:0 3px 16px rgba(0,0,0,.45)}}
  h1{{margin:.1rem 0 .2rem;font-size:1.7rem}}
+ h2{{font-size:1.15rem;margin:1.2rem 0 .3rem}}
  .sub{{margin:.1rem 0 1rem;color:#333;font-size:1.05rem}}
  form{{margin:1rem 0;padding:1rem;border:1px solid #bbb;border-radius:8px;background:#fafafa}}
  button{{font-size:1rem;padding:.45rem 1.2rem;border:1px solid #888;border-radius:6px;
@@ -75,11 +78,87 @@ def index_body(score_note: str) -> str:
   <input type="file" name="file" accept=".syx,.bin,.hex,.mid,.midi" required>
   <button type="submit">Convert</button>
 </form>
+<p class="note">Your file is processed in memory. The generated ZIP is deleted
+  after your one-time download (at the latest after one hour). Uploads are not
+  used for training. See <a href="/privacy">Privacy</a>.</p>
 <p class="note"><b>NOTE:</b> Due to a host of technical issues, the converted sound is a very
   crude approximation on what you get on the Blofeld. Use it as a starting point,
   not as a 1:1 representation.</p>
 <p class="note">The predicted match score shown after conversion is {score_note}.</p>
 {footer(_active_sim_version())}
+"""
+
+
+PRIVACY_BODY = """
+<h1>Privacy</h1>
+<p class="sub">Bloridium converter &ndash; bloridium.frankruft.de</p>
+
+<p>This page explains what happens to the file you upload and to the data
+produced while you use the converter.</p>
+
+<h2>Controller</h2>
+<p>J. Eggers, Herbartstr. 17, D-60316 Frankfurt/M, Germany.<br>
+Contact: <a href="https://www.untergeek.de/cc/">Imprint and Contact</a>.</p>
+
+<h2>What we process</h2>
+<ul>
+<li><b>Your upload.</b> The MIDI/SysEx file you select is processed in memory
+to convert it. It is not written to disk and is discarded when the
+conversion finishes.</li>
+<li><b>Generated files.</b> The ZIP (including <code>report.json</code> with
+sound names, parameters and scores) is stored under a random link only so
+that you can download it. It is deleted as soon as the ZIP has been sent to
+your browser. If you never download it, it is deleted automatically after
+one hour. The download link works once.</li>
+<li><b>Server logs.</b> The web server records a truncated IP address (the
+last IPv4 octet or IPv6 group is replaced by <code>xxx</code>), date and
+time, the requested URL (including the random download token), HTTP status,
+transferred bytes, referrer and user agent. This is used only to operate the
+service and to detect abuse. Server logs are rotated and deleted according
+to the server configuration.</li>
+</ul>
+
+<h2>No training on your data</h2>
+<p>Uploaded sounds are <b>not used for training</b> the similarity model and
+are not used for any purpose other than producing your download. The random
+forest model was trained on the operator's own A/B measurements, not on
+user uploads.</p>
+
+<h2>Cookies and tracking</h2>
+<p>This service sets no cookies and uses no analytics, advertising, tracking
+pixels, third-party fonts or CDNs. The page loads its background image from
+this server. Links to external sites (for example the blog or GitHub) are
+contacted only when you click them.</p>
+
+<h2>Legal basis</h2>
+<p>Providing the conversion you request is based on Art. 6(1)(b) GDPR
+(pre-contractual/contractual request) or, where no contract applies, on
+Art. 6(1)(f) GDPR (legitimate interest in operating the free tool). Server
+logs are processed on the basis of Art. 6(1)(f) GDPR for security and abuse
+prevention.</p>
+
+<h2>Retention</h2>
+<p>Uploads exist only in memory during the request. Generated ZIP/report
+files are deleted after the one-time download, or after one hour if they are
+never downloaded. Server logs are kept only for the period configured for
+the web server and system logs and are then rotated out.</p>
+
+<h2>Your rights</h2>
+<p>You have the right to access, rectification, erasure, restriction of
+processing, data portability and objection, and the right to complain to a
+supervisory authority. The authority responsible for the controller is the
+<a href="https://datenschutz.hessen.de/">Hessian Commissioner for Data
+Protection and Freedom of Information</a>. Because the service has no user
+accounts, we may need the download token from your link to identify the
+temporary files.</p>
+
+<h2>Score</h2>
+<p>The predicted match score is a rough estimate. It is not an automated
+decision with legal effect.</p>
+
+<h2>Changes</h2>
+<p>This page may be updated when the service changes. Last updated:
+22 November 2026.</p>
 """
 
 
@@ -173,6 +252,10 @@ def create_app() -> Flask:
     def index():
         return page(index_body(_score_note()))
 
+    @app.get("/privacy")
+    def privacy():
+        return page(PRIVACY_BODY)
+
     @app.get("/health")
     def health():
         return "ok\n"
@@ -222,6 +305,12 @@ def create_app() -> Flask:
             return response
 
         return resp
+
+    @app.after_request
+    def _no_store(response):
+        if request.endpoint in {"upload", "download"}:
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
     return app
 
