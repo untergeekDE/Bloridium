@@ -297,3 +297,49 @@ dem v4↔v5-Vergleich), daher **kein repräsentativer Mittelwert**:
   vorhersagen. v2 war ein Memorierer seines eigenen Logs. 367 Features bei
   n=100 überfordern den RF; die Entropie-Analyse zeigt zusätzlich, dass die
   Log-Features zirkulär sind (`spec_mad_db` ist Teil der Score-Formel).
+
+### Kleines Feature-Set, 150/50-Split (2026-11-22)
+
+`scripts/experiment_prognose_small.py`: stratifizierter Split (75 A + 75 E
+train, 25 A + 25 E test), 3 Seeds, 200 Bäume (hausgemachter RF).
+
+| Variante | MAE | R² gesamt | R² Bank A | R² Bank E | Spearman |
+|---|---:|---:|---:|---:|---:|
+| alle 367 | 7,91 | +0,188 | **−0,002** | **−0,007** | 0,46 |
+| kuratiert 24 | 8,39 | +0,111 | −0,228 | −0,065 | 0,40 |
+| kuratiert 24, Tiefe 4 | 8,35 | +0,110 | −0,235 | −0,048 | 0,41 |
+| kuratiert Top-10 | 8,31 | +0,138 | −0,123 | −0,060 | 0,45 |
+| kuratiert Top-5 | 8,24 | +0,138 | −0,175 | −0,015 | 0,43 |
+
+- Der positive Gesamtwert ist **ausschließlich der Bank-Unterschied**
+  (A-Mittel 79,5 vs. E 68,2). Innerhalb einer Bank ist R² ≈ 0.
+- Das kleine Set ist nicht besser als alle 367 — eher etwas schlechter.
+- Konsequenz: Ein Modell kann derzeit nur „welche Bank" erkennen, nicht
+  „welcher Sound klingt schlechter".
+
+### Wiederholbarkeit der Scores (2026-11-22)
+
+Dieselben Patches mehrfach gemessen (gleiches Protokoll, Note 60):
+
+| Sound | Messungen | Spanne |
+|---|---|---:|
+| E002 | 78,2 · 77,0 · 74,7 | 3,5 |
+| E007 | 75,2 · 76,0 · 76,3 | 1,1 |
+| E051 | 55,1 · 54,5 · 47,6 | 7,5 |
+| E072 | 46,8 · 57,6 · 55,1 (im Lauf: 40,6) | 17,0 |
+
+- Typische Streuung ~3 Punkte, bei einzelnen Sounds (E072, E051) bis 17.
+- Der erste Ton nach einem Load ist **nicht** generell schlechter
+  (E002/E051 fallen sogar leicht ab) — die Instabilität ist patch-spezifisch.
+- Die Bank-E-Ausreißer sind damit teils Messrauschen, teils echte
+  Spektralfehler; ihre Rangfolge ist nicht belastbar.
+
+### Ausreißer-Spektralbild (Bank E)
+
+- E072/E001/E015: Iridium deutlich zu dunkel (Bänder 60–180 Hz +35…47 dB,
+  1,2–2,6 kHz −30…−34 dB) — Filter bleibt zu geschlossen.
+- E077/E078: Iridium zu dünn (60–180 Hz −63…−75 dB) — Filter/Cutoff zu tief.
+- Beide Muster passen zu einer zu schwachen `Filter1EnvAmount`-Wirkung
+  (Konverter schreibt `raw/127`; Iridium-Factory-Patches nutzen 0,5 als
+  neutralen Wert). Am Gerät ließ sich das mit E072 nicht monoton bestätigen
+  (Filter-Env-Sweep messtechnisch instabil) — offene Frage.
