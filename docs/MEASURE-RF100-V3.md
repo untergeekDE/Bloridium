@@ -1,6 +1,7 @@
 # RF100 v3 — Konvertierung, SD-Transfer, Messung und Retraining
 
-**Stand:** 2026-11-21 · **Code:** Bloridium 0.5.3 (A1/A2/A3/A4/A7a + Glide-Fix)
+**Stand:** 2026-11-22 · **Code:** Bloridium 0.6.0 (Konverter unverändert seit
+0.5.3; die qpats in `transfer/rf100_v3` wurden mit 0.5.3 erzeugt)
 
 Ziel: A001–A100 mit dem aktuellen Mapping neu konvertieren, auf die SD-Karte
 legen, einen frischen Messlauf (v2-Score) fahren und daraus das Prognosemodell

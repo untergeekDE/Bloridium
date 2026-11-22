@@ -7,6 +7,18 @@ Test baseline on Linux without private data: 200 passed / 46 failed / 17 errors.
 All remaining failures come from the missing `dumps/` and `recordings/` data. The full
 suite is run on the measurement machine (item 11).
 
+## Release 0.6.0 (2026-11-22)
+
+- **RF100 v3:** A001–A100 re-converted with the A1/A2/A3/A4/A7a and Glide fixes
+  (`transfer/rf100_v3`, SD folder `rf300`, slots 200–299), measured against the
+  Blofeld: 200 rows, 197 scored, mean **56.6** (v2: 50.5), 72 of 99 sounds better.
+- **Prognose v3:** n=99, MAE **8.37**, RMSE 10.89, **R² 0.212 / R²_cv 0.218**
+  (v2: 10.47 / 0.064 / 0.132). `models/prognose_rf.pkl` is now v3; the v2 model
+  is kept as `models/prognose_rf_v2.pkl`.
+- Version bump only — the converter output is unchanged since 0.5.3.
+- Open: A12 (`DigiFormerAmount` calibration), regressions A009/A001/A095,
+  silent Blofeld channel on A050/A097.
+
 ## Scoring & prognosis
 
 1. 🟡 **Similarity score saturated** (`bloridium/sim.py`). The v1 cosine on raw dB spectra
