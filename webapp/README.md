@@ -35,6 +35,13 @@ Reverse proxy (needs sudo, DNS A record first): see the header of
 `certbot --apache`). `mod_rewrite` is required for the truncated IP addresses
 in the access/error logs.
 
+**Existing HTTPS vhost:** if `bloridium-le-ssl.conf` already exists, certbot
+will not rewrite it. Copy the `RewriteEngine`/`LogFormat`/`CustomLog`/
+`ErrorLogFormat`/`ErrorLog` block from `deploy/bloridium.conf` into that file
+manually, then run `apachectl configtest`, reload Apache, and verify the first
+new line in `bloridium_access.log` after an HTTPS request shows `a.b.c.xxx`.
+Without this step the public `:443` site would keep logging full IPs.
+
 **A') systemd Quadlet (Podman >= 4.4):** `webapp/bloridium-web.container`
 into `~/.config/containers/systemd/`, then
 `systemctl --user enable --now bloridium-web.service`.
