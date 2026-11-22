@@ -9,8 +9,10 @@ edit buffer via `get-param` readback before playing a note.
 command but silently does nothing (verified 2026-11-22 by edit-buffer
 readback; the 2026-11-22 v3 run was invalid because of this).
 
-Both synths play the same note; the recordings are scored with the v2 score
-and appended to a JSONL log that `bloridium prognose train` consumes.
+Both synths play the same note; the recording starts before the note and is
+cropped from the detected onset (protocol "onset"), so percussive sustain-0
+patches keep their attack and short decay. The segments are scored with the v2
+score and appended to a JSONL log that `bloridium prognose train` consumes.
 
 Safety: without `--run` the script only prints the plan (no MIDI note, no
 load-patch). `--verify-sd` is read-only (`ls`).
@@ -30,6 +32,7 @@ import argparse
 import json
 import re
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -161,6 +164,40 @@ def verify_sd(irr: Iridium, sd_dir: str, entries: list[dict],
     return not missing and not stale
 
 
+def capture_onset(blo, irr, note: int = 60, vel: int = 100,
+                  hold: float = 1.2, tail: float = 0.9, lead: float = 0.6):
+    """Record from the note onset (not 0.35 s later): percussive patches count.
+
+    Starts the recorder, plays the note in a thread, then crops both channels
+    from just before the detected onset. This keeps the attack and the short
+    decay of sustain-0 patches in the scored segment.
+    """
+    for ch in range(16):
+        blo.control_change(123, 0, channel=ch)
+        blo.control_change(7, 127, channel=ch)
+    irr.silence_part()
+
+    def play():
+        time.sleep(lead)
+        blo.note_on(note=note, velocity=vel)
+        irr.note_on(note=note, velocity=vel)
+        time.sleep(hold)
+        blo.note_off(note=note)
+        irr.note_off(note=note)
+
+    th = threading.Thread(target=play)
+    th.start()
+    data = audio.record(duration=lead + hold + tail, channels=None)
+    th.join()
+    peak = float(np.abs(data).max())
+    if peak <= 0:
+        return data
+    onset = int(np.argmax(np.abs(data).max(axis=0) > max(peak * 0.03, 1e-4)))
+    start = max(0, onset - int(0.03 * audio.SAMPLERATE))
+    end = min(data.shape[1], start + int((hold + tail) * audio.SAMPLERATE))
+    return data[:, start:end]
+
+
 def select_blofeld(blo, loc: str) -> None:
     n = int(loc[1:])
     blo.control_change(0, 0, channel=blo.channel)    # bank A
@@ -245,7 +282,8 @@ def main(argv=None) -> int:
     ap.add_argument("--log", type=Path, default=DEFAULT_LOG)
     ap.add_argument("--notes", default="72,60")
     ap.add_argument("--only", help="comma-separated locations, e.g. A001,A043")
-    ap.add_argument("--dur", type=float, default=1.5)
+    ap.add_argument("--hold", type=float, default=1.2)
+    ap.add_argument("--tail", type=float, default=0.9)
     ap.add_argument("--no-resume", action="store_true",
                     help="re-measure rows already present in the log")
     ap.add_argument("--verify-sd", action="store_true",
@@ -315,7 +353,8 @@ def main(argv=None) -> int:
             verify_patch(irr, expected, pids)
             select_blofeld(blo, loc)
             for note in pending:
-                data = M.capture(blo, irr, note=note, vel=100, dur=args.dur)
+                data = capture_onset(blo, irr, note=note, vel=100,
+                                     hold=args.hold, tail=args.tail)
                 bx = np.asarray(data[list(audio.CHANNELS["blofeld"]), :],
                                 dtype=np.float64).mean(axis=0)
                 ix = np.asarray(data[list(audio.CHANNELS["iridium"]), :],
@@ -328,7 +367,7 @@ def main(argv=None) -> int:
                 # run continues (3 silent sounds in a row -> abort: dead cable).
                 dead = rms < 2e-5 or (brms > 1e-4 and rms / brms < 1e-3)
                 silent_streak = silent_streak + 1 if dead else 0
-                meta = {"mode": "rf100_v4", "blofeld": loc, "note": note,
+                meta = {"mode": "rf100_v5", "protocol": "onset", "blofeld": loc, "note": note,
                         "qpat": sd_name, "sd_dir": sd_dir, "slot": e["slot"]}
                 if dead:
                     print(f"  {loc} note{note}: Iridium silent (rms {rms:.2e}, "
