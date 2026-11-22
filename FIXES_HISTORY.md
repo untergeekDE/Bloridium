@@ -7,6 +7,17 @@ Test baseline on Linux without private data: 200 passed / 46 failed / 17 errors.
 All remaining failures come from the missing `dumps/` and `recordings/` data. The full
 suite is run on the measurement machine (item 11).
 
+## Release 0.6.2 (2026-11-22)
+
+- **Envelope attack/decay times calibrated:** `ENVELOPE_TIME_ANCHORS` +
+  `envelope_time_norm()` in `qpat_map.py` replace the linear raw/127 mapping
+  (attack was up to ~3x too slow). Applies to amp, filter and free envelopes.
+- A/B on real sounds: A003 +4.7, A016 +4.7 (only attack/decay changed).
+- Curves stay Lin (RC fits the shape better but the earlier user finding and
+  the score A/B are not in its favour); release stays linear (not measured
+  reliably).
+- Re-converted to `transfer/rf100_v5` (SD `rf500`, slots 300-399).
+
 ## Release 0.6.1 (2026-11-22)
 
 - **Fix:** the waveform template shipped `Osc2WaveformSemitone2 = 0` and

@@ -169,3 +169,21 @@ evidence, not as current instructions.
   (nicht-monotone Zeiten, Kommandos teils nicht rechtzeitig angewendet). Für eine
   belastbare Kalibrierung muss nach jedem `set-param` ein Readback verifiziert
   werden; Skripte: `scripts/calib_envelope.py`, `scripts/calib_envelope2.py`.
+
+### Hüllkurven-Zeiten kalibriert (Attack/Decay, 0.6.2)
+
+- Messung mit sauberem Test-Patch (Blofeld SNDP, Iridium init + Filter-Bypass,
+  Lin-Kurven) und konsistenter Metrik (Attack 10–90 %, Decay bis −20 dB).
+  Anker (raw → Iridium-Norm):
+  - Attack: 0→0,0 · 32→0,02 · 64→0,22 · 96→0,52 · 127→0,55
+  - Decay:  0→0,0 · 32→0,29 · 64→0,35 · 96→0,58 · 127→0,60
+  Die alte lineare Abbildung (raw/127) war im Attack bis ~3× zu langsam.
+- A/B auf echten Sounds (nur Amp/Filter1-Attack/Decay geändert):
+  **A003 +4,7, A016 +4,7**; A014/A026/A070 bleiben stumm (Messfenster, s. u.).
+- **Kurven bleiben Lin:** RC passt zwar analytisch besser zur Form, aber ein
+  früherer Nutzerbefund und der Score-A/B (nur +0,3) sprechen dagegen — vorerst
+  keine Änderung.
+- **Release bleibt linear** (unzuverlässig gemessen; Note-Off-Erkennung).
+- **Stumme Percussive-Patches** (Sustain 0, kurzer Decay) sind ein
+  Messprotokoll-Problem: Aufnahme ab Note-On statt 0,35 s davor.
+- Neu konvertiert: `transfer/rf100_v5` (SD `rf500`, Slots 300–399).

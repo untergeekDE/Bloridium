@@ -5,5 +5,5 @@ Used by pyproject.toml (dynamic version), the CLI (--version), the web app
 imports so the web app can read it without loading the package.
 """
 
-__version__ = "0.6.1"  # 2026-11-22: neutral waveform semitone slots (Osc3 was an octave low)
+__version__ = "0.6.2"  # 2026-11-22: calibrated envelope attack/decay times
 # Converter code unchanged since 0.5.3 (A1/A2/A3/A4/A7a), before that 0.5.1/0.5.2

@@ -992,3 +992,24 @@ def test_waveform_semitone_slots_neutral(overrides):
         for slot in (1, 2, 3, 4):
             key = f"Osc{osc}WaveformSemitone{slot}"
             assert overrides[key][0] == pytest.approx(12.0), key
+
+
+def test_envelope_time_curve():
+    # Measured live 2026-11-22 (clean test patch, Lin): the old raw/127 mapping was
+    # up to ~3x off for attack/decay.
+    assert qpat_map.envelope_time_norm("attack", 0) == pytest.approx(0.0)
+    assert qpat_map.envelope_time_norm("attack", 64) == pytest.approx(0.22)
+    assert qpat_map.envelope_time_norm("decay", 127) == pytest.approx(0.60)
+    for stage in ("attack", "decay"):
+        vals = [qpat_map.envelope_time_norm(stage, r) for r in range(128)]
+        assert all(a <= b for a, b in zip(vals, vals[1:])), stage
+
+
+def test_envelope_times_use_the_curve(parsed, overrides):
+    # A043: amp env raw values must go through envelope_time_norm, not norm().
+    raw_a = parsed["params"]["Amplifier Envelope Attack"]
+    raw_d = parsed["params"]["Amplifier Envelope Decay"]
+    assert overrides["AmpEnvAttack"][0] == pytest.approx(
+        qpat_map.envelope_time_norm("attack", raw_a))
+    assert overrides["AmpEnvDecay"][0] == pytest.approx(
+        qpat_map.envelope_time_norm("decay", raw_d))

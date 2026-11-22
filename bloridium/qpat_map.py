@@ -432,6 +432,27 @@ def blofeld_reso_norm(raw) -> float:
     return min(1.0, raw / BLOFELD_RESO_SELF_OSC_RAW)
 
 
+# Envelope time calibration (measured live 2026-11-22 with the clean test patch,
+# Lin curves, 10-90 % attack / -20 dB decay). The Blofeld times and the Iridium
+# norm are both non-linear; the old raw/127 mapping was up to ~3x off.
+ENVELOPE_TIME_ANCHORS = {
+    "attack": [(0, 0.0), (16, 0.0), (32, 0.02), (48, 0.10), (64, 0.22),
+               (80, 0.38), (96, 0.52), (112, 0.54), (127, 0.55)],
+    "decay": [(0, 0.0), (16, 0.15), (32, 0.29), (48, 0.32), (64, 0.35),
+              (80, 0.47), (96, 0.58), (112, 0.60), (127, 0.60)],
+}
+
+
+def envelope_time_norm(stage: str, raw) -> float:
+    """Blofeld envelope time raw 0..127 -> Iridium norm (measured anchors)."""
+    anchors = ENVELOPE_TIME_ANCHORS[stage]
+    raw = max(0, min(127, int(raw)))
+    for (x0, y0), (x1, y1) in zip(anchors, anchors[1:]):
+        if raw <= x1:
+            return y0 + (y1 - y0) * (raw - x0) / max(1, x1 - x0)
+    return anchors[-1][1]
+
+
 def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     """parsed: blofeld_dump.parse_sndd(). -> (overrides, unmapped)
 
@@ -676,8 +697,10 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     fe = "Filter Envelope"
     for bk, ik in (("Attack", "Filter1EnvAttack"), ("Decay", "Filter1EnvDecay"),
                    ("Sustain", "Filter1EnvSustain"), ("Release", "Filter1EnvRelease")):
-        setp(ik, norm(p[f"{fe} {bk}"]))
-        setp(ik.replace("Filter1", "Filter2"), norm(p[f"{fe} {bk}"]))
+        value = (envelope_time_norm(bk.lower(), p[f"{fe} {bk}"])
+                 if bk in ("Attack", "Decay") else norm(p[f"{fe} {bk}"]))
+        setp(ik, value, f"{p[f'{fe} {bk}']} raw")
+        setp(ik.replace("Filter1", "Filter2"), value, f"{p[f'{fe} {bk}']} raw")
     # (filter routing/keytrack/mod mapped above; drive/curve/FM/pan unmapped)
 
     # --- amp ---
@@ -693,13 +716,17 @@ def blofeld_to_qpat_params(parsed: dict) -> tuple[dict, list]:
     ae = "Amplifier Envelope"
     for bk, ik in (("Attack", "AmpEnvAttack"), ("Decay", "AmpEnvDecay"),
                    ("Sustain", "AmpEnvSustain"), ("Release", "AmpEnvRelease")):
-        setp(ik, norm(p[f"{ae} {bk}"]))
+        value = (envelope_time_norm(bk.lower(), p[f"{ae} {bk}"])
+                 if bk in ("Attack", "Decay") else norm(p[f"{ae} {bk}"]))
+        setp(ik, value, f"{p[f'{ae} {bk}']} raw")
 
     # --- env 3/4 -> FreeEnv1/2 ---
     for n, base in ((3, "FreeEnv1"), (4, "FreeEnv2")):
         for bk, ik in (("Attack", f"{base}Attack"), ("Decay", f"{base}Decay"),
                        ("Sustain", f"{base}Sustain"), ("Release", f"{base}Release")):
-            setp(ik, norm(p[f"Envelope {n} {bk}"]))
+            value = (envelope_time_norm(bk.lower(), p[f"Envelope {n} {bk}"])
+                     if bk in ("Attack", "Decay") else norm(p[f"Envelope {n} {bk}"]))
+            setp(ik, value, f"{p[f'Envelope {n} {bk}']} raw")
 
     # --- envelope curves: Blofeld ADSRs are LINEAR, but the Iridium template defaults
     # Attack=RC (1.0) — massive audible difference (user finding 2026-11-21).

@@ -353,3 +353,11 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
 
 **Hinweis:** `measure_rf100.py --verify-sd` prüft jetzt auch ohne `--run`
 (read-only); vorher kehrte das Skript vor der Prüfung zurück.
+
+### Hüllkurven (2026-11-22)
+- [x] Attack/Decay-Zeiten kalibriert (`ENVELOPE_TIME_ANCHORS`, 0.6.2); A/B
+      A003/A016 je +4,7.
+- [ ] Release-Zeiten messen (Note-Off-Erkennung zu unzuverlässig).
+- [ ] Messprotokoll für Sustain-0-Patches: Aufnahme ab Note-On, sonst bleiben
+      A014/A026/A070 stumm.
+- [ ] v5 auf SD `rf500`/Slots 300–399 laden und vollständig messen.
