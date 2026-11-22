@@ -281,3 +281,14 @@ def test_entropy_report_partial_ig_given_base(tmp_path):
     assert emb["ig_given_base_bits"] == pytest.approx(0.0, abs=1e-9)
     # rohe IG von embed ist trotzdem hoch (unordentlich, aber gebinnt passt es sich an)
     assert emb["ig_bits"] is not None
+
+
+def test_find_dump_prefers_bank_file(tmp_path):
+    # Bank E dumps live in dumps/banks/E/E016.bin; the old glob only looked at
+    # dumps/*.bin, so bank B..Z sounds were "no dump" during training.
+    d = tmp_path / "dumps"
+    (d / "banks" / "E").mkdir(parents=True)
+    (d / "banks" / "E" / "E016.bin").write_bytes(_synth_dump_bytes("E016", _sdata(1)))
+    (d / "blofeld_sndd_E016_20260101_000000.bin").write_bytes(
+        _synth_dump_bytes("E016", _sdata(2)))
+    assert prognose.find_dump(d, "E016") == d / "banks" / "E" / "E016.bin"

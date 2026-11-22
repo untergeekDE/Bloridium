@@ -191,8 +191,12 @@ def loc_from_header(data: bytes) -> str:
 
 
 def find_dump(dumps_dir, loc: str) -> Path:
-    """Newest SNDD dump (*.bin) with a matching location in the header."""
+    """Stable bank dump (dumps/banks/<letter>/<LOC>.bin) or newest SNDD dump."""
     dumps_dir = Path(dumps_dir)
+    loc = loc.upper()
+    bank_file = dumps_dir / "banks" / loc[0] / f"{loc}.bin"
+    if bank_file.exists():
+        return bank_file
     best = None
     for p in sorted(dumps_dir.glob("*.bin")):
         try:

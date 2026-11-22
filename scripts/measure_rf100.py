@@ -283,6 +283,8 @@ def main(argv=None) -> int:
     ap.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     ap.add_argument("--log", type=Path, default=DEFAULT_LOG)
     ap.add_argument("--notes", default="72,60")
+    ap.add_argument("--mode", default="rf100_v5",
+                    help="meta.mode tag in the sim log (e.g. bankE_v1)")
     ap.add_argument("--only", help="comma-separated locations, e.g. A001,A043")
     ap.add_argument("--slot-start", type=int, default=None,
                     help="override the manifest slots: entry i is loaded from "
@@ -381,7 +383,7 @@ def main(argv=None) -> int:
                 # run continues (3 silent sounds in a row -> abort: dead cable).
                 dead = rms < 2e-5 or (brms > 1e-4 and rms / brms < 1e-3)
                 silent_streak = silent_streak + 1 if dead else 0
-                meta = {"mode": "rf100_v5", "protocol": "onset", "blofeld": loc, "note": note,
+                meta = {"mode": args.mode, "protocol": "onset", "blofeld": loc, "note": note,
                         "qpat": sd_name, "sd_dir": sd_dir, "slot": e["slot"]}
                 if dead:
                     print(f"  {loc} note{note}: Iridium silent (rms {rms:.2e}, "
