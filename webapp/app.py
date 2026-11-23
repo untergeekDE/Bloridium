@@ -79,6 +79,8 @@ PAGE = """<!doctype html>
  table{{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.88rem}}
  th,td{{border:1px solid #ccc;padding:.28rem .5rem;text-align:left}}
  th{{background:#f0f0f0}} .score{{font-weight:bold}}
+ .exp{{background:#ffe0e0;border:1px solid #c66;border-radius:4px;padding:0 .35rem;
+      font-size:.8em;font-weight:bold;color:#a00;vertical-align:middle}}
  .bar{{background:#e4e4e4;border-radius:3px;min-width:90px}}
  .bar>div{{background:#4a7ebb;height:.65rem;border-radius:3px}}
  .err{{color:#a00}} code{{background:#f2f2f2;padding:0 .3rem}}
@@ -173,12 +175,13 @@ def _active_sim_version() -> str:
 def _score_note() -> str:
     mpath = matching.resolve_model_path(os.environ.get("BLORIDIUM_MODEL"))
     if mpath:
-        return (f'similarity v{matching.SIMILARITY_VERSION} &ndash; random-forest prognosis '
-                f'(model <code>{escape(mpath.name)}</code>, trained on A/B measurements, '
-                'see docs/HANDOVER-2026-11-19-rf-dataset.md). <b>Treat it as a rough '
-                'indication only:</b> the model was trained on 99 sounds, does not beat '
-                'a constant guess on held-out data (R&sup2; &lt; 0), and the underlying '
-                'similarity score is known to saturate (see FIXES_TODO.md)')
+        return (f'similarity v{matching.SIMILARITY_VERSION} &ndash; '
+                '<b>experimental</b> random-forest prognosis '
+                f'(model <code>{escape(mpath.name)}</code>, n=200 A/B measurements). '
+                'It only knows the average level of a sound bank: on held-out data it '
+                'does not explain the score of an individual sound (R&sup2; &asymp; 0.01), '
+                'so it cannot tell a good conversion from a bad one &ndash; '
+                '<b>trust your ears, not this number</b>')
     return (f'similarity v{matching.PLACEHOLDER_VERSION} &ndash; deterministic placeholder '
             '(no trained model found; set BLORIDIUM_MODEL to enable the RF prognosis)')
 
@@ -366,6 +369,7 @@ def _results_html(report: dict) -> str:
   {report['num_sounds']} sounds converted, {report['num_errors']} errors,
   {report['skipped_messages']} non-sound messages skipped &ndash;
   avg predicted score <b>{report['avg_score']:.1f}</b>
+  <span class="exp">experimental</span>
   (similarity {escape(report.get('similarity_version', ''))}, {matcher}{model})</p>
 <p><a href="/download/{report['token']}"><button>Download ZIP ({escape(report['zip_name'])})</button></a></p>
 <p class="note">One-time download: the ZIP is deleted from the server after it

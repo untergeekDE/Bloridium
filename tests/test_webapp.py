@@ -126,10 +126,11 @@ def test_rf_prognose(sample_sdata, tmp_path):
     assert r1["model"] == str(RF_MODEL)
     assert 0.0 <= s["score"] <= 100.0 and s["std"] is not None and s["std"] >= 0
     assert s["score"] == r2["sounds"][0]["score"]  # deterministic
-    # A043 measured v2 mean label is 46.3 (recordings/sim_log_v2_rf.jsonl,
-    # HANDOVER §6c; the old v1 label 89.55 no longer applies since the v2
-    # retrain on 2026-11-20) -> prediction should land near it
-    assert abs(s["score"] - 46.3) < 15.0
+    # The shipped model is the n=200 combined one (A v7 + E v2, 0.6.6). Its
+    # output is NOT calibrated to a single A043 label any more: the model only
+    # reproduces the average level of a bank (holdout R2 ~0.01), which is why
+    # the webapp labels it experimental. Anchoring the test to 46.3 would
+    # re-introduce exactly the false precision the label warns about.
     with zipfile.ZipFile(r1["zip_path"]) as zf:
         rep = json.loads(zf.read("report.json"))
         assert rep["matcher"].startswith(f"rf-prognose-v{V}")
