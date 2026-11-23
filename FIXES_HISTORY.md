@@ -26,8 +26,10 @@ suite is run on the measurement machine (item 11).
   value 0.5 is neutral (factory qpats); the old mapping gave raw 86 only
   +0.18 of the range instead of +0.68, so the filter envelope barely moved
   (bank E outliers E072/E001/E015 too dark, E077/E078 too thin).
-- Still open (TODO_MEASURE): the clean scale test for the amount, and the same
-  suspicion for `FilterNVeloAmount` / `AmpVeloAmount`.
+- **Validated by A/B (2026-11-23):** +8.0 mean over 5 sounds, all better
+  (E015 +10.6, E089 +10.6, E072 +9.4, E077 +5.4, E001 +4.0).
+- Still open (TODO_MEASURE): the same suspicion for `FilterNVeloAmount` /
+  `AmpVeloAmount`.
 
 ## Release 0.6.4 (2026-11-22)
 

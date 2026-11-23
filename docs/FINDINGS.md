@@ -372,3 +372,38 @@ Dieselben Patches mehrfach gemessen (gleiches Protokoll, Note 60):
   Firmware-/Ghidra-Fall.
 - Fade-out (negativer Blofeld-Fade) ist jetzt als Approximation markiert statt
   den LFO zu killen; die Iridium-Decay-Skala bleibt offen (A7).
+
+### 0.6.5 / 0.6.6 im A/B isoliert (2026-11-23)
+
+Nach dem gemeinsamen Neulauf (Bank A v7, Bank E v2) beide Änderungen einzeln
+gegengeprüft, jeweils gleicher Patch, nur der eine Parameter umgeschaltet:
+
+**Filter-Env-Amount bipolar (0.6.5)** — `scripts/ab_env_amount.py`, Note 60:
+
+| Sound | raw/127 | 0,5+0,5*raw/127 | Δ |
+|---|---:|---:|---:|
+| E015 | 53,3 | 63,8 | +10,6 |
+| E089 | 68,3 | 78,9 | +10,6 |
+| E072 | 44,5 | 53,9 | +9,4 |
+| E077 | 52,8 | 58,2 | +5,4 |
+| E001 | 56,7 | 60,7 | +4,0 |
+| **Mittel** | | | **+8,0** (5/5) |
+
+**LFO-Decay (0.6.6)** — `scripts/ab_lfo_decay.py`, Note 60:
+
+| Sound | Decay 0,0 | Decay 1,0 | Δ |
+|---|---:|---:|---:|
+| E072 | 47,3 | 57,0 | +9,7 |
+| E016 | 46,1 | 53,0 | +6,9 |
+| E001 | 59,9 | 60,9 | +1,0 |
+| E089 | 80,8 | 80,0 | −0,8 |
+| E090 | 63,7 | 53,1 | −10,7 |
+| **Mittel** | | | **+1,2** |
+
+- Der LFO-Fix ist **akustisch zwingend** (ohne ihn ist der LFO tot), kostet im
+  Score aber Punkte, weil `spec_mad_db` das zeitlich gemittelte Spektrum
+  vergleicht: ein statisches Signal liegt näher am Blofeld-Mittel als ein
+  lebendiges mit nicht phasengleichem LFO. E090 ist der Extremfall.
+- Konsequenz für die Bewertung: Scores modulierter Sounds sind mit dieser
+  Metrik systematisch pessimistisch. Für die Qualitätsaussage zählt bei ihnen
+  das Gehör mehr als der Score.
