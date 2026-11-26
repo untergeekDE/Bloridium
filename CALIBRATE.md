@@ -119,7 +119,7 @@ freezes the anchors, document the measurement in
 | Matrix pitch amount → semi | `MATRIX_PITCH_CAL` (amount → semitones, Constant→Osc1Pitch) | 2026-11-21 |
 | Bipolar matrix full scale | divisor 127 (`bipolar_amount_full`), pan measured at half with /254 | 2026-11-21 |
 | `LfoNDecay` ≠ 0 | 0 kills the LFO output; 1.0 for every converted LFO | E090 measurement, 2026-11-22 |
-| LFO → Pitch depth (small amounts) | `amt_bipolar` (divisor 254) confirmed ≈ correct for raw 64–80 (ratio 0.98–1.11); first round 2026-11-26, rerun with verified base pending | LFO-PITCH-CALIB-2026-11-26 |
+| LFO → Pitch depth (small amounts) | `amt_bipolar` (divisor 254) **confirmed correct** for raw 64-80 (ratio 0.98-1.11, direct and matrix identical); above raw 88 the Iridium undershoots (0.52/0.25/0.19), affects 8/200 sounds | LFO-PITCH-CALIB-2026-11-26.md |
 
 **Measured but not yet implemented** (curves exist, converter still linear):
 
@@ -154,8 +154,10 @@ freezes the anchors, document the measurement in
    trap, never verified by a velocity sweep.
 9. **Unisono detune / unison count** — unconverted/unmeasured.
 10. **LFO → Pitch depth, large-depth region** (raw > 88): Iridium measures
-    flatter than Blofeld (first round 2026-11-26); relevant only if bank
-    sounds actually use deep vibrato — check the dumps before spending time.
+    flatter than Blofeld (measured 2026-11-26, ratios 0.52/0.25/0.19 at raw
+    88/96/112); affects 8/200 bank sounds (A003, A037, A048, A051, A071,
+    A072, A099, E042) — a correction curve for amounts > 0.59 would only
+    matter for those.
 11. **Drive / FM amounts** — unmeasured.
 12. **FX parameter scales** (Effect 1/2 Parameter 1–14) — only worth it if FX
     conversion matters by ear; mostly unmapped today.

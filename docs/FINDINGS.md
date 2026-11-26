@@ -423,3 +423,26 @@ gegengeprüft, jeweils gleicher Patch, nur der eine Parameter umgeschaltet:
 - Konsequenz für das Prognose-Modell: Es wurde auf 0.6.6-Daten trainiert; mit
   dem Revert passt die Verteilung nicht mehr exakt. Bleibt als "experimentell"
   gekennzeichnet.
+
+### LFO→Pitch-Tiefe kalibriert (A8, 2026-11-26)
+
+- Init-Aufbau (A066, Osc1 Sine, LFO1 ~1 Hz), beide Geräte gleichzeitig,
+  Heterodyn-Frequenzverfolgung: BF- und IR-Vibrato-Tiefe stimmen im
+  musikalischen Bereich (raw 64–80, IR-Amount 0.5–0.563) überein
+  (Ratio 0,98–1,11) — `amt_bipolar` (Divisor 254) ist dort korrekt.
+  **Keine globale Dosisänderung.** Direkt- und Matrix-Pfad verhalten sich
+  identisch.
+- Oberhalb raw 88 unterschreitet der Iridium die Blofeld-Tiefe deutlich
+  (0,52/0,25/0,19) — betrifft 8/200 Sounds (A003, A037, A048, A051, A071,
+  A072, A099, E042).
+- A001s Urteil „LFO etwa ½ zurückdrehen" kann damit nicht am Amount liegen
+  (A001: raw 70/58, im bestätigten Bereich). Hauptverdächtiger ist die
+  **LFO-Geschwindigkeit**: `Lfo1Speed = 0.457` ≈ 5 Hz auf dem Iridium, der
+  Blofeld läuft laut A7-Kurve bei dem raw-Wert langsamer. Nächster Schritt:
+  A001-A/B (Rate messen), dann LfoNSpeed-Hz-Brücke einbauen.
+- Messmethodik (INIT → Parameter isolieren → Readback-verifiziert setzen →
+  durchmessen → Ankertabelle) ist jetzt in `CALIBRATE.md` formalisiert.
+- Wichtige Messtechnik-Lehren: QUIR-Shell liefert direkt nach `init-patch`
+  Speicher-Müll (Basis-Anwendung muss per Readback verifiziert werden —
+  sonst bleiben nie nachgesendete Matrix-Zeilen tot); Heterodyn-Fenster
+  60 ms (24 ms ließ die 2. Harmonische als Scheinrate durch).
