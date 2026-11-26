@@ -446,3 +446,22 @@ gegengeprüft, jeweils gleicher Patch, nur der eine Parameter umgeschaltet:
   Speicher-Müll (Basis-Anwendung muss per Readback verifiziert werden —
   sonst bleiben nie nachgesendete Matrix-Zeilen tot); Heterodyn-Fenster
   60 ms (24 ms ließ die 2. Harmonische als Scheinrate durch).
+
+### A001 „LFO übertrieben" — echte Ursache ist die fehlende Schwebung (2026-11-26)
+
+- A/B mit FX-off-Isolation: Die dominante Bewegung des Blofeld-A001 ist
+  **kein LFO, sondern die Schwebung** der beiden verstimmten Sägezähne
+  (±4,8 Cent → 1,45 Hz bei C4, 2,9 Hz bei C5 — Rate skaliert mit der
+  Tonhöhe, exakt messbestätigt). Der echte LFO läuft auf **beiden** Geräten
+  bei ~4,3 Hz → Speed- und Depth-Abbildung sind für A001 korrekt.
+- Der Iridium hat die Schwebung verloren: `OscNWaveformSpread` =
+  0,25/0,356/0,38 sind **Template-Werte** (identisch in jedem konvertierten
+  Sound) — jeder Oszillator wird zum 4-Stimmen-Spread-Cluster, die ±4,8-
+  Cent-Verstimmung ertrinkt darin. Übrig bleibt der kahle 4,35-Hz-LFO,
+  den das Ohr als „übertrieben" wahrnimmt.
+- Zusätzlich: LFO→F1-Cutoff (raw 103) wobbelt auf dem IR mit 9,6 dB
+  Helligkeit, auf dem BF ~0 dB — die Cutoff-Mod-Tiefe ist unkalibriert.
+- FX: nur Typen, keine Parameter konvertiert (A001-Chorus → IR-Standard).
+- **Lehre:** „Zu viel LFO" kann auch „zu wenig von allem anderen" heißen.
+  Erst modulierende Quellen im Spektrum trennen (Rate ∝ f0 = Schwebung,
+  Rate konstant = LFO/FX), dann dosieren.

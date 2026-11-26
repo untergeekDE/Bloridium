@@ -158,9 +158,14 @@ freezes the anchors, document the measurement in
     88/96/112); affects 8/200 bank sounds (A003, A037, A048, A051, A071,
     A072, A099, E042) — a correction curve for amounts > 0.59 would only
     matter for those.
-11. **Drive / FM amounts** — unmeasured.
-12. **FX parameter scales** (Effect 1/2 Parameter 1–14) — only worth it if FX
-    conversion matters by ear; mostly unmapped today.
+11. **LFO → F1/F2 Cutoff depth** (A9) — measured 2026-11-26 on A001: IR
+    brightness wobble 9.6 dB where the BF shows none (raw 103 → amount
+    0.654). INIT-framework sweep over cutoff-mod amounts, centroid-mod
+    depth BF vs IR. See docs/research/A001-LFO-2026-11-26.md.
+12. **Drive / FM amounts** — unmeasured.
+13. **FX parameter scales** (Effect 1/2 Parameter 1–14) — confirmed gap: only
+    FX *types* are converted, no parameters (A001 chorus → IR defaults;
+    2026-11-26). Start with chorus rate/depth/mix.
 
 When a candidate is measured: move it to §2, implement anchors in
 `qpat_map.py`, reference the research doc, update `TODO_MEASURE.md`.

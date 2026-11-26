@@ -184,3 +184,14 @@ Check whether these have been done already.
     18. ⬜ **`cli.py` is 1,000+ lines.** Split it into `cli/` per command group.
     19.     - ⬜ `_dtw` is still a pure-Python double loop; vectorise it or use a banded DTW.
 16. - ⬜ **_MAD_SCALE (20 dB)** gegen User-Ratings kalibrieren (bestehender Punkt aus Item 1).
+### Template WaveformSpread verschluckt Oszillator-Verstimmung (2026-11-26)
+
+- [ ] `Osc1/2/3WaveformSpread` im Template (0.25/0.356/0.38) auf 0 setzen
+      oder — besser — nur im Unisono-Modus aus `Unisono Detune` mappen.
+      Jeder konvertierte Waveform-Oszillator ist sonst ein 4-Stimmen-
+      Cluster; die 2-Oszillator-Schwebung des Blofeld (A001: 1,45/2,9 Hz)
+      geht verloren (Messung: docs/research/A001-LFO-2026-11-26.md).
+- [ ] FX-Parameter konvertieren (mindestens Chorus Rate/Depth/Mix);
+      aktuell werden nur FX-Typen gemappt.
+- [ ] Nach dem Spread-Fix: beide Pakete neu konvertieren und anhören
+      (Schwebungs-Sounds: A001, A043, E001 — LFO-Sounds: E090, E016).

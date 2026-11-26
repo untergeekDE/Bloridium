@@ -404,3 +404,9 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
       (16/100 in Bank E) und die 2-4x zu langsame Iridium-Geschwindigkeit.
 - [ ] Nach dem Revert: Bank E/A neu messen (Daten passen sonst nicht zum
       ausgelieferten Konverter).
+
+### A9: LFO→F1/F2 Cutoff-Mod-Tiefe (2026-11-26)
+- [ ] INIT-Rahmen wie A8, aber Ziel `F1 Cutoff` statt Pitch: Amount-Sweep
+      (raw 64..127), Centroid-Mod-Tiefe (dB) BF vs IR messen.
+- [ ] Erwartung aus A001: IR ~9,6 dB bei raw 103, BF ~0 — Mapping deutlich
+      zu tief. Danach Ankertabelle für Cutoff-Mod-Amounts.
