@@ -46,6 +46,7 @@ Synth descriptions in the docs:
 - Blofeld on Scarlett inputs 3/4 (MIDI channel 5), Iridium on inputs 5/6 (MIDI channels 6-9, Parts 1-4)
 - Install: `pip install -e ".[dev]"`, `brew install ffmpeg`, build `tools/ump_send` (details in `README.md`)
 - Workflow (convert -> upload -> A/B measure -> tweak): see `README.md`; mapping status: `docs/MAPPING-MASTER.md`; empirical facts: `docs/FINDINGS.md`; backlog: `FIXES_HISTORY.md`, `TODO_FIX.md`, `TODO_MEASURE.md`
+- Parameter calibration (method + inventory of measured anchors + open candidates): `CALIBRATE.md` — a mapping may ship only with a measured calibration, a manual-documented identity, or an explicit TODO naming the calibration task
 
 ## Skills
 
