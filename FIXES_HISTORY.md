@@ -7,6 +7,17 @@ Test baseline on Linux without private data: 200 passed / 46 failed / 17 errors.
 All remaining failures come from the missing `dumps/` and `recordings/` data. The full
 suite is run on the measurement machine (item 11).
 
+## Release 0.6.7 (2026-11-26)
+
+- **Filter envelope amount reverted to `norm(raw)`** (undoes 0.6.5's
+  `0.5 + 0.5*norm(raw)`). The A/B *score* preferred bipolar by +8.0, but by ear
+  the filter envelope then opens far too much - the user judged the 0.6.4/0.6.5
+  sound clearly better. The score rewards spectral brightness, not taste.
+- **LFO decay fix stays** (0.6.6): live LFOs are an enrichment, even if the
+  modulation is sometimes too strong (open point: LFO amount/speed scaling).
+- Both packages re-converted: `transfer/don_solaris_v1` (E, 200-299) and
+  `transfer/rf100_v6` (A, 300-399).
+
 ## Release 0.6.6 (2026-11-23)
 
 - **All converted LFOs were silent:** the fade mapping wrote `LfoNAttack = 0`

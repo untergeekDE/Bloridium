@@ -1069,18 +1069,14 @@ def test_poly_mono_mode_follows_allocation_bit():
     assert ov["UnisonoCount"] == (1.0, "")
 
 
-def test_filter_env_amount_is_bipolar():
-    # 2026-11-22: the Iridium filter envelope amount is bipolar (0.5 = neutral,
-    # factory qpats use 0.5000). raw 0 -> 0.5 (no modulation), raw 127 -> 1.0.
-    # E072 "Velo City Bass": Filter 1 Env Amount = 86.
+def test_filter_env_amount_uses_norm_again():
+    # 0.6.5 tried the bipolar 0.5 + 0.5*norm(raw) mapping; the score liked it
+    # (+8.0) but by ear the filter envelope opened far too much (user verdict
+    # 2026-11-26). 0.6.7 reverts to norm(raw) - raw 0 = no modulation.
     parsed = bd.parse_sndd((REPO / "dumps/banks/E/E072.bin").read_bytes())
     raw = parsed["params"]["Filter 1 Env Amount"]
     assert raw == 86
     ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
-    assert ov["Filter1EnvAmount"][0] == pytest.approx(0.5 + 0.5 * 86 / 127)
+    assert ov["Filter1EnvAmount"][0] == pytest.approx(86 / 127)
     assert ov["Filter2EnvAmount"][0] == pytest.approx(
-        0.5 + 0.5 * parsed["params"]["Filter 2 Env Amount"] / 127)
-    # raw 0 must be neutral, not 0.0 (which would invert the envelope)
-    parsed["params"]["Filter 1 Env Amount"] = 0
-    ov, _ = qpat_map.blofeld_to_qpat_params(parsed)
-    assert ov["Filter1EnvAmount"][0] == pytest.approx(0.5)
+        parsed["params"]["Filter 2 Env Amount"] / 127)

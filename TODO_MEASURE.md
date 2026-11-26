@@ -397,3 +397,10 @@ Setup: Blofeld Allocation = Mono + Portamento, Iridium Onset, C3 → C5, trocken
 - [ ] Beide Pakete auf SD laden und **neu messen** - alle bisherigen Scores
       (A 79,5 / E 68,2) sind mit toten LFOs entstanden.
 - [ ] Danach Filter-Env-Amount-Skalentest und Prognose-Entscheidung wiederholen.
+
+### Env-Revert (0.6.7, 2026-11-26)
+- [x] Filter-Env-Amount zurück auf `norm(raw)` (Gehör schlägt Score).
+- [ ] LFO-Modulation dosieren: `LfoNAmount`/Speed prüfen, `Clocked`-LFOs
+      (16/100 in Bank E) und die 2-4x zu langsame Iridium-Geschwindigkeit.
+- [ ] Nach dem Revert: Bank E/A neu messen (Daten passen sonst nicht zum
+      ausgelieferten Konverter).

@@ -407,3 +407,19 @@ gegengeprüft, jeweils gleicher Patch, nur der eine Parameter umgeschaltet:
 - Konsequenz für die Bewertung: Scores modulierter Sounds sind mit dieser
   Metrik systematisch pessimistisch. Für die Qualitätsaussage zählt bei ihnen
   das Gehör mehr als der Score.
+
+### Rücknahme: Filter-Env-Amount (0.6.7, 2026-11-26)
+
+- Die bipolare Abbildung (0.6.5, `0,5 + 0,5*raw/127`) war im A/B-Score **+8,0**
+  besser (5/5 Sounds), klang für den Nutzer aber **deutlich schlechter**: die
+  Filter-Hüllkurve öffnet damit zu weit. Entscheidung: zurück auf `raw/127`.
+- Lehre für die Bewertung: `spec_mad_db` belohnt spektrale Helligkeit. Ein
+  stärker öffnender Filter gewinnt Punkte, auch wenn er musikalisch falsch ist.
+  Bei Filter-/Hüllkurven-Änderungen entscheidet das Gehör, der Score ist nur
+  ein Indikator.
+- Der LFO-Decay-Fix (0.6.6) bleibt: lebende LFOs sind eine Bereicherung, auch
+  wenn die Modulation gelegentlich zu stark wirkt (offen: Amount/Speed-Skalierung,
+  insbesondere `Clocked`-LFOs und die 2-4x zu langsame Iridium-Geschwindigkeit).
+- Konsequenz für das Prognose-Modell: Es wurde auf 0.6.6-Daten trainiert; mit
+  dem Revert passt die Verteilung nicht mehr exakt. Bleibt als "experimentell"
+  gekennzeichnet.
